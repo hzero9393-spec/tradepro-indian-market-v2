@@ -607,3 +607,31 @@ Stage Summary:
 - Full loading state support with Skeleton components
 - Graceful fallback to mock data on API failure
 - All Indian market formatting preserved (₹, en-IN locale, Lakhs notation)
+
+---
+Task ID: 1
+Agent: Main
+Task: Redesign Dashboard page based on uploaded HTML template (dashboard_tradepro.html)
+
+Work Log:
+- Read uploaded HTML template (dashboard_tradepro.html) to understand the design
+- Completely rewrote dashboard-page.tsx to match the uploaded HTML template design
+- Added Market Overview section with 3 index cards (NIFTY 50, SENSEX, BANK NIFTY) with LIVE badge
+- Added Stats Grid with 4 colored left-border cards (Total Balance, Today's P&L, Win Rate, Total Trades)
+- Added Open Positions table with real data from /api/trade/positions (Instrument, LTP, Avg Cost, P&L, Chg%)
+- Added Activity Feed timeline with BUY/SELL/PENDING icons and vertical timeline line
+- Added floating "New Trade" FAB button that navigates to trading page
+- Added Quick Actions row (AI Market Insights, Risk Analysis, Strategy Builder)
+- Added Framer Motion staggered animations matching the HTML template
+- All currency displayed in ₹ (INR)
+- Fixed icon import issues (MoreVert→MoreVertical, Sell→ArrowUpFromLine, HistoryEdu→Clock, KeyboardDoubleArrowUp→ChevronsUp)
+- Removed unused imports (Progress, Target)
+- ESLint passes cleanly, page compiles successfully (200 response)
+
+Stage Summary:
+- Dashboard page fully redesigned to match the uploaded HTML template
+- Key sections: Market Overview (3 index cards), Stats Grid (4 border-color cards), Open Positions table, Activity Feed timeline, Quick Actions, FAB
+- Real data integration from existing API endpoints (portfolio, positions, trades, indices)
+- All currency in Indian Rupees (₹) with en-IN locale
+- Framer Motion animations for staggered entry effects
+- Floating "New Trade" button navigates to trading page

@@ -2,21 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -27,27 +17,26 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart'
-import {
-  Plus,
-  ArrowDownToLine,
   TrendingUp,
   TrendingDown,
-  Briefcase,
-  Target,
-  Brain,
-  Shield,
-  Zap,
-  ArrowRight,
   ArrowUpRight,
   ArrowDownRight,
+  Plus,
+  ShoppingCart,
+  ArrowUpFromLine,
+  Hourglass,
   BarChart3,
+  Briefcase,
+  Shield,
+  Zap,
+  Rocket,
+  Clock,
+  ChevronsUp,
+  MoreVertical,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
+import { useAppStore } from '@/lib/store'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -66,10 +55,30 @@ interface PortfolioData {
   initialCapital: number
   openPositionsCount: number
   segments: {
-    equity: { count: number; invested: number; currentValue: number; unrealizedPnl: number }
-    futures: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number }
-    options: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number }
+    equity: { count: number; invested: number; currentValue: number; unrealizedPnl: number; positions?: PositionData[] }
+    futures: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number; positions?: PositionData[] }
+    options: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number; positions?: PositionData[] }
   }
+}
+
+interface PositionData {
+  id: string
+  segment: string
+  productType: string
+  tradeDirection: string
+  symbol: string
+  optionType?: string | null
+  strikePrice?: number | null
+  expiryDate?: string | null
+  quantity: number
+  entryPrice: number
+  currentPrice: number
+  totalInvested: number
+  currentValue: number
+  unrealizedPnl: number
+  unrealizedPnlPercent: number
+  isOpen: boolean
+  createdAt: string
 }
 
 interface TradeData {
@@ -84,6 +93,9 @@ interface TradeData {
   pnl: number | null
   pnlPercent: number | null
   executedAt: string
+  order?: {
+    status: string
+  }
 }
 
 interface IndexData {
@@ -96,7 +108,7 @@ interface IndexData {
   isEnabled: boolean
 }
 
-// ─── Fallback Mock Data ──────────────────────────────────────────────────────
+// ─── Fallback Data ──────────────────────────────────────────────────────────
 
 const fallbackPortfolio: PortfolioData = {
   virtualBalance: 100000,
@@ -119,30 +131,27 @@ const fallbackPortfolio: PortfolioData = {
   },
 }
 
+const fallbackIndices: IndexData[] = [
+  { id: '1', symbol: 'NIFTY', name: 'NIFTY 50', currentPrice: 22356.10, change: 142.30, changePercent: 0.64, isEnabled: true },
+  { id: '2', symbol: 'SENSEX', name: 'SENSEX', currentPrice: 73645.25, change: 450.15, changePercent: 0.61, isEnabled: true },
+  { id: '3', symbol: 'BANKNIFTY', name: 'BANK NIFTY', currentPrice: 47210.45, change: -82.10, changePercent: -0.17, isEnabled: true },
+]
+
 const fallbackTrades: TradeData[] = [
-  { id: '1', symbol: 'RELIANCE', tradeDirection: 'BUY', segment: 'EQUITY', fillPrice: 2945.30, quantity: 10, totalValue: 29453, brokerage: 20, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 120000).toISOString() },
-  { id: '2', symbol: 'TCS', tradeDirection: 'SELL', segment: 'EQUITY', fillPrice: 3812.75, quantity: 5, totalValue: 19063.75, brokerage: 20, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 900000).toISOString() },
-  { id: '3', symbol: 'HDFCBANK', tradeDirection: 'BUY', segment: 'EQUITY', fillPrice: 1645.20, quantity: 20, totalValue: 32904, brokerage: 20, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 3600000).toISOString() },
+  { id: '1', symbol: 'RELIANCE', tradeDirection: 'BUY', segment: 'EQUITY', fillPrice: 2950.00, quantity: 50, totalValue: 147500, brokerage: 73.75, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 120000).toISOString() },
+  { id: '2', symbol: 'HDFCBANK', tradeDirection: 'SELL', segment: 'EQUITY', fillPrice: 1420.00, quantity: 100, totalValue: 142000, brokerage: 71, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 900000).toISOString() },
+  { id: '3', symbol: 'TCS', tradeDirection: 'BUY', segment: 'EQUITY', fillPrice: 4100.00, quantity: 20, totalValue: 82000, brokerage: 41, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 3600000).toISOString() },
 ]
-
-const fallbackMarketOverview = [
-  { name: 'NIFTY 50', value: '22,456.30', change: +0.84, icon: BarChart3 },
-  { name: 'SENSEX', value: '74,012.45', change: +1.12, icon: TrendingUp },
-  { name: 'BANK NIFTY', value: '48,312.80', change: -0.43, icon: ArrowUpRight },
-  { name: 'NIFTY IT', value: '35,624.15', change: +2.15, icon: ArrowUpRight },
-  { name: 'NIFTY PHARMA', value: '18,742.60', change: +0.28, icon: Target },
-]
-
-const chartConfig = {
-  value: {
-    label: 'Portfolio Value',
-    color: '#0058be',
-  },
-} satisfies ChartConfig
-
-const timeRanges = ['1D', '1W', '1M', '3M', '1Y', 'ALL'] as const
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
+
+function formatINR(value: number): string {
+  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatINRWhole(value: number): string {
+  return '₹' + Math.abs(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })
+}
 
 function formatRelativeTime(isoDate: string): string {
   const now = Date.now()
@@ -158,30 +167,49 @@ function formatRelativeTime(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
 }
 
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function formatTimeOfDay(isoDate: string): string {
+  return new Date(isoDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase()
 }
 
-function formatINRCompact(value: number): string {
-  if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)}Cr`
-  if (value >= 100000) return `₹${(value / 100000).toFixed(2)}L`
-  if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`
-  return `₹${value.toFixed(0)}`
+// ─── Stagger Animation Variants ─────────────────────────────────────────────
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.34, 1.56, 0.64, 1],
+    },
+  },
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
   const { token, user } = useAuthStore()
-  const [activeRange, setActiveRange] = useState<string>('1M')
+  const { setCurrentPage } = useAppStore()
 
   // Data states
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
+  const [positions, setPositions] = useState<PositionData[]>([])
   const [trades, setTrades] = useState<TradeData[]>([])
   const [marketIndices, setMarketIndices] = useState<IndexData[]>([])
 
   // Loading states
   const [portfolioLoading, setPortfolioLoading] = useState(true)
+  const [positionsLoading, setPositionsLoading] = useState(true)
   const [tradesLoading, setTradesLoading] = useState(true)
   const [marketLoading, setMarketLoading] = useState(true)
 
@@ -206,12 +234,33 @@ export function DashboardPage() {
     }
   }, [token])
 
+  // ─── Fetch Positions ─────────────────────────────────────────────
+  const fetchPositions = useCallback(async () => {
+    if (!token) { setPositionsLoading(false); return }
+    try {
+      setPositionsLoading(true)
+      const res = await fetch('/api/trade/positions', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setPositions(json.data || [])
+      } else {
+        setPositions([])
+      }
+    } catch {
+      setPositions([])
+    } finally {
+      setPositionsLoading(false)
+    }
+  }, [token])
+
   // ─── Fetch Trades ────────────────────────────────────────────────
   const fetchTrades = useCallback(async () => {
     if (!token) { setTradesLoading(false); return }
     try {
       setTradesLoading(true)
-      const res = await fetch('/api/trade/trades?limit=5', {
+      const res = await fetch('/api/trade/trades?limit=10', {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -236,10 +285,10 @@ export function DashboardPage() {
         const json = await res.json()
         setMarketIndices(json.data || [])
       } else {
-        setMarketIndices([])
+        setMarketIndices(fallbackIndices)
       }
     } catch {
-      setMarketIndices([])
+      setMarketIndices(fallbackIndices)
     } finally {
       setMarketLoading(false)
     }
@@ -248,18 +297,34 @@ export function DashboardPage() {
   // ─── Load all data on mount ──────────────────────────────────────
   useEffect(() => {
     fetchPortfolio()
+    fetchPositions()
     fetchTrades()
     fetchMarketIndices()
-  }, [fetchPortfolio, fetchTrades, fetchMarketIndices])
+  }, [fetchPortfolio, fetchPositions, fetchTrades, fetchMarketIndices])
 
   // ─── Derived values ──────────────────────────────────────────────
   const portfolioData = portfolio ?? fallbackPortfolio
-  const portfolioValue = portfolioData.totalPortfolioValue
-  const totalReturn = portfolioData.totalReturn
+  const totalBalance = portfolioData.totalPortfolioValue
   const dayPnl = portfolioData.totalUnrealizedPnl + portfolioData.totalRealizedPnl
-  const openPositions = portfolioData.openPositionsCount
+  const totalTrades = portfolioData.totalTrades
   const winRate = user?.winRate ?? 0
 
+  // Market indices - use API data or fallback
+  const displayIndices = marketIndices.length > 0 ? marketIndices : fallbackIndices
+
+  // Positions for the table - use API positions or extract from portfolio segments
+  const displayPositions = positions.length > 0
+    ? positions
+    : [
+        ...(portfolioData.segments.equity.positions || []),
+        ...(portfolioData.segments.futures.positions || []),
+        ...(portfolioData.segments.options.positions || []),
+      ]
+
+  // Trades for activity feed
+  const displayTrades = trades.length > 0 ? trades : fallbackTrades
+
+  // Greeting
   const greeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Good Morning'
@@ -267,496 +332,474 @@ export function DashboardPage() {
     return 'Good Evening'
   }
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-
-  // ─── Portfolio Performance Chart Data ────────────────────────────
-  // Use generated data around the real portfolio value
-  const chartData = Array.from({ length: 30 }, (_, i) => {
-    const base = portfolioValue * 0.92
-    const trend = (portfolioValue - base) * (i / 29)
-    const noise = (Math.sin(i * 0.8) * portfolioValue * 0.008) + (Math.cos(i * 1.3) * portfolioValue * 0.004)
-    return {
-      day: i + 1,
-      date: new Date(2026, 2, i + 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: Math.round(base + trend + noise),
-    }
-  })
-
-  // ─── Market Overview items ───────────────────────────────────────
-  const marketOverviewItems = marketIndices.length > 0
-    ? marketIndices.map((idx) => ({
-        name: idx.name || idx.symbol,
-        value: idx.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        change: idx.changePercent,
-        icon: idx.changePercent >= 0 ? TrendingUp : TrendingDown,
-        isPositive: idx.changePercent >= 0,
-      }))
-    : fallbackMarketOverview.map((item) => ({
-        ...item,
-        isPositive: item.change >= 0,
-      }))
-
-  const displayTrades = trades.length > 0 ? trades : fallbackTrades
-
   return (
-    <div className="min-h-screen bg-tp-surface p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* ── Welcome Header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-tp-on-surface tracking-tight">
-            {greeting()}, {user?.name?.split(' ')[0] || 'Trader'}!
-          </h1>
-          <p className="text-tp-on-surface-variant mt-1 text-sm">{today}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button className="gap-2 spring-interaction">
-            <Plus className="size-4" />
-            New Trade
-          </Button>
-          <Button variant="outline" className="gap-2 spring-interaction">
-            <ArrowDownToLine className="size-4" />
-            Add Funds
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Key Metric Cards ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-stagger">
-        {/* Portfolio Value */}
-        <Card className="glass-card border-l-4 border-l-tp-primary rounded-xl shadow-sm py-4">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-tp-on-surface-variant">Portfolio Value</p>
-              <div className="size-8 rounded-lg bg-tp-primary/10 flex items-center justify-center">
-                <Briefcase className="size-4 text-tp-primary" />
-              </div>
-            </div>
-            {portfolioLoading ? (
-              <Skeleton className="h-9 w-40 mt-2" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
-                {formatINR(portfolioValue)}
-              </p>
-            )}
-            {portfolioLoading ? (
-              <Skeleton className="h-4 w-28 mt-2" />
-            ) : (
-              <div className="flex items-center gap-1.5 mt-2">
-                {totalReturn >= 0 ? (
-                  <ArrowUpRight className="size-3.5 text-tp-secondary" />
-                ) : (
-                  <ArrowDownRight className="size-3.5 text-tp-tertiary" />
-                )}
-                <span className={`text-sm font-medium ${totalReturn >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
-                  {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}%
-                </span>
-                <span className="text-xs text-tp-on-surface-variant">overall return</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Today's P&L */}
-        <Card className="glass-card border-l-4 border-l-tp-secondary rounded-xl shadow-sm py-4">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-tp-on-surface-variant">Today&apos;s P&amp;L</p>
-              <div className="size-8 rounded-lg bg-tp-secondary/10 flex items-center justify-center">
-                <TrendingUp className="size-4 text-tp-secondary" />
-              </div>
-            </div>
-            {portfolioLoading ? (
-              <Skeleton className="h-9 w-36 mt-2" />
-            ) : (
-              <p className={`text-2xl sm:text-3xl font-bold font-mono-data mt-2 ${dayPnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
-                {dayPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(dayPnl))}
-              </p>
-            )}
-            {portfolioLoading ? (
-              <Skeleton className="h-4 w-24 mt-2" />
-            ) : (
-              <div className="flex items-center gap-1.5 mt-2">
-                {dayPnl >= 0 ? (
-                  <ArrowUpRight className="size-3.5 text-tp-secondary" />
-                ) : (
-                  <ArrowDownRight className="size-3.5 text-tp-tertiary" />
-                )}
-                <span className={`text-sm font-medium ${dayPnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
-                  {portfolioValue > 0 ? `${dayPnl >= 0 ? '+' : ''}${((dayPnl / portfolioValue) * 100).toFixed(2)}%` : '0.00%'}
-                </span>
-                <span className="text-xs text-tp-on-surface-variant">today</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Open Positions */}
-        <Card className="glass-card border-l-4 border-l-tp-outline-variant rounded-xl shadow-sm py-4">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-tp-on-surface-variant">Open Positions</p>
-              <div className="size-8 rounded-lg bg-tp-outline-variant/20 flex items-center justify-center">
-                <Target className="size-4 text-tp-on-surface-variant" />
-              </div>
-            </div>
-            {portfolioLoading ? (
-              <Skeleton className="h-9 w-12 mt-2" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
-                {openPositions}
-              </p>
-            )}
-            {portfolioLoading ? (
-              <Skeleton className="h-4 w-24 mt-2" />
-            ) : (
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-sm text-tp-on-surface-variant">
-                  {openPositions > 0
-                    ? `across ${[portfolioData.segments.equity.count > 0, portfolioData.segments.futures.count > 0, portfolioData.segments.options.count > 0].filter(Boolean).length} segment${[portfolioData.segments.equity.count > 0, portfolioData.segments.futures.count > 0, portfolioData.segments.options.count > 0].filter(Boolean).length !== 1 ? 's' : ''}`
-                    : 'no active positions'}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Win Rate */}
-        <Card className="glass-card border-l-4 border-l-tp-secondary rounded-xl shadow-sm py-4">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-tp-on-surface-variant">Win Rate</p>
-              <div className="size-8 rounded-lg bg-tp-secondary/10 flex items-center justify-center">
-                <Shield className="size-4 text-tp-secondary" />
-              </div>
-            </div>
-            {portfolioLoading ? (
-              <Skeleton className="h-9 w-20 mt-2" />
-            ) : (
-              <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
-                {winRate.toFixed(1)}%
-              </p>
-            )}
-            {portfolioLoading ? (
-              <Skeleton className="h-2 w-full mt-3" />
-            ) : (
-              <div className="mt-3">
-                <Progress value={winRate} className="h-2 bg-tp-secondary/20" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Portfolio Performance Chart ─────────────────────────────────── */}
-      <Card className="glass-card rounded-xl shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-lg font-semibold text-tp-on-surface">
-                Portfolio Performance
-              </CardTitle>
-              <div className="flex items-center gap-3 mt-1.5">
-                {portfolioLoading ? (
-                  <Skeleton className="h-8 w-32" />
-                ) : (
-                  <span className="text-2xl font-bold font-mono-data text-tp-on-surface">
-                    {formatINRCompact(portfolioValue)}
-                  </span>
-                )}
-                {portfolioLoading ? (
-                  <Skeleton className="h-5 w-16" />
-                ) : (
-                  <Badge
-                    variant="secondary"
-                    className={`gap-1 border-0 text-xs font-medium ${
-                      totalReturn >= 0
-                        ? 'bg-tp-secondary/10 text-tp-secondary'
-                        : 'bg-tp-tertiary/10 text-tp-tertiary'
-                    }`}
-                  >
-                    {totalReturn >= 0 ? (
-                      <ArrowUpRight className="size-3" />
-                    ) : (
-                      <ArrowDownRight className="size-3" />
-                    )}
-                    {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}%
-                  </Badge>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-              {timeRanges.map((range) => (
-                <Button
-                  key={range}
-                  variant={activeRange === range ? 'default' : 'ghost'}
-                  size="sm"
-                  className="h-7 px-3 text-xs font-medium"
-                  onClick={() => setActiveRange(range)}
-                >
-                  {range}
-                </Button>
-              ))}
-            </div>
+    <div className="min-h-screen bg-tp-surface px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {/* ═══ Market Overview Section ════════════════════════════════════════════ */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-tp-on-surface tracking-tight">
+            Market Overview
+          </h2>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-tp-secondary-container text-tp-on-secondary-container text-[10px] font-semibold px-2 py-0.5 border-0">
+              LIVE
+            </Badge>
+            <span className="text-xs font-semibold text-tp-on-surface-variant uppercase tracking-wider">
+              NSE - Open
+            </span>
           </div>
-        </CardHeader>
-        <CardContent className="pb-4">
-          <ChartContainer config={chartConfig} className="h-[280px] sm:h-[320px] w-full">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="fillValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0058be" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#0058be" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={11}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={11}
-                tickFormatter={(value: number) =>
-                  `₹${(value / 100000).toFixed(1)}L`
-                }
-                domain={['dataMin - 10000', 'dataMax + 10000']}
-              />
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={(value) => (
-                      <span className="font-mono-data font-semibold">
-                        ₹{Number(value).toLocaleString('en-IN')}
-                      </span>
-                    )}
-                  />
-                }
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke="#0058be"
-                strokeWidth={2.5}
-                fill="url(#fillValue)"
-              />
-            </AreaChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* ── Two Column: Recent Trades + Market Overview ─────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
-        {/* Recent Trades Table */}
-        <Card className="glass-card rounded-xl shadow-sm lg:col-span-3">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-tp-on-surface">
-                Recent Trades
-              </CardTitle>
-              <Button variant="ghost" size="sm" className="text-tp-primary text-xs gap-1">
-                View All
-                <ArrowRight className="size-3" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {tradesLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-5 w-12" />
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-4 w-12" />
+        {/* Index Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {marketLoading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="bg-tp-surface-container-lowest shadow-md rounded-xl border border-tp-outline-variant/10">
+                <CardContent className="p-5">
+                  <Skeleton className="h-4 w-24 mb-3" />
+                  <Skeleton className="h-8 w-32 mb-2" />
+                  <Skeleton className="h-4 w-28" />
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            displayIndices.slice(0, 3).map((index, i) => {
+              const isPositive = index.changePercent >= 0
+              return (
+                <motion.div
+                  key={index.id || i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.1, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+                >
+                  <Card className="bg-tp-surface-container-lowest shadow-md rounded-xl border border-tp-outline-variant/10 hover:shadow-lg transition-shadow cursor-pointer group">
+                    <CardContent className="p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase">
+                          {index.name || index.symbol}
+                        </span>
+                        {isPositive ? (
+                          <TrendingUp className="size-5 text-tp-secondary group-hover:scale-110 transition-transform" />
+                        ) : (
+                          <TrendingDown className="size-5 text-tp-tertiary group-hover:scale-110 transition-transform" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold font-mono-data text-tp-on-surface mb-1">
+                          {index.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
+                          {isPositive ? (
+                            <ArrowUpRight className="size-3.5" />
+                          ) : (
+                            <ArrowDownRight className="size-3.5" />
+                          )}
+                          <span>
+                            {isPositive ? '+' : ''}{index.change.toLocaleString('en-IN', { minimumFractionDigits: 2 })} ({isPositive ? '+' : ''}{index.changePercent.toFixed(2)}%)
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )
+            })
+          )}
+        </div>
+      </motion.section>
+
+      {/* ═══ Stats Grid ═════════════════════════════════════════════════════════ */}
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+      >
+        {/* Stat 1 - Total Balance */}
+        <motion.div variants={staggerItem}>
+          <Card className="bg-tp-surface shadow-md rounded-xl border-l-4 border-l-tp-primary border-y border-r border-y-tp-outline-variant/10 border-r-tp-outline-variant/10">
+            <CardContent className="p-5">
+              <p className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase mb-2">
+                Total Balance
+              </p>
+              {portfolioLoading ? (
+                <Skeleton className="h-8 w-40 mb-2" />
+              ) : (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold font-mono-data text-tp-on-surface">
+                    {formatINRWhole(totalBalance)}
+                  </span>
+                  <span className="text-xs text-tp-on-surface-variant">
+                    .{Math.abs(totalBalance % 1).toFixed(2).substring(2)}
+                  </span>
+                </div>
+              )}
+              {portfolioLoading ? (
+                <Skeleton className="h-4 w-32 mt-2" />
+              ) : (
+                <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-tp-secondary">
+                  <ChevronsUp className="size-3.5" />
+                  <span>{portfolioData.totalReturn >= 0 ? '+' : ''}{portfolioData.totalReturn.toFixed(2)}% from start</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Stat 2 - Today's P&L */}
+        <motion.div variants={staggerItem}>
+          <Card className="bg-tp-surface shadow-md rounded-xl border-l-4 border-l-tp-secondary border-y border-r border-y-tp-outline-variant/10 border-r-tp-outline-variant/10">
+            <CardContent className="p-5">
+              <p className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase mb-2">
+                Today&apos;s P&amp;L
+              </p>
+              {portfolioLoading ? (
+                <Skeleton className="h-8 w-36 mb-2" />
+              ) : (
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-2xl font-bold font-mono-data ${dayPnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
+                    {dayPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(dayPnl))}
+                  </span>
+                </div>
+              )}
+              {portfolioLoading ? (
+                <Skeleton className="h-2 w-full mt-3" />
+              ) : (
+                <div className="mt-3 h-1.5 w-full bg-tp-surface-container rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ${dayPnl >= 0 ? 'bg-tp-secondary' : 'bg-tp-tertiary'}`}
+                    style={{ width: `${Math.min(100, Math.max(5, Math.abs(dayPnl / (totalBalance || 1)) * 100 * 10))}%` }}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Stat 3 - Win Rate */}
+        <motion.div variants={staggerItem}>
+          <Card className="bg-tp-surface shadow-md rounded-xl border-l-4 border-l-tp-primary-container border-y border-r border-y-tp-outline-variant/10 border-r-tp-outline-variant/10">
+            <CardContent className="p-5">
+              <p className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase mb-2">
+                Win Rate
+              </p>
+              {portfolioLoading ? (
+                <Skeleton className="h-8 w-20 mb-2" />
+              ) : (
+                <div className="text-2xl font-bold font-mono-data text-tp-on-surface">
+                  {winRate.toFixed(0)}%
+                </div>
+              )}
+              {portfolioLoading ? (
+                <Skeleton className="h-4 w-32 mt-2" />
+              ) : (
+                <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-tp-on-surface-variant">
+                  <Clock className="size-3.5" />
+                  <span>Based on last {totalTrades || 50} trades</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Stat 4 - Total Trades */}
+        <motion.div variants={staggerItem}>
+          <Card className="bg-tp-surface shadow-md rounded-xl border-l-4 border-l-tp-outline border-y border-r border-y-tp-outline-variant/10 border-r-tp-outline-variant/10">
+            <CardContent className="p-5">
+              <p className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase mb-2">
+                Total Trades
+              </p>
+              {portfolioLoading ? (
+                <Skeleton className="h-8 w-16 mb-2" />
+              ) : (
+                <div className="text-2xl font-bold font-mono-data text-tp-on-surface">
+                  {totalTrades}
+                </div>
+              )}
+              {portfolioLoading ? (
+                <Skeleton className="h-4 w-24 mt-2" />
+              ) : (
+                <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-tp-primary">
+                  <Rocket className="size-3.5" />
+                  <span>{displayPositions.length} open positions</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {/* ═══ Two Column: Open Positions + Activity ═════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── Open Positions Table ──────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+          className="lg:col-span-2"
+        >
+          <Card className="bg-tp-surface shadow-md rounded-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xl font-semibold text-tp-on-surface">Open Positions</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-tp-primary text-xs font-semibold hover:underline px-0"
+                  onClick={() => setCurrentPage('portfolio')}
+                >
+                  VIEW PORTFOLIO
+                </Button>
+              </div>
+
+              {positionsLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  ))}
+                </div>
+              ) : displayPositions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="size-12 rounded-full bg-tp-surface-container flex items-center justify-center mb-3">
+                    <Briefcase className="size-6 text-tp-on-surface-variant/40" />
                   </div>
-                ))}
+                  <p className="text-tp-on-surface-variant font-medium text-sm">No open positions</p>
+                  <p className="text-tp-on-surface-variant/60 text-xs mt-1">
+                    Start trading to see your positions here
+                  </p>
+                  <Button
+                    size="sm"
+                    className="mt-4 gap-1.5 bg-tp-primary hover:bg-tp-primary/90"
+                    onClick={() => setCurrentPage('trading')}
+                  >
+                    <Plus className="size-3.5" />
+                    Start Trading
+                  </Button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-b border-tp-outline-variant/30">
+                        <TableHead className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase pb-4">
+                          Instrument
+                        </TableHead>
+                        <TableHead className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase pb-4">
+                          LTP
+                        </TableHead>
+                        <TableHead className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase pb-4">
+                          Avg. Cost
+                        </TableHead>
+                        <TableHead className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase pb-4">
+                          P&amp;L
+                        </TableHead>
+                        <TableHead className="text-xs font-semibold text-tp-on-surface-variant tracking-wider uppercase pb-4">
+                          Chg %
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-tp-outline-variant/10">
+                      {displayPositions.slice(0, 5).map((pos) => {
+                        const pnlValue = pos.unrealizedPnl
+                        const pnlPercent = pos.unrealizedPnlPercent
+                        const isPositive = pnlValue >= 0
+                        // Build instrument label
+                        const instrumentLabel = pos.symbol
+                        const subLabel = pos.segment === 'OPTIONS'
+                          ? `${pos.strikePrice} ${pos.optionType || ''}`
+                          : pos.segment === 'FUTURES'
+                            ? 'FUT'
+                            : 'Equity'
+
+                        return (
+                          <TableRow
+                            key={pos.id}
+                            className="hover:bg-tp-surface-container-low transition-colors cursor-pointer"
+                          >
+                            <TableCell className="py-4">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-sm text-tp-on-surface">{instrumentLabel}</span>
+                                <span className="text-xs text-tp-on-surface-variant">{subLabel}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-4 font-mono-data text-sm text-tp-on-surface">
+                              {pos.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell className="py-4 font-mono-data text-sm text-tp-on-surface-variant">
+                              {pos.entryPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell className="py-4">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+                                isPositive
+                                  ? 'bg-tp-secondary-container text-tp-on-secondary-container'
+                                  : 'bg-tp-error-container text-tp-on-error-container'
+                              }`}>
+                                {isPositive ? '+' : '-'}{formatINR(Math.abs(pnlValue))}
+                              </span>
+                            </TableCell>
+                            <TableCell className={`py-4 font-mono-data text-sm font-medium ${isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
+                              {isPositive ? '+' : ''}{pnlPercent.toFixed(2)}%
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* ── Activity Feed ─────────────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        >
+          <Card className="bg-tp-surface shadow-md rounded-xl">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xl font-semibold text-tp-on-surface">Activity</h3>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-tp-on-surface-variant hover:text-tp-on-surface">
+                  <MoreVertical className="size-4" />
+                </Button>
               </div>
-            ) : displayTrades.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Briefcase className="size-10 text-tp-on-surface-variant/40 mb-3" />
-                <p className="text-tp-on-surface-variant font-medium">No trades yet</p>
-                <p className="text-tp-on-surface-variant/70 text-sm mt-1">
-                  Start trading to see your recent activity here
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-tp-outline-variant/30">
-                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                      Symbol
-                    </TableHead>
-                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                      Type
-                    </TableHead>
-                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                      Price
-                    </TableHead>
-                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                      P&amp;L
-                    </TableHead>
-                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
-                      Time
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayTrades.map((trade) => {
-                    const isBuy = trade.tradeDirection === 'BUY'
-                    const pnl = trade.pnl
-                    return (
-                      <TableRow
-                        key={trade.id}
-                        className="border-tp-outline-variant/20 hover:bg-tp-surface-container-low/50"
-                      >
-                        <TableCell>
-                          <div>
-                            <span className="font-semibold text-tp-on-surface">{trade.symbol}</span>
-                            {trade.segment !== 'EQUITY' && (
-                              <span className="ml-1.5 text-[10px] text-tp-on-surface-variant uppercase bg-tp-surface-container/60 px-1.5 py-0.5 rounded">
-                                {trade.segment}
+
+              {tradesLoading ? (
+                <div className="space-y-6">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex gap-3">
+                      <Skeleton className="size-8 rounded-full shrink-0" />
+                      <div className="space-y-1.5 flex-1">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-48" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : displayTrades.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="size-12 rounded-full bg-tp-surface-container flex items-center justify-center mb-3">
+                    <Clock className="size-6 text-tp-on-surface-variant/40" />
+                  </div>
+                  <p className="text-tp-on-surface-variant font-medium text-sm">No activity yet</p>
+                  <p className="text-tp-on-surface-variant/60 text-xs mt-1">
+                    Your trade history will appear here
+                  </p>
+                </div>
+              ) : (
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-4 top-2 bottom-2 w-px bg-tp-outline-variant/30" />
+
+                  <div className="space-y-6">
+                    {displayTrades.slice(0, 5).map((trade) => {
+                      const isBuy = trade.tradeDirection === 'BUY'
+                      // Determine activity type
+                      const isCancelled = trade.order?.status === 'CANCELLED'
+                      const isPending = trade.order?.status === 'PENDING'
+
+                      // Choose icon and colors
+                      let IconComponent: React.ComponentType<{ className?: string }>
+                      let iconBg: string
+                      let iconText: string
+
+                      if (isCancelled || isPending) {
+                        IconComponent = Hourglass
+                        iconBg = 'bg-tp-surface-container-high'
+                        iconText = 'text-tp-on-surface-variant'
+                      } else if (isBuy) {
+                        IconComponent = ShoppingCart
+                        iconBg = 'bg-tp-secondary-container'
+                        iconText = 'text-tp-on-secondary-container'
+                      } else {
+                        IconComponent = ArrowUpFromLine
+                        iconBg = 'bg-tp-error-container'
+                        iconText = 'text-tp-on-error-container'
+                      }
+
+                      // Label
+                      const actionLabel = isCancelled
+                        ? `CANCELLED ${trade.symbol}`
+                        : isPending
+                          ? `PENDING ${trade.symbol}`
+                          : isBuy
+                            ? `BUY ${trade.symbol}`
+                            : `SELL ${trade.symbol}`
+
+                      // Status text
+                      const statusText = isCancelled
+                        ? 'Cancelled'
+                        : isPending
+                          ? 'Pending'
+                          : 'Executed'
+
+                      return (
+                        <div key={trade.id} className="relative pl-10">
+                          {/* Timeline dot */}
+                          <div className={`absolute left-0 top-1 size-8 rounded-full ${iconBg} flex items-center justify-center ${iconText} z-10 border-4 border-tp-surface`}>
+                            <IconComponent className="size-3.5" />
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex flex-col">
+                            <div className="flex justify-between items-start">
+                              <span className="font-bold text-sm text-tp-on-surface">{actionLabel}</span>
+                              <span className="text-[10px] font-semibold text-tp-on-surface-variant uppercase">
+                                {formatTimeOfDay(trade.executedAt)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-tp-on-surface-variant mt-0.5">
+                              {trade.quantity} Shares @ {formatINR(trade.fillPrice)} • {statusText}
+                            </p>
+                            {trade.pnl !== null && trade.pnl !== undefined && (
+                              <span className={`text-xs font-semibold mt-0.5 ${trade.pnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
+                                P&L: {trade.pnl >= 0 ? '+' : ''}{formatINR(trade.pnl)}
                               </span>
                             )}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="secondary"
-                            className={
-                              isBuy
-                                ? 'bg-tp-secondary/10 text-tp-secondary border-0 text-xs font-semibold gap-1'
-                                : 'bg-tp-tertiary/10 text-tp-tertiary border-0 text-xs font-semibold gap-1'
-                            }
-                          >
-                            {isBuy ? (
-                              <ArrowDownRight className="size-3" />
-                            ) : (
-                              <ArrowUpRight className="size-3" />
-                            )}
-                            {isBuy ? 'Buy' : 'Sell'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono-data text-tp-on-surface">
-                          ₹{trade.fillPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell
-                          className={`font-mono-data font-medium ${
-                            pnl === null
-                              ? 'text-tp-on-surface-variant'
-                              : pnl >= 0
-                                ? 'text-tp-secondary'
-                                : 'text-tp-tertiary'
-                          }`}
-                        >
-                          {pnl === null
-                            ? '—'
-                            : `${pnl >= 0 ? '+' : ''}₹${Math.abs(pnl).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                        </TableCell>
-                        <TableCell className="text-tp-on-surface-variant text-right text-xs">
-                          {formatRelativeTime(trade.executedAt)}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Market Overview */}
-        <Card className="glass-card rounded-xl shadow-sm lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-semibold text-tp-on-surface">
-              Market Overview
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {marketLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between py-3 px-3">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="size-8 rounded-lg" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <div className="text-right space-y-1">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-3 w-12 ml-auto" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {marketOverviewItems.map((item) => {
-                  const Icon = 'icon' in item ? (item as { icon: React.ComponentType<{ className?: string }> }).icon : (item.isPositive ? TrendingUp : TrendingDown)
-                  const isPositive = item.isPositive
-                  return (
-                    <div
-                      key={item.name}
-                      className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-tp-surface-container-low/60 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`size-8 rounded-lg flex items-center justify-center ${
-                            isPositive ? 'bg-tp-secondary/10' : 'bg-tp-tertiary/10'
-                          }`}
-                        >
-                          <Icon
-                            className={`size-4 ${
-                              isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'
-                            }`}
-                          />
                         </div>
-                        <span className="font-medium text-sm text-tp-on-surface">{item.name}</span>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-mono-data text-sm font-semibold text-tp-on-surface">
-                          {item.value}
-                        </p>
-                        <p
-                          className={`text-xs font-medium flex items-center justify-end gap-0.5 ${
-                            isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'
-                          }`}
-                        >
-                          {isPositive ? (
-                            <ArrowUpRight className="size-3" />
-                          ) : (
-                            <ArrowDownRight className="size-3" />
-                          )}
-                          {isPositive ? '+' : ''}
-                          {item.change.toFixed(2)}%
-                        </p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      )
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full mt-6 py-2.5 rounded-lg border-tp-outline-variant/30 text-tp-on-surface-variant text-xs font-semibold hover:bg-tp-surface-container-low transition-all"
+                    onClick={() => setCurrentPage('orders')}
+                  >
+                    VIEW ALL ACTIVITY
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
-      {/* ── Quick Actions Row ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger">
+      {/* ═══ Quick Actions Row ═════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+      >
         {/* AI Market Insights */}
-        <Card className="glass-card rounded-xl shadow-sm group hover:shadow-md transition-shadow">
+        <Card className="glass-card rounded-xl shadow-sm group hover:shadow-md transition-all duration-300">
           <CardContent className="p-6">
             <div className="size-10 rounded-xl bg-tp-primary/10 flex items-center justify-center mb-4 group-hover:bg-tp-primary/20 transition-colors">
-              <Brain className="size-5 text-tp-primary" />
+              <BarChart3 className="size-5 text-tp-primary" />
             </div>
             <h3 className="font-semibold text-tp-on-surface text-base">AI Market Insights</h3>
             <p className="text-sm text-tp-on-surface-variant mt-1.5 leading-relaxed">
@@ -766,15 +809,16 @@ export function DashboardPage() {
               variant="outline"
               size="sm"
               className="mt-4 gap-1.5 text-tp-primary border-tp-primary/30 hover:bg-tp-primary/10 hover:text-tp-primary spring-interaction"
+              onClick={() => setCurrentPage('analytics')}
             >
               Explore
-              <ArrowRight className="size-3.5" />
+              <ArrowUpRight className="size-3.5" />
             </Button>
           </CardContent>
         </Card>
 
         {/* Risk Analysis */}
-        <Card className="glass-card rounded-xl shadow-sm group hover:shadow-md transition-shadow">
+        <Card className="glass-card rounded-xl shadow-sm group hover:shadow-md transition-all duration-300">
           <CardContent className="p-6">
             <div className="size-10 rounded-xl bg-tp-tertiary/10 flex items-center justify-center mb-4 group-hover:bg-tp-tertiary/20 transition-colors">
               <Shield className="size-5 text-tp-tertiary" />
@@ -787,15 +831,16 @@ export function DashboardPage() {
               variant="outline"
               size="sm"
               className="mt-4 gap-1.5 text-tp-tertiary border-tp-tertiary/30 hover:bg-tp-tertiary/10 hover:text-tp-tertiary spring-interaction"
+              onClick={() => setCurrentPage('analytics')}
             >
               Analyze
-              <ArrowRight className="size-3.5" />
+              <ArrowUpRight className="size-3.5" />
             </Button>
           </CardContent>
         </Card>
 
         {/* Strategy Builder */}
-        <Card className="glass-card rounded-xl shadow-sm group hover:shadow-md transition-shadow">
+        <Card className="glass-card rounded-xl shadow-sm group hover:shadow-md transition-all duration-300">
           <CardContent className="p-6">
             <div className="size-10 rounded-xl bg-tp-secondary/10 flex items-center justify-center mb-4 group-hover:bg-tp-secondary/20 transition-colors">
               <Zap className="size-5 text-tp-secondary" />
@@ -808,40 +853,33 @@ export function DashboardPage() {
               variant="outline"
               size="sm"
               className="mt-4 gap-1.5 text-tp-secondary border-tp-secondary/30 hover:bg-tp-secondary/10 hover:text-tp-secondary spring-interaction"
+              onClick={() => setCurrentPage('optionChain')}
             >
               Build
-              <ArrowRight className="size-3.5" />
+              <ArrowUpRight className="size-3.5" />
             </Button>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* ═══ Floating Action Button - New Trade ════════════════════════════════ */}
+      <div className="fixed bottom-6 right-6 z-50 md:right-[calc(280px+24px)]">
+        <AnimatePresence>
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.8, type: 'spring', stiffness: 260, damping: 20 }}
+          >
+            <Button
+              className="flex items-center gap-3 px-6 py-3 bg-tp-primary text-tp-on-primary rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all group"
+              onClick={() => setCurrentPage('trading')}
+            >
+              <Plus className="size-5 group-hover:rotate-90 transition-transform duration-300" />
+              <span className="text-xs font-semibold tracking-wider uppercase">New Trade</span>
+            </Button>
+          </motion.div>
+        </AnimatePresence>
       </div>
-
-      {/* ── Upgrade Banner ──────────────────────────────────────────────── */}
-      <Card className="rounded-xl shadow-sm overflow-hidden border-0">
-        <CardContent className="p-0">
-          <div className="relative bg-gradient-to-r from-tp-primary via-tp-primary/90 to-tp-secondary px-6 py-8 sm:px-10 sm:py-10">
-            {/* Decorative circles */}
-            <div className="absolute top-0 right-0 size-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
-            <div className="absolute bottom-0 right-1/4 size-24 bg-white/5 rounded-full translate-y-1/2" />
-
-            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white">
-                  Optimize Your Strategy
-                </h2>
-                <p className="text-white/80 mt-1.5 text-sm sm:text-base max-w-lg leading-relaxed">
-                  Upgrade to TradePro Premium for AI-powered insights, advanced risk management, and
-                  unlimited strategy backtesting.
-                </p>
-              </div>
-              <Button className="bg-white text-tp-primary hover:bg-white/90 font-semibold gap-2 spring-interaction shrink-0 shadow-lg">
-                Upgrade Now
-                <ArrowRight className="size-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
