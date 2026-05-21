@@ -23,6 +23,7 @@ import {
   ArrowDownRight,
   Briefcase,
   Loader2,
+  PieChart as PieChartIcon,
 } from 'lucide-react'
 import {
   PieChart,
@@ -73,6 +74,11 @@ interface PortfolioData {
   totalTrades: number
   initialCapital: number
   openPositionsCount: number
+  segments?: {
+    equity: { count: number; invested: number; currentValue: number; unrealizedPnl: number }
+    futures: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number }
+    options: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number }
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -88,7 +94,7 @@ function formatINRWhole(value: number): string {
 // ─── Component ───────────────────────────────────────────────────
 
 export default function PortfolioPage() {
-  const { token, user } = useAuthStore()
+  const { token } = useAuthStore()
   const { setCurrentPage } = useAppStore()
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
   const [positions, setPositions] = useState<PositionData[]>([])
@@ -166,8 +172,8 @@ export default function PortfolioPage() {
 
   // Allocation data from real positions
   const allocationData = portfolio ? [
-    { name: 'Equity', value: portfolio.totalCurrentValue, color: '#f59e0b' },
-    { name: 'Cash', value: portfolio.virtualBalance, color: '#374151' },
+    { name: 'Equity', value: portfolio.totalCurrentValue, color: '#5367ff' },
+    { name: 'Cash', value: portfolio.virtualBalance, color: '#c7d2fe' },
   ].filter(d => d.value > 0) : []
 
   const allocationTotal = allocationData.reduce((s, d) => s + d.value, 0)
@@ -175,24 +181,59 @@ export default function PortfolioPage() {
   // Summary cards data
   const totalValue = portfolio?.totalPortfolioValue ?? 0
   const investedAmount = portfolio?.totalInvested ?? 0
+  const currentvalue = portfolio?.totalCurrentValue ?? 0
   const unrealizedPnl = portfolio?.totalUnrealizedPnl ?? 0
   const realizedPnl = portfolio?.totalRealizedPnl ?? 0
   const totalReturn = portfolio?.totalReturn ?? 0
+  const totalPnl = portfolio?.totalPnl ?? 0
+
+  // Segment breakdown
+  const segmentBreakdown = portfolio?.segments
+    ? [
+        {
+          name: 'Equity',
+          count: portfolio.segments.equity.count,
+          value: portfolio.segments.equity.currentValue,
+          pnl: portfolio.segments.equity.unrealizedPnl,
+          invested: portfolio.segments.equity.invested,
+          icon: TrendingUp,
+          color: '#5367ff',
+        },
+        {
+          name: 'Futures',
+          count: portfolio.segments.futures.count,
+          value: portfolio.segments.futures.currentValue,
+          pnl: portfolio.segments.futures.unrealizedPnl,
+          invested: portfolio.segments.futures.invested,
+          icon: Landmark,
+          color: '#00d09c',
+        },
+        {
+          name: 'Options',
+          count: portfolio.segments.options.count,
+          value: portfolio.segments.options.currentValue,
+          pnl: portfolio.segments.options.unrealizedPnl,
+          invested: portfolio.segments.options.invested,
+          icon: IndianRupee,
+          color: '#eb5b3c',
+        },
+      ].filter(s => s.count > 0 || s.invested > 0)
+    : []
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#f5f7fa] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* ── Page Header ───────────────────────────────────── */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Portfolio Tracker
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1a1a2e]">
+            Portfolio
           </h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Monitor your holdings, allocation, and returns in real-time.
+          <p className="mt-1 text-sm text-[#6b7280]">
+            Track your holdings, returns, and allocation in real-time.
           </p>
         </div>
         <Button
-          className="gap-1.5 rounded-lg bg-amber-500 text-black font-semibold shadow-md hover:bg-amber-400 active:scale-[0.98]"
+          className="gap-1.5 rounded-lg bg-[#5367ff] text-white font-semibold shadow-md hover:bg-[#4356e0] active:scale-[0.98]"
           onClick={() => setCurrentPage('trading')}
         >
           <TrendingUp className="size-4" />
@@ -201,59 +242,130 @@ export default function PortfolioPage() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-sm border-l-4 border-l-amber-500">
-              <CardContent className="p-6">
-                <Skeleton className="h-4 w-24 mb-3" />
-                <Skeleton className="h-8 w-36 mb-2" />
-                <Skeleton className="h-4 w-28" />
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-6">
+          {/* Total Portfolio Value Skeleton */}
+          <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+            <CardContent className="p-6">
+              <Skeleton className="h-4 w-32 mb-3 bg-[#f0f0f5]" />
+              <Skeleton className="h-10 w-48 mb-4 bg-[#f0f0f5]" />
+              <div className="grid grid-cols-3 gap-4">
+                <Skeleton className="h-16 w-full rounded-lg bg-[#f0f0f5]" />
+                <Skeleton className="h-16 w-full rounded-lg bg-[#f0f0f5]" />
+                <Skeleton className="h-16 w-full rounded-lg bg-[#f0f0f5]" />
+              </div>
+            </CardContent>
+          </Card>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+                <CardContent className="p-5">
+                  <Skeleton className="h-4 w-24 mb-3 bg-[#f0f0f5]" />
+                  <Skeleton className="h-8 w-36 mb-2 bg-[#f0f0f5]" />
+                  <Skeleton className="h-4 w-28 bg-[#f0f0f5]" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       ) : (
         <>
-          {/* ── Summary Cards ─────────────────────────────────── */}
-          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Total Value */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }}>
-              <Card className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-md border-l-4 border-l-amber-500">
-                <CardContent className="p-6">
-                  <div className="mb-2 flex items-start justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                      Total Value
-                    </p>
-                    <Landmark className="size-5 text-amber-500" />
+          {/* ── Total Portfolio Value Card ─────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
+                    Total Portfolio Value
+                  </p>
+                  <div className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${
+                    totalPnl >= 0
+                      ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                      : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                  }`}>
+                    {totalPnl >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
+                    {totalPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
+                    <span className="ml-0.5">({totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}%)</span>
                   </div>
-                  <h3 className="font-mono-data text-2xl font-bold text-white">
-                    {formatINRWhole(totalValue)}
-                    <span className="text-lg opacity-50">.{Math.abs(totalValue % 1).toFixed(2).substring(2)}</span>
-                  </h3>
-                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${totalReturn >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {totalReturn >= 0 ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
-                    {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}% from start
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                </div>
 
-            {/* Invested Amount */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <Card className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-md border-l-4 border-l-gray-500">
-                <CardContent className="p-6">
-                  <div className="mb-2 flex items-start justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                      Invested Amount
-                    </p>
-                    <IndianRupee className="size-5 text-gray-400" />
+                <div className="flex items-baseline gap-1 mb-6">
+                  <span className="text-3xl sm:text-4xl font-bold font-mono-data text-[#1a1a2e]">
+                    {formatINRWhole(totalValue)}
+                  </span>
+                  <span className="text-lg text-[#6b7280]">
+                    .{Math.abs(totalValue % 1).toFixed(2).substring(2)}
+                  </span>
+                </div>
+
+                {/* Breakdown Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Available Balance */}
+                  <div className="bg-[#f8f9fb] rounded-xl p-4 border border-[#e5e7eb]/50">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="size-7 rounded-lg bg-[#5367ff]/10 flex items-center justify-center">
+                        <Wallet className="size-3.5 text-[#5367ff]" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Available Balance</span>
+                    </div>
+                    <span className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                      {formatINR(portfolio?.virtualBalance ?? 100000)}
+                    </span>
                   </div>
-                  <h3 className="font-mono-data text-2xl font-bold text-white">
-                    {formatINRWhole(investedAmount)}
-                    {investedAmount % 1 > 0 && <span className="text-lg opacity-50">.{Math.abs(investedAmount % 1).toFixed(2).substring(2)}</span>}
+
+                  {/* Invested */}
+                  <div className="bg-[#f8f9fb] rounded-xl p-4 border border-[#e5e7eb]/50">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="size-7 rounded-lg bg-[#6b7280]/10 flex items-center justify-center">
+                        <IndianRupee className="size-3.5 text-[#6b7280]" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Invested</span>
+                    </div>
+                    <span className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                      {formatINR(investedAmount)}
+                    </span>
+                  </div>
+
+                  {/* Current Value */}
+                  <div className="bg-[#f8f9fb] rounded-xl p-4 border border-[#e5e7eb]/50">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="size-7 rounded-lg bg-[#00d09c]/10 flex items-center justify-center">
+                        <Landmark className="size-3.5 text-[#00d09c]" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Current Value</span>
+                    </div>
+                    <span className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                      {formatINR(currentvalue)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* ── Summary Cards Row ─────────────────────────────────── */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Total P&L */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <Card className={`bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 ${totalPnl >= 0 ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]'}`}>
+                <CardContent className="p-5">
+                  <div className="mb-2 flex items-start justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
+                      Total P&amp;L
+                    </p>
+                    <div className={`size-7 rounded-lg flex items-center justify-center ${totalPnl >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
+                      {totalPnl >= 0 ? <TrendingUp className="size-3.5 text-[#00d09c]" /> : <TrendingDown className="size-3.5 text-[#eb5b3c]" />}
+                    </div>
+                  </div>
+                  <h3 className={`font-mono-data text-2xl font-bold ${totalPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                    {totalPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
                   </h3>
-                  <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-gray-400">
-                    {positions.length} position{positions.length !== 1 ? 's' : ''} active
+                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${totalPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                    {totalPnl >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
+                    {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}% returns
                   </div>
                 </CardContent>
               </Card>
@@ -261,18 +373,20 @@ export default function PortfolioPage() {
 
             {/* Unrealized P&L */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <Card className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-md border-l-4 border-l-emerald-500">
-                <CardContent className="p-6">
+              <Card className={`bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 ${unrealizedPnl >= 0 ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]'}`}>
+                <CardContent className="p-5">
                   <div className="mb-2 flex items-start justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
                       Unrealized P&amp;L
                     </p>
-                    {unrealizedPnl >= 0 ? <TrendingUp className="size-5 text-emerald-500" /> : <TrendingDown className="size-5 text-red-500" />}
+                    <div className={`size-7 rounded-lg flex items-center justify-center ${unrealizedPnl >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
+                      {unrealizedPnl >= 0 ? <TrendingUp className="size-3.5 text-[#00d09c]" /> : <TrendingDown className="size-3.5 text-[#eb5b3c]" />}
+                    </div>
                   </div>
-                  <h3 className={`font-mono-data text-2xl font-bold ${unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <h3 className={`font-mono-data text-2xl font-bold ${unrealizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
                     {unrealizedPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(unrealizedPnl))}
                   </h3>
-                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${unrealizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
                     {unrealizedPnl >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                     {investedAmount > 0 ? ((unrealizedPnl / investedAmount) * 100).toFixed(2) : '0.00'}% ROI
                   </div>
@@ -282,295 +396,447 @@ export default function PortfolioPage() {
 
             {/* Realized P&L */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <Card className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-md border-l-4 border-l-red-500">
-                <CardContent className="p-6">
+              <Card className={`bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 ${realizedPnl >= 0 ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]'}`}>
+                <CardContent className="p-5">
                   <div className="mb-2 flex items-start justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
                       Realized P&amp;L
                     </p>
-                    <Wallet className="size-5 text-red-500" />
+                    <div className={`size-7 rounded-lg flex items-center justify-center ${realizedPnl >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
+                      <Wallet className={`size-3.5 ${realizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`} />
+                    </div>
                   </div>
-                  <h3 className={`font-mono-data text-2xl font-bold ${realizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <h3 className={`font-mono-data text-2xl font-bold ${realizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
                     {realizedPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(realizedPnl))}
                   </h3>
-                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${realizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {realizedPnl >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
+                  <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#6b7280]">
                     From closed positions
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Open Positions */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 border-l-[#5367ff]">
+                <CardContent className="p-5">
+                  <div className="mb-2 flex items-start justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
+                      Open Positions
+                    </p>
+                    <div className="size-7 rounded-lg bg-[#5367ff]/10 flex items-center justify-center">
+                      <Briefcase className="size-3.5 text-[#5367ff]" />
+                    </div>
+                  </div>
+                  <h3 className="font-mono-data text-2xl font-bold text-[#1a1a2e]">
+                    {portfolio?.openPositionsCount ?? 0}
+                  </h3>
+                  <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#5367ff]">
+                    {portfolio?.totalTrades ?? 0} total trades
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
 
-          {/* ── Detailed Holdings Table ───────────────────────── */}
-          <section className="mb-6 overflow-hidden rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-md">
-            <div className="flex items-center justify-between border-b border-[#1f2937]/40 px-6 py-4">
-              <h4 className="text-lg font-semibold text-white sm:text-xl">
-                Active Holdings
-              </h4>
-              <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-0 text-xs font-semibold">
-                {positions.length} Active
-              </Badge>
-            </div>
-
-            {positions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="size-14 rounded-full bg-[#0d111c] flex items-center justify-center mb-4">
-                  <Briefcase className="size-7 text-gray-400/40" />
-                </div>
-                <p className="text-gray-400 font-medium text-sm">No open positions yet</p>
-                <p className="text-gray-400/60 text-xs mt-1">
-                  Start trading to see your positions here
-                </p>
-                <Button
-                  size="sm"
-                  className="mt-4 gap-1.5 bg-amber-500 text-black font-semibold hover:bg-amber-400"
-                  onClick={() => setCurrentPage('trading')}
-                >
-                  <TrendingUp className="size-3.5" />
-                  Start Trading
-                </Button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-[#0d111c]/60 hover:bg-[#0d111c]/60">
-                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        Symbol
-                      </TableHead>
-                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        Direction
-                      </TableHead>
-                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        Segment
-                      </TableHead>
-                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        Qty
-                      </TableHead>
-                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        Avg. Price
-                      </TableHead>
-                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        LTP
-                      </TableHead>
-                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        P&amp;L (%)
-                      </TableHead>
-                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        P&amp;L (₹)
-                      </TableHead>
-                      <TableHead className="text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400">
-                        Action
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {positions.map((pos) => {
-                      const isLong = pos.tradeDirection === 'BUY'
-                      const pnlValue = pos.unrealizedPnl
-                      const pnlPercent = pos.unrealizedPnlPercent
-                      const isPositive = pnlValue >= 0
-
-                      return (
-                        <TableRow
-                          key={pos.id}
-                          className="transition-colors hover:bg-[#0d111c]/60 border-[#1f2937]/30"
-                        >
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold text-amber-500">{pos.symbol}</span>
-                              {pos.segment === 'OPTIONS' && pos.strikePrice && (
-                                <span className="text-[10px] uppercase text-gray-400">
-                                  {pos.strikePrice} {pos.optionType}
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="secondary"
-                              className={`text-[10px] font-semibold border-0 gap-0.5 ${
-                                isLong ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'
-                              }`}
-                            >
-                              {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
-                              {isLong ? 'Long' : 'Short'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-xs text-gray-400">{pos.segment}</TableCell>
-                          <TableCell className="text-right font-mono-data text-sm text-white">{pos.quantity}</TableCell>
-                          <TableCell className="text-right font-mono-data text-sm text-gray-400">
-                            {formatINR(pos.entryPrice)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono-data text-sm text-white">
-                            {formatINR(pos.currentPrice)}
-                          </TableCell>
-                          <TableCell className={`text-right font-mono-data text-sm font-semibold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {isPositive ? '+' : ''}{pnlPercent.toFixed(2)}%
-                          </TableCell>
-                          <TableCell className={`text-right font-mono-data text-sm font-semibold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {isPositive ? '+' : '-'}{formatINR(Math.abs(pnlValue))}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="rounded border border-orange-500/50 bg-orange-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-orange-500 transition-all hover:bg-orange-500 hover:text-white active:scale-95"
-                              disabled={squaringOff === pos.id}
-                              onClick={() => handleSquareOff(pos.id, pos.symbol)}
-                            >
-                              {squaringOff === pos.id ? (
-                                <Loader2 className="size-3.5 animate-spin" />
-                              ) : (
-                                'Square Off'
-                              )}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </section>
-
-          {/* ── Bottom Section: Allocation + Balance ──── */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* Asset Allocation */}
-            <div className="rounded-xl border border-[#1f2937]/60 bg-[#111827] p-6 shadow-md lg:col-span-2">
-              <div className="mb-6 flex items-center justify-between">
-                <h4 className="text-lg font-semibold text-white sm:text-xl">
-                  Asset Allocation
+          {/* ── Holdings Table ────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-4">
+                <h4 className="text-lg font-semibold text-[#1a1a2e]">
+                  Holdings
                 </h4>
+                <Badge variant="secondary" className="bg-[#5367ff]/10 text-[#5367ff] border-0 text-xs font-semibold">
+                  {positions.length} Active
+                </Badge>
               </div>
-              {allocationData.length > 0 && allocationTotal > 0 ? (
-                <div className="flex flex-col items-center gap-8 sm:flex-row">
-                  {/* Donut Chart */}
-                  <div className="relative h-48 w-48 shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={allocationData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={3}
-                          dataKey="value"
-                          stroke="none"
-                        >
-                          {allocationData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
-                          contentStyle={{
-                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                            border: '1px solid rgba(31, 41, 55, 0.8)',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            color: '#f9fafb',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-                          }}
-                          itemStyle={{ color: '#f9fafb' }}
-                          labelStyle={{ color: '#9ca3af' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    {/* Center Label */}
-                    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-bold leading-none text-white">
-                        {investedAmount > 0 && totalValue > 0 ? Math.round((investedAmount / totalValue) * 100) : 0}%
-                      </span>
-                      <span className="text-[10px] uppercase text-gray-400">Invested</span>
-                    </div>
-                  </div>
 
-                  {/* Legend */}
-                  <div className="flex w-full flex-col gap-4">
-                    {allocationData.map((item) => {
-                      const percent = ((item.value / allocationTotal) * 100).toFixed(1)
-                      return (
-                        <div key={item.name} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span className="text-xs font-semibold text-white">{item.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono-data text-sm text-white">
-                              ₹{item.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                            </span>
-                            <Badge variant="outline" className="border-[#1f2937]/40 text-[10px] text-gray-400">
-                              {percent}%
-                            </Badge>
-                          </div>
-                        </div>
-                      )
-                    })}
+              {positions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
+                    <Briefcase className="size-7 text-[#6b7280]/40" />
                   </div>
+                  <p className="text-[#1a1a2e] font-semibold text-sm">Your portfolio is empty</p>
+                  <p className="text-[#6b7280] text-xs mt-1">
+                    Start trading to see your holdings here
+                  </p>
+                  <Button
+                    size="sm"
+                    className="mt-4 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+                    onClick={() => setCurrentPage('trading')}
+                  >
+                    <TrendingUp className="size-3.5" />
+                    Start Trading
+                  </Button>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <p className="text-sm text-gray-400">No allocation data yet</p>
-                  <p className="text-xs text-gray-400/60 mt-1">Start trading to see your portfolio allocation</p>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          Symbol
+                        </TableHead>
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          Direction
+                        </TableHead>
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          Segment
+                        </TableHead>
+                        <TableHead className="text-right text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          Qty
+                        </TableHead>
+                        <TableHead className="text-right text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          Avg Price
+                        </TableHead>
+                        <TableHead className="text-right text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          LTP
+                        </TableHead>
+                        <TableHead className="text-right text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          P&amp;L
+                        </TableHead>
+                        <TableHead className="text-right text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          Current Value
+                        </TableHead>
+                        <TableHead className="text-center text-xs font-semibold text-[#6b7280] tracking-wider uppercase bg-[#f8f9fb]">
+                          Action
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-[#e5e7eb]">
+                      {positions.map((pos) => {
+                        const isLong = pos.tradeDirection === 'BUY'
+                        const pnlValue = pos.unrealizedPnl
+                        const pnlPercent = pos.unrealizedPnlPercent
+                        const isPositive = pnlValue >= 0
+
+                        return (
+                          <TableRow
+                            key={pos.id}
+                            className="hover:bg-[#f8f9fb] transition-colors"
+                          >
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold text-[#5367ff]">{pos.symbol}</span>
+                                {pos.segment === 'OPTIONS' && pos.strikePrice && (
+                                  <span className="text-[10px] uppercase text-[#6b7280]">
+                                    {pos.strikePrice} {pos.optionType}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="secondary"
+                                className={`text-[10px] font-semibold border-0 gap-0.5 ${
+                                  isLong ? 'bg-[#00d09c]/10 text-[#00d09c]' : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                                }`}
+                              >
+                                {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
+                                {isLong ? 'Long' : 'Short'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-[#6b7280]">{pos.segment}</TableCell>
+                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a2e]">{pos.quantity}</TableCell>
+                            <TableCell className="text-right font-mono-data text-sm text-[#6b7280]">
+                              {formatINR(pos.entryPrice)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a2e]">
+                              {formatINR(pos.currentPrice)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex flex-col items-end">
+                                <span className={`font-mono-data text-sm font-semibold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                                  {isPositive ? '+' : '-'}{formatINR(Math.abs(pnlValue))}
+                                </span>
+                                <span className={`text-[10px] font-semibold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                                  {isPositive ? '+' : ''}{pnlPercent.toFixed(2)}%
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono-data text-sm font-medium text-[#1a1a2e]">
+                              {formatINR(pos.currentValue)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="rounded-lg border border-[#eb5b3c]/30 bg-[#eb5b3c]/5 px-3 py-1.5 text-[11px] font-semibold text-[#eb5b3c] transition-all hover:bg-[#eb5b3c] hover:text-white hover:border-[#eb5b3c] active:scale-95"
+                                disabled={squaringOff === pos.id}
+                                onClick={() => handleSquareOff(pos.id, pos.symbol)}
+                              >
+                                {squaringOff === pos.id ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  'Square Off'
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
-            </div>
+            </Card>
+          </motion.div>
+
+          {/* ── Segment Breakdown Cards ──────────────────────────── */}
+          {segmentBreakdown.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-semibold text-[#1a1a2e]">Segment Breakdown</h4>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {segmentBreakdown.map((segment) => {
+                  const Icon = segment.icon
+                  const isProfit = segment.pnl >= 0
+                  const pnlPercent = segment.invested > 0
+                    ? ((segment.pnl / segment.invested) * 100).toFixed(2)
+                    : '0.00'
+                  return (
+                    <Card
+                      key={segment.name}
+                      className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm hover:shadow-md hover:border-[#5367ff]/20 transition-all duration-300"
+                    >
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className="size-9 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: `${segment.color}12` }}
+                            >
+                              <Icon className="size-4" style={{ color: segment.color }} />
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold text-[#1a1a2e]">{segment.name}</span>
+                              <span className="ml-1.5 text-[10px] text-[#6b7280]">
+                                {segment.count} pos{segment.count !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-semibold border-0 ${
+                              isProfit
+                                ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                                : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                            }`}
+                          >
+                            {isProfit ? '+' : ''}{pnlPercent}%
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-[#6b7280]">Current Value</span>
+                            <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                              {formatINRWhole(segment.value)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-[#6b7280]">Invested</span>
+                            <span className="font-mono-data text-sm text-[#6b7280]">
+                              {formatINRWhole(segment.invested)}
+                            </span>
+                          </div>
+                          <div className="h-px bg-[#e5e7eb]" />
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-[#6b7280]">P&amp;L</span>
+                            <span className={`font-mono-data text-sm font-semibold ${isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                              {isProfit ? '+' : '-'}{formatINR(Math.abs(segment.pnl))}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Bottom Section: Allocation + Account Details ──── */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Asset Allocation */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+              className="lg:col-span-2"
+            >
+              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm h-full">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <PieChartIcon className="size-5 text-[#5367ff]" />
+                    <h4 className="text-lg font-semibold text-[#1a1a2e]">
+                      Asset Allocation
+                    </h4>
+                  </div>
+                  {allocationData.length > 0 && allocationTotal > 0 ? (
+                    <div className="flex flex-col items-center gap-8 sm:flex-row">
+                      {/* Donut Chart */}
+                      <div className="relative h-48 w-48 shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={allocationData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={80}
+                              paddingAngle={3}
+                              dataKey="value"
+                              stroke="none"
+                            >
+                              {allocationData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
+                              contentStyle={{
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '10px',
+                                fontSize: '12px',
+                                color: '#1a1a2e',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                              }}
+                              itemStyle={{ color: '#1a1a2e' }}
+                              labelStyle={{ color: '#6b7280' }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        {/* Center Label */}
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-xl font-bold leading-none text-[#1a1a2e]">
+                            {investedAmount > 0 && totalValue > 0 ? Math.round((investedAmount / totalValue) * 100) : 0}%
+                          </span>
+                          <span className="text-[10px] uppercase text-[#6b7280]">Invested</span>
+                        </div>
+                      </div>
+
+                      {/* Legend */}
+                      <div className="flex w-full flex-col gap-4">
+                        {allocationData.map((item) => {
+                          const percent = ((item.value / allocationTotal) * 100).toFixed(1)
+                          return (
+                            <div key={item.name} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                <span className="text-xs font-semibold text-[#1a1a2e]">{item.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono-data text-sm text-[#1a1a2e]">
+                                  ₹{item.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                </span>
+                                <Badge variant="outline" className="border-[#e5e7eb] text-[10px] text-[#6b7280]">
+                                  {percent}%
+                                </Badge>
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                        {/* Allocation bar */}
+                        <div className="mt-2">
+                          <div className="flex h-3 w-full overflow-hidden rounded-full bg-[#f0f0f5]">
+                            {allocationData.map((item) => {
+                              const width = (item.value / allocationTotal) * 100
+                              return (
+                                <div
+                                  key={item.name}
+                                  className="h-full transition-all duration-700"
+                                  style={{ width: `${width}%`, backgroundColor: item.color }}
+                                />
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
+                        <PieChartIcon className="size-7 text-[#6b7280]/40" />
+                      </div>
+                      <p className="text-sm text-[#6b7280]">No allocation data yet</p>
+                      <p className="text-xs text-[#6b7280]/60 mt-1">Start trading to see your portfolio allocation</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
 
             {/* Account Details */}
-            <div className="rounded-xl border border-[#1f2937]/60 bg-[#111827] p-6 shadow-md">
-              <h4 className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-                Account Details
-              </h4>
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-400">Available Balance</span>
-                  <span className="font-mono-data text-sm font-semibold text-white">
-                    {formatINR(portfolio?.virtualBalance ?? 100000)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-400">Margin Used</span>
-                  <span className="font-mono-data text-sm font-semibold text-white">
-                    {formatINR(portfolio?.marginUsed ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-400">Available Margin</span>
-                  <span className="font-mono-data text-sm font-semibold text-white">
-                    {formatINR(portfolio?.availableMargin ?? 100000)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-400">Total Trades</span>
-                  <span className="font-mono-data text-sm font-semibold text-white">
-                    {portfolio?.totalTrades ?? 0}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-400">Open Positions</span>
-                  <span className="font-mono-data text-sm font-semibold text-white">
-                    {portfolio?.openPositionsCount ?? 0}
-                  </span>
-                </div>
-                <div className="h-px bg-[#1f2937]/30 my-1" />
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-400">Initial Capital</span>
-                  <span className="font-mono-data text-sm font-semibold text-gray-400">
-                    ₹1,00,000
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-400">Overall P&amp;L</span>
-                  <span className={`font-mono-data text-sm font-bold ${(portfolio?.totalPnl ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {(portfolio?.totalPnl ?? 0) >= 0 ? '+' : '-'}{formatINR(Math.abs(portfolio?.totalPnl ?? 0))}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+            >
+              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm h-full border-l-4 border-l-[#5367ff]">
+                <CardContent className="p-6">
+                  <h4 className="mb-5 text-[11px] font-semibold uppercase tracking-widest text-[#6b7280]">
+                    Account Details
+                  </h4>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6b7280]">Available Balance</span>
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                        {formatINR(portfolio?.virtualBalance ?? 100000)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6b7280]">Margin Used</span>
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                        {formatINR(portfolio?.marginUsed ?? 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6b7280]">Available Margin</span>
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                        {formatINR(portfolio?.availableMargin ?? 100000)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6b7280]">Total Trades</span>
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                        {portfolio?.totalTrades ?? 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6b7280]">Open Positions</span>
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                        {portfolio?.openPositionsCount ?? 0}
+                      </span>
+                    </div>
+                    <div className="h-px bg-[#e5e7eb] my-1" />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6b7280]">Initial Capital</span>
+                      <span className="font-mono-data text-sm font-semibold text-[#6b7280]">
+                        ₹1,00,000
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-[#6b7280]">Overall P&amp;L</span>
+                      <span className={`font-mono-data text-sm font-bold ${(portfolio?.totalPnl ?? 0) >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                        {(portfolio?.totalPnl ?? 0) >= 0 ? '+' : '-'}{formatINR(Math.abs(portfolio?.totalPnl ?? 0))}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
         </>
       )}

@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StockVerse - Indian Market Trading Simulator",
-  description: "Professional paper trading platform for Indian stock markets. Practice trading NIFTY, BANKNIFTY, SENSEX with real-time data.",
-  keywords: ["StockVerse", "Indian Stock Market", "Paper Trading", "NIFTY", "BANKNIFTY", "SENSEX", "Trading Simulator", "NSE", "BSE"],
+  title: "TradePro - Indian Market Paper Trading",
+  description: "Practice trading Indian stock markets with virtual money. Trade NIFTY, BANKNIFTY, SENSEX options, futures & stocks risk-free.",
+  keywords: ["TradePro", "Indian Stock Market", "Paper Trading", "NIFTY", "BANKNIFTY", "SENSEX", "Trading Simulator", "NSE", "Option Chain"],
   icons: {
     icon: "/favicon.ico",
   },
@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >

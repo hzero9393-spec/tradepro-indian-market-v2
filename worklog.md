@@ -361,3 +361,91 @@ Stage Summary:
 - Dark themed tabs with amber-500 active state and black text
 - All existing functionality fully preserved (API calls, state management, event handlers, charts)
 - No TradePro text found in display content of index-detail-drawer.tsx (only in import path)
+
+---
+Task ID: 5
+Agent: Dashboard Light Theme Redesign Agent
+Task: Redesign dashboard page to match Groww/Sahi.com style LIGHT theme
+
+Work Log:
+- Completely rewrote /home/z/my-project/src/components/tradepro/pages/dashboard-page.tsx
+- Applied Groww/Sahi.com light theme design system:
+  - Background: #f5f7fa (light gray) — replaces #0a0e17
+  - Cards: White (#ffffff) with border #e5e7eb and rounded-xl — replaces #111827 cards
+  - Primary color: #5367ff (blue) — replaces amber-500
+  - Profit color: #00d09c (teal green) — replaces emerald-500
+  - Loss color: #eb5b3c (red-orange) — replaces red-500
+  - Headings: #1a1a2e (dark) — replaces white
+  - Secondary text: #6b7280 (gray) — replaces gray-400
+  - Skeleton loaders: #f0f0f5 — replaces #1f2937
+
+Section changes:
+- Market Pulse: LIVE badge as green pill (#00d09c with animated dot), NSE label in white card with gray border, index cards with white bg and #5367ff/30 hover border
+- Stats Grid: Total Balance with #5367ff left border, Today's P&L with conditional #00d09c/#eb5b3c border + progress bar, Win Rate with #5367ff border, Total Trades with #6b7280 border
+- Active Positions Table: White card, light header bg #f8f9fb, P&L pills with rounded-md and #00d09c/#eb5b3c tinted bg, empty state with briefcase icon on #f5f7fa bg + "Start Trading" #5367ff button
+- Trade Feed: Timeline with colored border dots (white bg with #5367ff/#00d09c/#eb5b3c border-2 + inner dot), BUY/SELL labels in profit/loss colors, empty state with clock icon
+- Quick Actions: Smart Analytics (#5367ff icon + hover border), Risk Monitor (#eb5b3c icon + hover border), Strategy Lab (#00d09c icon + hover border)
+- Floating New Trade button: #5367ff rounded-full with white text
+
+All existing functionality preserved: fetchPortfolio, fetchPositions, fetchTrades, fetchMarketIndices, auto-refresh 10s, IndexDetailDrawer, openIndexDetail event listener, all state management and derived values
+
+Lint: Passes cleanly
+Dev server: Running without errors
+
+Stage Summary:
+- Complete dashboard page redesign from dark theme to Groww/Sahi.com style LIGHT theme
+- Design system: #f5f7fa bg, white cards, #e5e7eb borders, #5367ff primary, #00d09c profit, #eb5b3c loss
+- All data fetching logic and IndexDetailDrawer integration fully preserved
+
+---
+Task ID: 8
+Agent: Portfolio & Reports Light Theme Redesign Agent
+Task: Redesign Portfolio Page and Reports Page to match Groww/Sahi.com LIGHT theme
+
+Work Log:
+- Completely rewrote /home/z/my-project/src/components/tradepro/pages/portfolio-page.tsx
+- Applied Groww/Sahi.com light theme design system (consistent with Dashboard page):
+  - Background: #f5f7fa — replaces #0a0e17
+  - Cards: White (#ffffff) with border #e5e7eb and rounded-xl — replaces #111827
+  - Primary color: #5367ff — replaces amber-500
+  - Profit color: #00d09c — replaces emerald-500
+  - Loss color: #eb5b3c — replaces red-500
+  - Headings: #1a1a2e — replaces white
+  - Secondary text: #6b7280 — replaces gray-400
+  - Skeleton loaders: #f0f0f5 — replaces #1f2937
+
+Portfolio Page section changes:
+- Total Portfolio Value card (large hero card): White bg with total value in #1a1a2e large bold text, P&L badge (#00d09c/#eb5b3c rounded-full pill with percentage), three sub-cards in #f8f9fb bg for Available Balance (₹), Invested (₹), Current Value (₹)
+- Summary cards row: 4 cards — Total P&L, Unrealized P&L, Realized P&L (all with conditional #00d09c/#eb5b3c left border + text), Open Positions (#5367ff left border)
+- Holdings table: White card, #f8f9fb header bg, #e5e7eb dividers, Symbol in #5367ff, P&L pills with #00d09c/#eb5b3c tinted bg, "Your portfolio is empty" empty state on #f5f7fa bg
+- Segment breakdown cards: Equity (#5367ff), Futures (#00d09c), Options (#eb5b3c) with white bg, hover shadow-md and #5367ff/20 hover border, Current Value/Invested/P&L details
+- Asset Allocation: White card with donut chart (#5367ff for Equity, #c7d2fe for Cash), allocation bar, white tooltip with #e5e7eb border
+- Account Details: White card with #5367ff left border, clean row layout
+- Square Off button: #eb5b3c/5 bg with #eb5b3c text, hover fills #eb5b3c with white text
+- New Trade button: #5367ff bg with white text
+- All existing functionality preserved: fetchPortfolio, fetchPositions, auto-refresh 10s, square off, data display
+
+- Completely rewrote /home/z/my-project/src/components/tradepro/pages/reports-page.tsx
+- Applied same Groww/Sahi.com light theme design system
+
+Reports Page section changes:
+- Summary cards: 4 cards — Total Trades (#5367ff left border), Win Rate (conditional #00d09c/#eb5b3c), Total P&L (conditional #00d09c/#eb5b3c), Avg P&L/Trade (conditional #00d09c/#eb5b3c), each with colored icon in tinted bg
+- P&L Trend chart placeholder: White card with "Analytics coming soon" centered message on #f8f9fb bg, Activity icon in #5367ff/8 circle, descriptive text about upcoming features, P&L badge in header
+- Win/Loss Summary card: White card with visual win rate progress bar (#00d09c for wins, #eb5b3c for losses), winning trades section with green icons, losing trades section with red icons, Best/Worst/Avg trade details
+- Segment Breakdown card: White card with segment rows on #f8f9fb bg — Equity (#5367ff), Futures (#00d09c), Options (#eb5b3c), showing trade count and closed P&L per segment
+- Recent Trades table: White card, #f8f9fb header bg, #e5e7eb dividers, Symbol in #5367ff, Buy/Sell badges with #00d09c/#eb5b3c, max-h-96 with overflow scroll
+- Performance Summary footer: White card with #5367ff left border, 4-column grid showing Gross Profit (#00d09c), Gross Loss (#eb5b3c), Total Brokerage (#1a1a2e), Net P&L (conditional)
+- Removed Recharts dependency (AreaChart, PieChart) — no chart imports in reports page, only placeholder
+- All data from /api/trade/trades with auth token, no demo data
+- "No trades yet" empty state with Start Trading #5367ff button
+
+Lint: Passes cleanly
+Dev server: Running without errors
+
+Stage Summary:
+- Complete Portfolio and Reports page redesign from dark theme to Groww/Sahi.com style LIGHT theme
+- Design system consistently applied: #f5f7fa bg, white cards, #e5e7eb borders, #5367ff primary, #00d09c profit, #eb5b3c loss
+- Portfolio page features: Total Portfolio Value hero card with breakdown, Holdings table, Segment breakdown cards, Asset Allocation donut chart, Account Details
+- Reports page features: Summary stats, P&L chart placeholder ("Analytics coming soon"), Win/Loss summary with visual bar, Segment breakdown, Recent trades table, Performance summary footer
+- NO demo data — only real API data, "Your portfolio is empty" / "No trades yet" empty states
+- All existing functionality fully preserved (API calls, auto-refresh, square off, state management)

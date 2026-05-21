@@ -26,7 +26,6 @@ export default function AdminPage() {
     setError('')
     setIsLoading(true)
 
-    // Simulate brief delay for UX
     await new Promise(resolve => setTimeout(resolve, 500))
 
     if (password === ADMIN_PASSWORD) {
@@ -40,11 +39,10 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] flex items-center justify-center p-4">
-        {/* Background effects */}
+      <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center p-4">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#5367ff]/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#00d09c]/5 rounded-full blur-3xl" />
         </div>
 
         <motion.div
@@ -53,38 +51,36 @@ export default function AdminPage() {
           transition={{ duration: 0.5 }}
           className="relative w-full max-w-md"
         >
-          <div className="bg-[#111827] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-b border-gray-800 px-8 py-6">
+          <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-gradient-to-r from-[#5367ff]/5 to-[#00d09c]/5 border-b border-[#e5e7eb] px-8 py-6">
               <div className="flex items-center gap-4">
-                <div className="flex size-12 items-center justify-center rounded-xl bg-amber-500/20">
-                  <Shield className="size-6 text-amber-400" />
+                <div className="flex size-12 items-center justify-center rounded-xl bg-[#5367ff]/10">
+                  <Shield className="size-6 text-[#5367ff]" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-white">Admin Access</h1>
-                  <p className="text-sm text-gray-400 mt-0.5">TradePro Administration Panel</p>
+                  <h1 className="text-xl font-bold text-[#1a1a2e]">Admin Access</h1>
+                  <p className="text-sm text-[#6b7280] mt-0.5">TradePro Administration Panel</p>
                 </div>
               </div>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleLogin} className="p-8 space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Admin Password</label>
+                <label className="text-sm font-medium text-[#1a1a2e]">Admin Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#9ca3af]" />
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError('') }}
                     placeholder="Enter admin password"
-                    className="pl-10 pr-10 h-12 bg-[#0a0e17] border-gray-700 text-white placeholder:text-gray-600 focus:border-amber-500 focus:ring-amber-500/20"
+                    className="pl-10 pr-10 h-12 bg-[#f0f2f5] border-[#e5e7eb] text-[#1a1a2e] placeholder:text-[#9ca3af] focus:border-[#5367ff] focus:ring-[#5367ff]/20"
                     autoFocus
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#6b7280] transition-colors"
                   >
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -97,7 +93,7 @@ export default function AdminPage() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+                    className="flex items-center gap-2 p-3 rounded-lg bg-[#eb5b3c]/8 border border-[#eb5b3c]/15 text-[#d44a2d] text-sm"
                   >
                     <AlertCircle className="size-4 shrink-0" />
                     {error}
@@ -108,11 +104,11 @@ export default function AdminPage() {
               <Button
                 type="submit"
                 disabled={isLoading || !password}
-                className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-black font-semibold text-base disabled:opacity-50"
+                className="w-full h-12 bg-[#5367ff] hover:bg-[#4456e6] text-white font-semibold text-base disabled:opacity-50"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
-                    <div className="size-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Authenticating...
                   </div>
                 ) : (
@@ -123,7 +119,7 @@ export default function AdminPage() {
                 )}
               </Button>
 
-              <p className="text-center text-xs text-gray-600 mt-4">
+              <p className="text-center text-xs text-[#9ca3af] mt-4">
                 This area is restricted to authorized administrators only.
               </p>
             </form>
@@ -133,11 +129,8 @@ export default function AdminPage() {
     )
   }
 
-  // Authenticated - Show Admin Panel (move the existing admin page content here)
   return <AdminPanel />
 }
-
-// ─── Admin Panel (after authentication) ────────────────────────────────
 
 import {
   LineChart,
@@ -146,10 +139,6 @@ import {
   XAxis,
   YAxis,
   Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Pie,
-  PieChart,
-  Cell,
 } from 'recharts'
 import {
   Users,
@@ -157,18 +146,11 @@ import {
   IndianRupee,
   Crown,
   Clock,
-  Plus,
-  RotateCcw,
-  Bell,
   Search,
   Edit,
   Ban,
-  Trash2,
-  CalendarDays,
   BarChart3,
   Settings2,
-  X,
-  ChevronDown,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -183,31 +165,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 
-// ─── Mock Data ────────────────────────────────────────────────────────
-
 const statsCards = [
-  { label: 'Total Users', value: '1,248', sub: '+12 this week', icon: Users, color: 'bg-amber-500/10 text-amber-400' },
-  { label: 'Active Traders', value: '856', sub: '68.6% of total', icon: Activity, color: 'bg-emerald-500/10 text-emerald-400' },
-  { label: 'Total Trades Today', value: '5,432', sub: '+18% vs yesterday', icon: BarChart3, color: 'bg-amber-500/10 text-amber-400' },
-  { label: 'Platform Volume', value: '₹45.2 Cr', sub: 'F&O + Equity', icon: IndianRupee, color: 'bg-emerald-500/10 text-emerald-400' },
-  { label: 'Premium Users', value: '234', sub: '₹23,166/mo revenue', icon: Crown, color: 'bg-amber-500/10 text-amber-400' },
-  { label: 'Avg Session', value: '18 min', sub: '+3 min this week', icon: Clock, color: 'bg-emerald-500/10 text-emerald-400' },
+  { label: 'Total Users', value: '1,248', sub: '+12 this week', icon: Users, color: 'bg-[#5367ff]/10 text-[#5367ff]' },
+  { label: 'Active Traders', value: '856', sub: '68.6% of total', icon: Activity, color: 'bg-[#00d09c]/10 text-[#00d09c]' },
+  { label: 'Total Trades Today', value: '5,432', sub: '+18% vs yesterday', icon: BarChart3, color: 'bg-[#5367ff]/10 text-[#5367ff]' },
+  { label: 'Platform Volume', value: '₹45.2 Cr', sub: 'F&O + Equity', icon: IndianRupee, color: 'bg-[#00d09c]/10 text-[#00d09c]' },
+  { label: 'Premium Users', value: '234', sub: '₹23,166/mo revenue', icon: Crown, color: 'bg-[#5367ff]/10 text-[#5367ff]' },
+  { label: 'Avg Session', value: '18 min', sub: '+3 min this week', icon: Clock, color: 'bg-[#00d09c]/10 text-[#00d09c]' },
 ]
 
 const recentActivity = [
@@ -242,7 +208,7 @@ const userGrowthData = [
   { month: 'Oct', users: 1200 }, { month: 'Nov', users: 1230 }, { month: 'Dec', users: 1248 },
 ]
 
-const lineChartConfig: ChartConfig = { users: { label: 'Users', color: '#f59e0b' } }
+const lineChartConfig: ChartConfig = { users: { label: 'Users', color: '#5367ff' } }
 
 function AdminPanel() {
   const [indices, setIndices] = useState(indexSettings)
@@ -268,26 +234,25 @@ function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e17]">
-      {/* Admin Header */}
-      <header className="bg-[#111827] border-b border-gray-800 px-6 py-4 sticky top-0 z-50">
+    <div className="min-h-screen bg-[#f5f7fa]">
+      <header className="bg-white border-b border-[#e5e7eb] px-6 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-amber-500/20">
-              <TrendingUp className="size-5 text-amber-400" />
+            <div className="flex size-10 items-center justify-center rounded-xl bg-[#5367ff]/10">
+              <TrendingUp className="size-5 text-[#5367ff]" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white">TradePro Admin</h1>
-              <p className="text-xs text-gray-500">Administration Panel</p>
+              <h1 className="text-lg font-bold text-[#1a1a2e]">TradePro Admin</h1>
+              <p className="text-xs text-[#6b7280]">Administration Panel</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-xs">ADMIN</Badge>
+            <Badge className="bg-[#5367ff]/10 text-[#5367ff] border-[#5367ff]/20 text-xs">ADMIN</Badge>
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="border-gray-700 text-gray-400 hover:text-white hover:border-gray-600"
+              className="border-[#e5e7eb] text-[#6b7280] hover:text-[#1a1a2e] hover:border-[#d1d5db]"
             >
               Logout
             </Button>
@@ -297,60 +262,59 @@ function AdminPanel() {
 
       <main className="max-w-7xl mx-auto p-6">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="bg-[#111827] border border-gray-800">
-            <TabsTrigger value="dashboard" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400">Dashboard</TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400">Users</TabsTrigger>
-            <TabsTrigger value="market" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400">Market Control</TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-amber-500/10 data-[state=active]:text-amber-400">Analytics</TabsTrigger>
+          <TabsList className="bg-white border border-[#e5e7eb]">
+            <TabsTrigger value="dashboard" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Dashboard</TabsTrigger>
+            <TabsTrigger value="users" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Users</TabsTrigger>
+            <TabsTrigger value="market" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Market Control</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Analytics</TabsTrigger>
           </TabsList>
 
-          {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:gap-4">
               {statsCards.map((stat) => {
                 const Icon = stat.icon
                 return (
-                  <Card key={stat.label} className="bg-[#111827] border-gray-800 rounded-xl">
+                  <Card key={stat.label} className="bg-white border-[#e5e7eb] rounded-xl">
                     <CardContent className="p-4">
                       <div className={`flex size-9 items-center justify-center rounded-lg ${stat.color}`}>
                         <Icon className="size-4" />
                       </div>
-                      <p className="mt-3 text-xs font-medium text-gray-400">{stat.label}</p>
-                      <p className="font-mono text-lg font-bold text-white">{stat.value}</p>
-                      <p className="text-[11px] text-gray-500">{stat.sub}</p>
+                      <p className="mt-3 text-xs font-medium text-[#6b7280]">{stat.label}</p>
+                      <p className="font-mono text-lg font-bold text-[#1a1a2e]">{stat.value}</p>
+                      <p className="text-[11px] text-[#9ca3af]">{stat.sub}</p>
                     </CardContent>
                   </Card>
                 )
               })}
             </div>
 
-            <Card className="bg-[#111827] border-gray-800 rounded-xl">
+            <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-white">Recent Activity</CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1a1a2e]">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-800 hover:bg-transparent">
-                      <TableHead className="text-gray-400">User</TableHead>
-                      <TableHead className="text-gray-400">Action</TableHead>
-                      <TableHead className="text-gray-400">Symbol</TableHead>
-                      <TableHead className="text-right text-gray-400">Time</TableHead>
+                    <TableRow className="border-[#e5e7eb] hover:bg-transparent">
+                      <TableHead className="text-[#6b7280]">User</TableHead>
+                      <TableHead className="text-[#6b7280]">Action</TableHead>
+                      <TableHead className="text-[#6b7280]">Symbol</TableHead>
+                      <TableHead className="text-right text-[#6b7280]">Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {recentActivity.map((item, i) => (
-                      <TableRow key={i} className="border-gray-800/50">
-                        <TableCell className="font-medium text-white">{item.user}</TableCell>
+                      <TableRow key={i} className="border-[#f0f2f5]">
+                        <TableCell className="font-medium text-[#1a1a2e]">{item.user}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`text-[11px] font-semibold ${
-                            item.action === 'Bought' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                            : item.action === 'Sold' ? 'border-red-500/30 bg-red-500/10 text-red-400'
-                            : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                            item.action === 'Bought' ? 'border-[#00d09c]/30 bg-[#00d09c]/10 text-[#00a87d]'
+                            : item.action === 'Sold' ? 'border-[#eb5b3c]/30 bg-[#eb5b3c]/10 text-[#d44a2d]'
+                            : 'border-[#5367ff]/30 bg-[#5367ff]/10 text-[#5367ff]'
                           }`}>{item.action}</Badge>
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-gray-300">{item.symbol}</TableCell>
-                        <TableCell className="text-right text-xs text-gray-500">{item.time}</TableCell>
+                        <TableCell className="font-mono text-sm text-[#1a1a2e]">{item.symbol}</TableCell>
+                        <TableCell className="text-right text-xs text-[#9ca3af]">{item.time}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -359,22 +323,21 @@ function AdminPanel() {
             </Card>
           </TabsContent>
 
-          {/* Users Tab */}
           <TabsContent value="users" className="space-y-6">
-            <Card className="bg-[#111827] border-gray-800 rounded-xl">
+            <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardContent className="p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-500" />
-                    <Input placeholder="Search users..." className="rounded-lg border-gray-700 bg-[#0a0e17] text-white pl-10" />
+                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
+                    <Input placeholder="Search users..." className="rounded-lg border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] pl-10" />
                   </div>
-                  <div className="inline-flex items-center gap-1 rounded-full bg-[#0a0e17] p-1 border border-gray-800">
+                  <div className="inline-flex items-center gap-1 rounded-full bg-[#f0f2f5] p-1 border border-[#e5e7eb]">
                     {['All', 'Free', 'Premium', 'Active', 'Inactive'].map((f) => (
                       <button
                         key={f}
                         onClick={() => setUserFilter(f)}
                         className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                          userFilter === f ? 'bg-amber-500 text-black' : 'text-gray-400 hover:text-white'
+                          userFilter === f ? 'bg-[#5367ff] text-white' : 'text-[#6b7280] hover:text-[#1a1a2e]'
                         }`}
                       >
                         {f}
@@ -385,42 +348,42 @@ function AdminPanel() {
               </CardContent>
             </Card>
 
-            <Card className="bg-[#111827] border-gray-800 rounded-xl">
+            <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-white">Users ({filteredUsers.length})</CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1a1a2e]">Users ({filteredUsers.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-800 hover:bg-transparent">
-                      <TableHead className="text-gray-400">Name</TableHead>
-                      <TableHead className="hidden sm:table-cell text-gray-400">Email</TableHead>
-                      <TableHead className="text-right text-gray-400">Balance</TableHead>
-                      <TableHead className="text-gray-400">Plan</TableHead>
-                      <TableHead className="text-gray-400">Status</TableHead>
-                      <TableHead className="text-right text-gray-400">Actions</TableHead>
+                    <TableRow className="border-[#e5e7eb] hover:bg-transparent">
+                      <TableHead className="text-[#6b7280]">Name</TableHead>
+                      <TableHead className="hidden sm:table-cell text-[#6b7280]">Email</TableHead>
+                      <TableHead className="text-right text-[#6b7280]">Balance</TableHead>
+                      <TableHead className="text-[#6b7280]">Plan</TableHead>
+                      <TableHead className="text-[#6b7280]">Status</TableHead>
+                      <TableHead className="text-right text-[#6b7280]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredUsers.map((user, i) => (
-                      <TableRow key={i} className="border-gray-800/50">
-                        <TableCell className="font-medium text-white">{user.name}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-xs text-gray-400">{user.email}</TableCell>
-                        <TableCell className="text-right font-mono text-sm text-gray-300">{user.balance}</TableCell>
+                      <TableRow key={i} className="border-[#f0f2f5]">
+                        <TableCell className="font-medium text-[#1a1a2e]">{user.name}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs text-[#6b7280]">{user.email}</TableCell>
+                        <TableCell className="text-right font-mono text-sm text-[#1a1a2e]">{user.balance}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`text-[11px] font-semibold ${
-                            user.subscription === 'Premium' ? 'border-amber-500/30 bg-amber-500/10 text-amber-400' : 'border-gray-700 bg-gray-800 text-gray-400'
+                            user.subscription === 'Premium' ? 'border-[#5367ff]/30 bg-[#5367ff]/10 text-[#5367ff]' : 'border-[#e5e7eb] bg-[#f0f2f5] text-[#6b7280]'
                           }`}>{user.subscription}</Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`text-[11px] font-semibold ${
-                            user.status === 'Active' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-red-500/30 bg-red-500/10 text-red-400'
+                            user.status === 'Active' ? 'border-[#00d09c]/30 bg-[#00d09c]/10 text-[#00a87d]' : 'border-[#eb5b3c]/30 bg-[#eb5b3c]/10 text-[#d44a2d]'
                           }`}>{user.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="size-7 text-gray-400 hover:text-amber-400"><Edit className="size-3.5" /></Button>
-                            <Button variant="ghost" size="icon" className="size-7 text-gray-400 hover:text-red-400"><Ban className="size-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="size-7 text-[#6b7280] hover:text-[#5367ff]"><Edit className="size-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="size-7 text-[#6b7280] hover:text-[#eb5b3c]"><Ban className="size-3.5" /></Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -431,36 +394,35 @@ function AdminPanel() {
             </Card>
           </TabsContent>
 
-          {/* Market Control Tab */}
           <TabsContent value="market" className="space-y-6">
-            <Card className="bg-[#111827] border-gray-800 rounded-xl">
+            <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base font-semibold text-white">
-                  <Settings2 className="size-4 text-amber-400" /> Indices Settings
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1a1a2e]">
+                  <Settings2 className="size-4 text-[#5367ff]" /> Indices Settings
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {indices.map((idx, i) => (
                     <div key={idx.name} className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:gap-4 ${
-                      idx.enabled ? 'border-amber-500/20 bg-amber-500/5' : 'border-gray-800 bg-gray-900/50'
+                      idx.enabled ? 'border-[#5367ff]/20 bg-[#5367ff]/5' : 'border-[#e5e7eb] bg-[#f0f2f5]/50'
                     }`}>
                       <div className="flex items-center gap-3 min-w-[140px]">
                         <Switch checked={idx.enabled} onCheckedChange={() => toggleIndex(i)} />
-                        <span className={`font-mono font-bold ${idx.enabled ? 'text-white' : 'text-gray-500'}`}>{idx.name}</span>
+                        <span className={`font-mono font-bold ${idx.enabled ? 'text-[#1a1a2e]' : 'text-[#9ca3af]'}`}>{idx.name}</span>
                       </div>
                       <div className="flex flex-1 flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
-                          <Label className="text-xs text-gray-400">Lot Size</Label>
-                          <Input defaultValue={idx.lotSize} className="h-8 w-20 border-gray-700 bg-[#0a0e17] text-white font-mono text-sm" disabled={!idx.enabled} />
+                          <Label className="text-xs text-[#6b7280]">Lot Size</Label>
+                          <Input defaultValue={idx.lotSize} className="h-8 w-20 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] font-mono text-sm" disabled={!idx.enabled} />
                         </div>
                         <div className="flex items-center gap-2">
-                          <Label className="text-xs text-gray-400">Expiry</Label>
-                          <Input defaultValue={idx.expiryDay} className="h-8 w-28 border-gray-700 bg-[#0a0e17] text-white text-sm" disabled={!idx.enabled} />
+                          <Label className="text-xs text-[#6b7280]">Expiry</Label>
+                          <Input defaultValue={idx.expiryDay} className="h-8 w-28 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] text-sm" disabled={!idx.enabled} />
                         </div>
                         <div className="flex items-center gap-2">
-                          <Label className="text-xs text-gray-400">Strike Interval</Label>
-                          <Input defaultValue={idx.strikeInterval} className="h-8 w-20 border-gray-700 bg-[#0a0e17] text-white font-mono text-sm" disabled={!idx.enabled} />
+                          <Label className="text-xs text-[#6b7280]">Strike Interval</Label>
+                          <Input defaultValue={idx.strikeInterval} className="h-8 w-20 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] font-mono text-sm" disabled={!idx.enabled} />
                         </div>
                       </div>
                     </div>
@@ -470,40 +432,39 @@ function AdminPanel() {
             </Card>
           </TabsContent>
 
-          {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
-            <Card className="bg-[#111827] border-gray-800 rounded-xl">
+            <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base font-semibold text-white">
-                  <TrendingUp className="size-4 text-amber-400" /> User Growth (2025)
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1a1a2e]">
+                  <TrendingUp className="size-4 text-[#5367ff]" /> User Growth (2025)
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={lineChartConfig} className="h-[300px] w-full">
                   <LineChart data={userGrowthData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={8} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} width={45} />
-                    <RechartsTooltip contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: '8px', fontSize: '12px' }} />
-                    <Line type="monotone" dataKey="users" stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 4, fill: '#f59e0b', stroke: '#111827', strokeWidth: 2 }} />
+                    <RechartsTooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }} />
+                    <Line type="monotone" dataKey="users" stroke="#5367ff" strokeWidth={2.5} dot={{ r: 4, fill: '#5367ff', stroke: '#ffffff', strokeWidth: 2 }} />
                   </LineChart>
                 </ChartContainer>
               </CardContent>
             </Card>
 
-            <Card className="bg-[#111827] border-gray-800 rounded-xl">
+            <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-white">Top Traders</CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1a1a2e]">Top Traders</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-800 hover:bg-transparent">
-                      <TableHead className="text-gray-400">#</TableHead>
-                      <TableHead className="text-gray-400">Name</TableHead>
-                      <TableHead className="text-right text-gray-400">ROI</TableHead>
-                      <TableHead className="text-right text-gray-400">Win Rate</TableHead>
-                      <TableHead className="text-right text-gray-400">Trades</TableHead>
+                    <TableRow className="border-[#e5e7eb] hover:bg-transparent">
+                      <TableHead className="text-[#6b7280]">#</TableHead>
+                      <TableHead className="text-[#6b7280]">Name</TableHead>
+                      <TableHead className="text-right text-[#6b7280]">ROI</TableHead>
+                      <TableHead className="text-right text-[#6b7280]">Win Rate</TableHead>
+                      <TableHead className="text-right text-[#6b7280]">Trades</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -512,16 +473,16 @@ function AdminPanel() {
                       { name: 'Sneha Patel', roi: '+56.1%', winRate: '68%', totalTrades: 567 },
                       { name: 'Arjun Mehta', roi: '+42.3%', winRate: '65%', totalTrades: 342 },
                     ].map((trader, i) => (
-                      <TableRow key={i} className="border-gray-800/50">
+                      <TableRow key={i} className="border-[#f0f2f5]">
                         <TableCell>
                           <div className={`flex size-7 items-center justify-center rounded-full font-mono text-xs font-bold ${
-                            i === 0 ? 'bg-amber-500/10 text-amber-400' : i === 1 ? 'bg-gray-500/10 text-gray-400' : 'bg-orange-500/10 text-orange-400'
+                            i === 0 ? 'bg-[#5367ff]/10 text-[#5367ff]' : i === 1 ? 'bg-[#9ca3af]/10 text-[#6b7280]' : 'bg-[#f59e0b]/10 text-[#d97706]'
                           }`}>{i + 1}</div>
                         </TableCell>
-                        <TableCell className="font-medium text-white">{trader.name}</TableCell>
-                        <TableCell className="text-right font-mono text-emerald-400">{trader.roi}</TableCell>
-                        <TableCell className="text-right font-mono text-gray-300">{trader.winRate}</TableCell>
-                        <TableCell className="text-right font-mono text-gray-400">{trader.totalTrades}</TableCell>
+                        <TableCell className="font-medium text-[#1a1a2e]">{trader.name}</TableCell>
+                        <TableCell className="text-right font-mono text-[#00a87d]">{trader.roi}</TableCell>
+                        <TableCell className="text-right font-mono text-[#1a1a2e]">{trader.winRate}</TableCell>
+                        <TableCell className="text-right font-mono text-[#6b7280]">{trader.totalTrades}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -34,10 +34,10 @@ export function MobileNav() {
       aria-label="Mobile navigation"
     >
       <div
-        className="flex h-16 w-full items-center justify-around px-2"
+        className="flex h-14 w-full items-center justify-around px-1"
         style={{
-          background: '#111827',
-          borderTop: '1px solid #1f2937',
+          background: '#ffffff',
+          borderTop: '1px solid #e5e7eb',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
@@ -49,34 +49,30 @@ export function MobileNav() {
               key={item.id}
               onClick={() => setCurrentPage(item.id)}
               className={cn(
-                'flex flex-1 flex-col items-center justify-center gap-0.5 py-1.5 transition-colors duration-200 outline-none rounded-lg',
-                'focus-visible:ring-2 focus-visible:ring-amber-500/30',
+                'flex flex-1 flex-col items-center justify-center gap-0.5 py-1 outline-none rounded-lg',
+                'transition-colors duration-150',
+                'focus-visible:ring-2 focus-visible:ring-[#5367ff]/20',
               )}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
             >
-              <div className="flex flex-col items-center gap-1">
-                <Icon
-                  className={cn(
-                    'size-5 transition-all duration-200',
-                    isActive && 'scale-105',
-                  )}
-                  style={{ color: isActive ? '#fbbf24' : '#6b7280' }}
+              <Icon
+                className="size-5 transition-colors duration-150"
+                style={{ color: isActive ? '#5367ff' : '#9ca3af' }}
+              />
+              {/* Active dot indicator */}
+              {isActive && (
+                <div
+                  className="h-1 w-1 rounded-full"
+                  style={{ background: '#5367ff' }}
                 />
-                {/* Active dot indicator */}
-                {isActive && (
-                  <div
-                    className="h-1 w-1 rounded-full"
-                    style={{ background: '#f59e0b' }}
-                  />
-                )}
-              </div>
+              )}
               <span
                 className={cn(
-                  'text-[10px] font-medium leading-tight transition-colors duration-200',
-                  isActive && 'font-semibold',
+                  'text-[10px] leading-tight transition-colors duration-150',
+                  isActive ? 'font-semibold' : 'font-medium',
                 )}
-                style={{ color: isActive ? '#fbbf24' : '#6b7280' }}
+                style={{ color: isActive ? '#5367ff' : '#9ca3af' }}
               >
                 {item.label}
               </span>

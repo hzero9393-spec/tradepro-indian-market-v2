@@ -116,8 +116,6 @@ export function FuturesPage() {
 
   const [instrument, setInstrument] = useState<Instrument>('NIFTY')
   const [contractIdx, setContractIdx] = useState(0)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [direction, setDirection] = useState<Direction>('BUY')
   const [orderType, setOrderType] = useState<OrderType>('MARKET')
   const [lots, setLots] = useState(1)
@@ -129,7 +127,6 @@ export function FuturesPage() {
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
   const [contractsLoading, setContractsLoading] = useState(true)
   const [positionsLoading, setPositionsLoading] = useState(true)
-  const [portfolioLoading, setPortfolioLoading] = useState(true)
   const [placingOrder, setPlacingOrder] = useState(false)
   const [squaringOff, setSquaringOff] = useState<string | null>(null)
 
@@ -197,8 +194,7 @@ export function FuturesPage() {
 
   // ─── Fetch Portfolio ──────────────────────────────────────────
   const fetchPortfolio = useCallback(async () => {
-    if (!token) { setPortfolioLoading(false); return }
-    setPortfolioLoading(true)
+    if (!token) { return }
     try {
       const res = await fetch('/api/trade/portfolio', {
         headers: { Authorization: `Bearer ${token}` },
@@ -211,8 +207,6 @@ export function FuturesPage() {
       }
     } catch {
       setPortfolio(null)
-    } finally {
-      setPortfolioLoading(false)
     }
   }, [token])
 
@@ -321,20 +315,20 @@ export function FuturesPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto">
+    <div className="p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto bg-[#f5f7fa] min-h-screen">
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-amber-500/10">
-          <CandlestickChart className="size-5 text-amber-500" />
+        <div className="flex size-10 items-center justify-center rounded-xl bg-[#5367ff]/10">
+          <CandlestickChart className="size-5 text-[#5367ff]" />
         </div>
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-white">Futures Trading</h1>
-          <p className="text-xs text-gray-400">Trade index & stock futures with real positions</p>
+          <h1 className="text-xl md:text-2xl font-bold text-[#1a1a2e]">Futures Trading</h1>
+          <p className="text-xs text-[#6b7280]">Trade index & stock futures with real positions</p>
         </div>
       </div>
 
       {/* ── Instrument Selector ───────────────────────────────── */}
-      <div className="bg-[#111827] border border-[#1f2937] p-4 rounded-xl">
+      <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
         <div className="flex flex-wrap items-center gap-2">
           {instruments.map((inst) => (
             <button
@@ -343,49 +337,25 @@ export function FuturesPage() {
               className={cn(
                 'px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200',
                 instrument === inst
-                  ? 'bg-amber-500 text-black shadow-md'
-                  : 'bg-[#1f2937] text-gray-400 hover:bg-amber-500/10 hover:text-amber-500'
+                  ? 'bg-[#5367ff] text-white shadow-md'
+                  : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#5367ff]/10 hover:text-[#5367ff]'
               )}
             >
               {inst}
             </button>
           ))}
-          <div className="relative">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium bg-[#1f2937] text-gray-400 hover:bg-amber-500/10 hover:text-amber-500 transition-all"
-            >
-              <Search className="size-3.5" />
-              Stocks
-              <ChevronDown className="size-3" />
-            </button>
-            {searchOpen && (
-              <div className="absolute top-full mt-2 right-0 z-50 w-72 bg-[#111827] border border-[#1f2937] rounded-xl shadow-xl p-3">
-                <Input
-                  placeholder="Search stocks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="mb-2"
-                  autoFocus
-                />
-                <div className="text-xs text-gray-400 p-2">
-                  Stock futures coming soon...
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
       {/* ── Contract Selector Tabs ─────────────────────────────── */}
-      <div className="bg-[#111827] border border-[#1f2937] p-4 rounded-xl">
+      <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
         {contractsLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-amber-500" />
-            <span className="ml-2 text-sm text-gray-400">Loading contracts...</span>
+            <Loader2 className="size-6 animate-spin text-[#5367ff]" />
+            <span className="ml-2 text-sm text-[#6b7280]">Loading contracts...</span>
           </div>
         ) : contracts.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 text-sm">
+          <div className="text-center py-8 text-[#6b7280] text-sm">
             No futures contracts found for {instrument}. Please seed the database.
           </div>
         ) : (
@@ -401,30 +371,30 @@ export function FuturesPage() {
               <TabsContent key={idx} value={String(idx)}>
                 <div className="flex flex-wrap items-center gap-4 md:gap-8">
                   <div>
-                    <div className="text-xs text-gray-400">Contract</div>
-                    <div className="font-bold text-white text-sm">{contract.name}</div>
+                    <div className="text-xs text-[#6b7280]">Contract</div>
+                    <div className="font-bold text-[#1a1a2e] text-sm">{contract.name}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">LTP</div>
-                    <div className="font-mono font-bold text-white">₹{contract.ltp.toLocaleString()}</div>
+                    <div className="text-xs text-[#6b7280]">LTP</div>
+                    <div className="font-mono font-bold text-[#1a1a2e]">₹{contract.ltp.toLocaleString()}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Change</div>
+                    <div className="text-xs text-[#6b7280]">Change</div>
                     <div className={cn(
                       'font-mono font-semibold text-sm',
-                      contract.changePct > 0 ? 'text-emerald-500' : contract.changePct < 0 ? 'text-red-500' : 'text-gray-400'
+                      contract.changePct > 0 ? 'text-[#00d09c]' : contract.changePct < 0 ? 'text-[#eb5b3c]' : 'text-[#6b7280]'
                     )}>
                       {contract.changePct > 0 ? '+' : ''}{contract.changePct.toFixed(2)}%
                       <span className="ml-1 text-xs">({contract.change > 0 ? '+' : ''}{contract.change.toFixed(2)})</span>
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">OI</div>
-                    <div className="font-mono text-sm text-white">{contract.oi}L</div>
+                    <div className="text-xs text-[#6b7280]">OI</div>
+                    <div className="font-mono text-sm text-[#1a1a2e]">{contract.oi}L</div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Volume</div>
-                    <div className="font-mono text-sm text-white">{(contract.volume / 1000).toFixed(1)}K</div>
+                    <div className="text-xs text-[#6b7280]">Volume</div>
+                    <div className="font-mono text-sm text-[#1a1a2e]">{(contract.volume / 1000).toFixed(1)}K</div>
                   </div>
                 </div>
               </TabsContent>
@@ -438,13 +408,13 @@ export function FuturesPage() {
         {/* Left: Chart + Stats */}
         <div className="lg:col-span-3 space-y-4">
           {/* Price Chart */}
-          <div className="bg-[#111827] border border-[#1f2937] p-4 rounded-xl">
+          <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <BarChart3 className="size-4 text-amber-500" />
+              <h3 className="text-sm font-bold text-[#1a1a2e] flex items-center gap-2">
+                <BarChart3 className="size-4 text-[#5367ff]" />
                 {selectedContract?.name || instrument} — Price Movement
               </h3>
-              <Badge variant="outline" className="text-xs font-mono border-[#1f2937] text-gray-400">
+              <Badge variant="outline" className="text-xs font-mono border-[#e5e7eb] text-[#6b7280]">
                 Live
               </Badge>
             </div>
@@ -454,21 +424,21 @@ export function FuturesPage() {
                   <AreaChart data={priceData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                     <defs>
                       <linearGradient id="futuresGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#5367ff" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#5367ff" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" opacity={0.5} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                     <XAxis
                       dataKey="time"
-                      tick={{ fontSize: 10, fill: '#9ca3af' }}
+                      tick={{ fontSize: 10, fill: '#6b7280' }}
                       tickLine={false}
                       axisLine={false}
                       interval={9}
                     />
                     <YAxis
                       domain={['auto', 'auto']}
-                      tick={{ fontSize: 10, fill: '#9ca3af' }}
+                      tick={{ fontSize: 10, fill: '#6b7280' }}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={(v: number) => `₹${(v / 1000).toFixed(1)}K`}
@@ -476,25 +446,25 @@ export function FuturesPage() {
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#111827',
-                        border: '1px solid #1f2937',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         fontSize: '12px',
-                        color: '#f9fafb',
+                        color: '#1a1a2e',
                       }}
                       formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Price']}
                     />
                     <Area
                       type="monotone"
                       dataKey="price"
-                      stroke="#f59e0b"
+                      stroke="#5367ff"
                       strokeWidth={2}
                       fill="url(#futuresGradient)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                <div className="h-full flex items-center justify-center text-[#6b7280] text-sm">
                   Select a contract to view chart
                 </div>
               )}
@@ -504,34 +474,34 @@ export function FuturesPage() {
           {/* Key Stats */}
           {selectedContract && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="bg-[#111827] border border-[#1f2937] p-3 rounded-xl text-center">
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">LTP</div>
-                <div className="font-mono font-bold text-white text-lg">₹{selectedContract.ltp.toLocaleString()}</div>
+              <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
+                <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">LTP</div>
+                <div className="font-mono font-bold text-[#1a1a2e] text-lg">₹{selectedContract.ltp.toLocaleString()}</div>
               </div>
-              <div className="bg-[#111827] border border-[#1f2937] p-3 rounded-xl text-center">
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Change</div>
+              <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
+                <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Change</div>
                 <div className={cn(
                   'font-mono font-bold text-lg',
-                  selectedContract.changePct > 0 ? 'text-emerald-500' : 'text-red-500'
+                  selectedContract.changePct > 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
                 )}>
                   {selectedContract.changePct > 0 ? '+' : ''}{selectedContract.changePct.toFixed(2)}%
                 </div>
               </div>
-              <div className="bg-[#111827] border border-[#1f2937] p-3 rounded-xl text-center">
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Open Interest</div>
-                <div className="font-mono font-bold text-white text-lg">{selectedContract.oi}L</div>
+              <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
+                <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Open Interest</div>
+                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{selectedContract.oi}L</div>
               </div>
-              <div className="bg-[#111827] border border-[#1f2937] p-3 rounded-xl text-center">
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Volume</div>
-                <div className="font-mono font-bold text-white text-lg">{(selectedContract.volume / 1000).toFixed(1)}K</div>
+              <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
+                <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Volume</div>
+                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{(selectedContract.volume / 1000).toFixed(1)}K</div>
               </div>
-              <div className="bg-[#111827] border border-[#1f2937] p-3 rounded-xl text-center">
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Lot Size</div>
-                <div className="font-mono font-bold text-white text-lg">{selectedContract.lotSize}</div>
+              <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
+                <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Lot Size</div>
+                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{selectedContract.lotSize}</div>
               </div>
-              <div className="bg-[#111827] border border-[#1f2937] p-3 rounded-xl text-center">
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Margin %</div>
-                <div className="font-mono font-bold text-white text-lg">{selectedContract.marginPercent}%</div>
+              <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
+                <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Margin %</div>
+                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{selectedContract.marginPercent}%</div>
               </div>
             </div>
           )}
@@ -539,14 +509,14 @@ export function FuturesPage() {
 
         {/* Right: Order Panel */}
         <div className="lg:col-span-2">
-          <div className="bg-[#111827] border border-[#1f2937] p-4 rounded-xl space-y-4 sticky top-20">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Wallet className="size-4 text-amber-500" />
+          <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl space-y-4 sticky top-20">
+            <h3 className="text-sm font-bold text-[#1a1a2e] flex items-center gap-2">
+              <Wallet className="size-4 text-[#5367ff]" />
               Place Order
             </h3>
 
             {!selectedContract ? (
-              <div className="text-center py-6 text-gray-400 text-sm">
+              <div className="text-center py-6 text-[#6b7280] text-sm">
                 No contract available for trading
               </div>
             ) : (
@@ -558,8 +528,8 @@ export function FuturesPage() {
                     className={cn(
                       'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200',
                       direction === 'BUY'
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                        : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                        ? 'bg-[#00d09c] text-white shadow-lg shadow-[#00d09c]/20'
+                        : 'bg-[#00d09c]/10 text-[#00d09c] hover:bg-[#00d09c]/20'
                     )}
                   >
                     <ArrowUpRight className="size-4 inline mr-1" />
@@ -570,8 +540,8 @@ export function FuturesPage() {
                     className={cn(
                       'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200',
                       direction === 'SELL'
-                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
-                        : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                        ? 'bg-[#eb5b3c] text-white shadow-lg shadow-[#eb5b3c]/20'
+                        : 'bg-[#eb5b3c]/10 text-[#eb5b3c] hover:bg-[#eb5b3c]/20'
                     )}
                   >
                     <ArrowDownRight className="size-4 inline mr-1" />
@@ -581,7 +551,7 @@ export function FuturesPage() {
 
                 {/* Order Type */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
                     Order Type
                   </label>
                   <div className="flex gap-2">
@@ -592,8 +562,8 @@ export function FuturesPage() {
                         className={cn(
                           'flex-1 py-2 rounded-lg text-xs font-bold transition-all',
                           orderType === type
-                            ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
-                            : 'bg-[#1f2937] text-gray-400 hover:bg-amber-500/5'
+                            ? 'bg-[#5367ff]/10 text-[#5367ff] border border-[#5367ff]/30'
+                            : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#5367ff]/5'
                         )}
                       >
                         {type}
@@ -604,14 +574,14 @@ export function FuturesPage() {
 
                 {/* Lots Input */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
                     Lots
                   </label>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="icon"
-                      className="size-10 shrink-0 border-[#1f2937]"
+                      className="size-10 shrink-0 border-[#e5e7eb]"
                       onClick={() => setLots(Math.max(1, lots - 1))}
                     >
                       <Minus className="size-4" />
@@ -620,12 +590,12 @@ export function FuturesPage() {
                       type="number"
                       value={lots}
                       onChange={(e) => setLots(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="text-center font-mono text-lg font-bold h-10 bg-[#0a0e17] border-[#1f2937]"
+                      className="text-center font-mono text-lg font-bold h-10 bg-white border-[#e5e7eb]"
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      className="size-10 shrink-0 border-[#1f2937]"
+                      className="size-10 shrink-0 border-[#e5e7eb]"
                       onClick={() => setLots(lots + 1)}
                     >
                       <Plus className="size-4" />
@@ -636,7 +606,7 @@ export function FuturesPage() {
                 {/* Price Input (for Limit/SL) */}
                 {(orderType === 'LIMIT' || orderType === 'SL') && (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    <label className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
                       Price (₹)
                     </label>
                     <Input
@@ -644,36 +614,36 @@ export function FuturesPage() {
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder={selectedContract.ltp.toFixed(2)}
-                      className="font-mono h-10 bg-[#0a0e17] border-[#1f2937]"
+                      className="font-mono h-10 bg-white border-[#e5e7eb]"
                     />
                   </div>
                 )}
 
                 {/* Calculated Fields */}
-                <div className="bg-[#0a0e17] border border-[#1f2937] p-3 rounded-xl space-y-2 text-sm">
+                <div className="bg-[#f5f7fa] border border-[#e5e7eb] p-3 rounded-xl space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Lot Size</span>
-                    <span className="font-mono font-medium text-white">{lotSize}</span>
+                    <span className="text-[#6b7280]">Lot Size</span>
+                    <span className="font-mono font-medium text-[#1a1a2e]">{lotSize}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Total Qty</span>
-                    <span className="font-mono font-medium text-white">{totalQty}</span>
+                    <span className="text-[#6b7280]">Total Qty</span>
+                    <span className="font-mono font-medium text-[#1a1a2e]">{totalQty}</span>
                   </div>
-                  <div className="flex justify-between border-t border-[#1f2937] pt-2">
-                    <span className="text-gray-400 font-semibold">Margin Required</span>
-                    <span className="font-mono font-bold text-amber-500 text-base">₹{Number(marginRequired).toLocaleString()}</span>
+                  <div className="flex justify-between border-t border-[#e5e7eb] pt-2">
+                    <span className="text-[#6b7280] font-semibold">Margin Required</span>
+                    <span className="font-mono font-bold text-[#5367ff] text-base">₹{Number(marginRequired).toLocaleString()}</span>
                   </div>
                 </div>
 
                 {/* Available Margin */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-[#1f2937]/50">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-[#f5f7fa]">
                   <div className="flex items-center gap-2">
-                    <Wallet className="size-4 text-amber-500" />
-                    <span className="text-xs font-medium text-gray-400">Available Margin</span>
+                    <Wallet className="size-4 text-[#5367ff]" />
+                    <span className="text-xs font-medium text-[#6b7280]">Available Margin</span>
                   </div>
                   <span className={cn(
                     'font-mono font-bold text-sm',
-                    availableMargin >= marginRequired ? 'text-emerald-500' : 'text-red-500'
+                    availableMargin >= marginRequired ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
                   )}>
                     ₹{availableMargin.toLocaleString()}
                   </span>
@@ -686,8 +656,8 @@ export function FuturesPage() {
                   className={cn(
                     'w-full py-3 font-bold text-base transition-all duration-200',
                     direction === 'BUY'
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                      : 'bg-red-500 hover:bg-red-600 text-white'
+                      ? 'bg-[#00d09c] hover:bg-[#00b888] text-white'
+                      : 'bg-[#eb5b3c] hover:bg-[#d44f33] text-white'
                   )}
                 >
                   {placingOrder ? (
@@ -699,7 +669,7 @@ export function FuturesPage() {
                   )}
                 </Button>
 
-                <p className="text-[10px] text-center text-gray-400 flex items-center justify-center gap-1">
+                <p className="text-[10px] text-center text-[#6b7280] flex items-center justify-center gap-1">
                   <Info className="size-3" />
                   Paper trading — No real money involved
                 </p>
@@ -710,18 +680,18 @@ export function FuturesPage() {
       </div>
 
       {/* ── Open Futures Positions ─────────────────────────────── */}
-      <div className="bg-[#111827] border border-[#1f2937] p-4 rounded-xl">
+      <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <CandlestickChart className="size-4 text-amber-500" />
+          <h3 className="text-sm font-bold text-[#1a1a2e] flex items-center gap-2">
+            <CandlestickChart className="size-4 text-[#5367ff]" />
             Open Futures Positions
           </h3>
           {positions.length > 0 && (
             <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400">Net P&L:</span>
+              <span className="text-xs text-[#6b7280]">Net P&L:</span>
               <span className={cn(
                 'font-mono font-bold',
-                totalPnl > 0 ? 'text-emerald-500' : totalPnl < 0 ? 'text-red-500' : 'text-gray-400'
+                totalPnl > 0 ? 'text-[#00d09c]' : totalPnl < 0 ? 'text-[#eb5b3c]' : 'text-[#6b7280]'
               )}>
                 {totalPnl > 0 ? '+' : ''}₹{totalPnl.toLocaleString()}
               </span>
@@ -731,15 +701,15 @@ export function FuturesPage() {
 
         {positionsLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-amber-500" />
+            <Loader2 className="size-6 animate-spin text-[#5367ff]" />
           </div>
         ) : positions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="size-12 rounded-full bg-[#1f2937] flex items-center justify-center mb-3">
-              <Briefcase className="size-6 text-gray-600" />
+            <div className="size-12 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-3">
+              <Briefcase className="size-6 text-[#6b7280]" />
             </div>
-            <p className="text-gray-400 font-medium text-sm">No open futures positions</p>
-            <p className="text-gray-600 text-xs mt-1">
+            <p className="text-[#1a1a2e] font-medium text-sm">No open futures positions</p>
+            <p className="text-[#6b7280] text-xs mt-1">
               Place a futures order above to see your positions here
             </p>
           </div>
@@ -749,7 +719,7 @@ export function FuturesPage() {
             <div className="hidden md:block overflow-x-auto custom-scrollbar">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#1f2937] text-gray-400 text-xs uppercase tracking-wider">
+                  <tr className="border-b border-[#e5e7eb] text-[#6b7280] text-xs uppercase tracking-wider">
                     <th className="px-3 py-2 text-left">Symbol</th>
                     <th className="px-3 py-2 text-left">Direction</th>
                     <th className="px-3 py-2 text-right">Lots</th>
@@ -764,39 +734,39 @@ export function FuturesPage() {
                   {positions.map((pos) => {
                     const isPositive = pos.unrealizedPnl >= 0
                     return (
-                      <tr key={pos.id} className="border-b border-[#1f2937] hover:bg-amber-500/5 transition-colors">
-                        <td className="px-3 py-2.5 font-semibold text-white">
+                      <tr key={pos.id} className="border-b border-[#e5e7eb] hover:bg-[#5367ff]/5 transition-colors">
+                        <td className="px-3 py-2.5 font-semibold text-[#1a1a2e]">
                           {pos.symbol}
-                          <span className="text-xs text-gray-400 ml-1">FUT</span>
+                          <span className="text-xs text-[#6b7280] ml-1">FUT</span>
                         </td>
                         <td className="px-3 py-2.5">
                           <Badge className={cn(
                             'text-xs font-bold',
                             pos.tradeDirection === 'BUY'
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-red-500/10 text-red-400'
+                              ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                              : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
                           )}>
                             {pos.tradeDirection === 'BUY' ? <ArrowUpRight className="size-3 mr-1" /> : <ArrowDownRight className="size-3 mr-1" />}
                             {pos.tradeDirection}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono text-white">{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-white">₹{pos.entryPrice.toLocaleString()}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-white">₹{pos.currentPrice.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a2e]">{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a2e]">₹{pos.entryPrice.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a2e]">₹{pos.currentPrice.toLocaleString()}</td>
                         <td className={cn(
                           'px-3 py-2.5 text-right font-mono font-bold',
-                          isPositive ? 'text-emerald-500' : 'text-red-500'
+                          isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
                         )}>
                           {isPositive ? '+' : ''}₹{pos.unrealizedPnl.toLocaleString()}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono text-gray-400">
+                        <td className="px-3 py-2.5 text-right font-mono text-[#6b7280]">
                           ₹{(pos.marginUsed || 0).toLocaleString()}
                         </td>
                         <td className="px-3 py-2.5 text-center">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs h-7 text-red-500 border-red-500/20 hover:bg-red-500/10 hover:text-red-400"
+                            className="text-xs h-7 text-[#eb5b3c] border-[#eb5b3c]/20 hover:bg-[#eb5b3c]/10 hover:text-[#eb5b3c]"
                             disabled={squaringOff === pos.id}
                             onClick={() => handleSquareOff(pos.id, pos.symbol)}
                           >
@@ -819,34 +789,34 @@ export function FuturesPage() {
               {positions.map((pos) => {
                 const isPositive = pos.unrealizedPnl >= 0
                 return (
-                  <div key={pos.id} className="p-3 rounded-xl border border-[#1f2937] bg-[#0a0e17] space-y-2">
+                  <div key={pos.id} className="p-3 rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-white">{pos.symbol} FUT</span>
+                        <span className="font-bold text-[#1a1a2e]">{pos.symbol} FUT</span>
                         <Badge className={cn(
                           'text-[10px] font-bold',
                           pos.tradeDirection === 'BUY'
-                            ? 'bg-emerald-500/10 text-emerald-400'
-                            : 'bg-red-500/10 text-red-400'
+                            ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                            : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
                         )}>
                           {pos.tradeDirection}
                         </Badge>
                       </div>
                       <span className={cn(
                         'font-mono font-bold',
-                        isPositive ? 'text-emerald-500' : 'text-red-500'
+                        isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
                       )}>
                         {isPositive ? '+' : ''}₹{pos.unrealizedPnl.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-400">
+                    <div className="flex justify-between text-xs text-[#6b7280]">
                       <span>{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))} lot(s)</span>
                       <span>₹{pos.entryPrice.toLocaleString()} → ₹{pos.currentPrice.toLocaleString()}</span>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs h-7 text-red-500 border-red-500/20 hover:bg-red-500/10"
+                      className="w-full text-xs h-7 text-[#eb5b3c] border-[#eb5b3c]/20 hover:bg-[#eb5b3c]/10"
                       disabled={squaringOff === pos.id}
                       onClick={() => handleSquareOff(pos.id, pos.symbol)}
                     >

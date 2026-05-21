@@ -42,131 +42,131 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* StockVerse Dark Trading Theme Colors */
-  --color-tp-surface: #0a0e17;
-  --color-tp-surface-dim: #060911;
-  --color-tp-surface-bright: #0f1520;
-  --color-tp-surface-variant: #111827;
-  --color-tp-surface-container: #111827;
-  --color-tp-surface-container-low: #0d111c;
-  --color-tp-surface-container-high: #151c2c;
-  --color-tp-surface-container-highest: #1a2235;
-  --color-tp-surface-container-lowest: #080c14;
-  --color-tp-on-surface: #f9fafb;
-  --color-tp-on-surface-variant: #9ca3af;
-  --color-tp-on-background: #f9fafb;
-  --color-tp-outline: #374151;
-  --color-tp-outline-variant: #1f2937;
-  --color-tp-primary: #f59e0b;
-  --color-tp-on-primary: #0a0e17;
-  --color-tp-primary-container: #d97706;
-  --color-tp-on-primary-container: #fef3c7;
-  --color-tp-primary-fixed: #fbbf24;
-  --color-tp-primary-fixed-dim: #f59e0b;
-  --color-tp-on-primary-fixed: #451a03;
-  --color-tp-on-primary-fixed-variant: #78350f;
-  --color-tp-secondary: #10b981;
-  --color-tp-on-secondary: #0a0e17;
-  --color-tp-secondary-container: #065f46;
-  --color-tp-on-secondary-container: #d1fae5;
-  --color-tp-secondary-fixed: #34d399;
-  --color-tp-secondary-fixed-dim: #10b981;
-  --color-tp-on-secondary-fixed: #022c22;
-  --color-tp-on-secondary-fixed-variant: #064e3b;
-  --color-tp-tertiary: #ef4444;
+  /* Groww-inspired Light Theme */
+  --color-tp-surface: #ffffff;
+  --color-tp-surface-dim: #f5f7fa;
+  --color-tp-surface-bright: #ffffff;
+  --color-tp-surface-variant: #f0f2f5;
+  --color-tp-surface-container: #ffffff;
+  --color-tp-surface-container-low: #f8f9fb;
+  --color-tp-surface-container-high: #ffffff;
+  --color-tp-surface-container-highest: #ffffff;
+  --color-tp-surface-container-lowest: #fafbfc;
+  --color-tp-on-surface: #1a1a2e;
+  --color-tp-on-surface-variant: #6b7280;
+  --color-tp-on-background: #1a1a2e;
+  --color-tp-outline: #e5e7eb;
+  --color-tp-outline-variant: #f0f0f0;
+  --color-tp-primary: #5367ff;
+  --color-tp-on-primary: #ffffff;
+  --color-tp-primary-container: #eef0ff;
+  --color-tp-on-primary-container: #3a4fd4;
+  --color-tp-primary-fixed: #5367ff;
+  --color-tp-primary-fixed-dim: #4456e6;
+  --color-tp-on-primary-fixed: #ffffff;
+  --color-tp-on-primary-fixed-variant: #eef0ff;
+  --color-tp-secondary: #00d09c;
+  --color-tp-on-secondary: #ffffff;
+  --color-tp-secondary-container: #e6faf3;
+  --color-tp-on-secondary-container: #009e76;
+  --color-tp-secondary-fixed: #00d09c;
+  --color-tp-secondary-fixed-dim: #00b887;
+  --color-tp-on-secondary-fixed: #ffffff;
+  --color-tp-on-secondary-fixed-variant: #e6faf3;
+  --color-tp-tertiary: #eb5b3c;
   --color-tp-on-tertiary: #ffffff;
-  --color-tp-tertiary-container: #b91c1c;
-  --color-tp-on-tertiary-container: #fee2e2;
-  --color-tp-tertiary-fixed: #f87171;
-  --color-tp-tertiary-fixed-dim: #ef4444;
-  --color-tp-on-tertiary-fixed: #450a0a;
-  --color-tp-on-tertiary-fixed-variant: #7f1d1d;
-  --color-tp-error: #ef4444;
+  --color-tp-tertiary-container: #fde8e3;
+  --color-tp-on-tertiary-container: #c4422a;
+  --color-tp-tertiary-fixed: #eb5b3c;
+  --color-tp-tertiary-fixed-dim: #d44a2d;
+  --color-tp-on-tertiary-fixed: #ffffff;
+  --color-tp-on-tertiary-fixed-variant: #fde8e3;
+  --color-tp-error: #eb5b3c;
   --color-tp-on-error: #ffffff;
-  --color-tp-error-container: #991b1b;
-  --color-tp-on-error-container: #fee2e2;
-  --color-tp-inverse-surface: #f9fafb;
-  --color-tp-inverse-on-surface: #111827;
-  --color-tp-inverse-primary: #d97706;
-  --color-tp-surface-tint: #f59e0b;
+  --color-tp-error-container: #fde8e3;
+  --color-tp-on-error-container: #c4422a;
+  --color-tp-inverse-surface: #1a1a2e;
+  --color-tp-inverse-on-surface: #f5f7fa;
+  --color-tp-inverse-primary: #95a3ff;
+  --color-tp-surface-tint: #5367ff;
 
   /* Trading-specific semantic colors */
-  --color-tp-profit: #10b981;
-  --color-tp-loss: #ef4444;
-  --color-tp-profit-bg: rgba(16, 185, 129, 0.1);
-  --color-tp-loss-bg: rgba(239, 68, 68, 0.1);
-  --color-tp-profit-border: rgba(16, 185, 129, 0.2);
-  --color-tp-loss-border: rgba(239, 68, 68, 0.2);
+  --color-tp-profit: #00d09c;
+  --color-tp-loss: #eb5b3c;
+  --color-tp-profit-bg: rgba(0, 208, 156, 0.08);
+  --color-tp-loss-bg: rgba(235, 91, 60, 0.08);
+  --color-tp-profit-border: rgba(0, 208, 156, 0.2);
+  --color-tp-loss-border: rgba(235, 91, 60, 0.2);
 }
 
 :root {
-  --radius: 0.625rem;
-  /* StockVerse Dark Theme - Default (no light mode) */
-  --background: #0a0e17;
-  --foreground: #f9fafb;
-  --card: #111827;
-  --card-foreground: #f9fafb;
-  --popover: #111827;
-  --popover-foreground: #f9fafb;
-  --primary: #f59e0b;
-  --primary-foreground: #0a0e17;
-  --secondary: #10b981;
-  --secondary-foreground: #0a0e17;
-  --muted: #1f2937;
-  --muted-foreground: #9ca3af;
-  --accent: #1f2937;
-  --accent-foreground: #f9fafb;
-  --destructive: #ef4444;
-  --border: #1f2937;
-  --input: #1f2937;
-  --ring: #f59e0b;
-  --chart-1: #f59e0b;
-  --chart-2: #10b981;
-  --chart-3: #ef4444;
-  --chart-4: #3b82f6;
+  --radius: 0.75rem;
+  /* Groww-inspired Light Theme */
+  --background: #f5f7fa;
+  --foreground: #1a1a2e;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a2e;
+  --primary: #5367ff;
+  --primary-foreground: #ffffff;
+  --secondary: #00d09c;
+  --secondary-foreground: #ffffff;
+  --muted: #f0f2f5;
+  --muted-foreground: #6b7280;
+  --accent: #f0f2f5;
+  --accent-foreground: #1a1a2e;
+  --destructive: #eb5b3c;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #5367ff;
+  --chart-1: #5367ff;
+  --chart-2: #00d09c;
+  --chart-3: #eb5b3c;
+  --chart-4: #f59e0b;
   --chart-5: #8b5cf6;
-  --sidebar: #0d111c;
-  --sidebar-foreground: #f9fafb;
-  --sidebar-primary: #f59e0b;
-  --sidebar-primary-foreground: #0a0e17;
-  --sidebar-accent: #1f2937;
-  --sidebar-accent-foreground: #f9fafb;
-  --sidebar-border: #1f2937;
-  --sidebar-ring: #f59e0b;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a2e;
+  --sidebar-primary: #5367ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f2f5;
+  --sidebar-accent-foreground: #1a1a2e;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #5367ff;
 }
 
 .dark {
-  --background: #0a0e17;
-  --foreground: #f9fafb;
-  --card: #111827;
-  --card-foreground: #f9fafb;
-  --popover: #111827;
-  --popover-foreground: #f9fafb;
-  --primary: #f59e0b;
-  --primary-foreground: #0a0e17;
-  --secondary: #10b981;
-  --secondary-foreground: #0a0e17;
-  --muted: #1f2937;
-  --muted-foreground: #9ca3af;
-  --accent: #1f2937;
-  --accent-foreground: #f9fafb;
-  --destructive: #ef4444;
-  --border: #1f2937;
-  --input: #1f2937;
-  --ring: #f59e0b;
-  --chart-1: #f59e0b;
-  --chart-2: #10b981;
-  --chart-3: #ef4444;
-  --chart-4: #3b82f6;
+  --background: #f5f7fa;
+  --foreground: #1a1a2e;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a2e;
+  --primary: #5367ff;
+  --primary-foreground: #ffffff;
+  --secondary: #00d09c;
+  --secondary-foreground: #ffffff;
+  --muted: #f0f2f5;
+  --muted-foreground: #6b7280;
+  --accent: #f0f2f5;
+  --accent-foreground: #1a1a2e;
+  --destructive: #eb5b3c;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #5367ff;
+  --chart-1: #5367ff;
+  --chart-2: #00d09c;
+  --chart-3: #eb5b3c;
+  --chart-4: #f59e0b;
   --chart-5: #8b5cf6;
-  --sidebar: #0d111c;
-  --sidebar-foreground: #f9fafb;
-  --sidebar-primary: #f59e0b;
-  --sidebar-primary-foreground: #0a0e17;
-  --sidebar-accent: #1f2937;
-  --sidebar-accent-foreground: #f9fafb;
-  --sidebar-border: #1f2937;
-  --sidebar-ring: #f59e0b;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a2e;
+  --sidebar-primary: #5367ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f2f5;
+  --sidebar-accent-foreground: #1a1a2e;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #5367ff;
 }
 
 @layer base {
@@ -178,42 +178,27 @@
   }
 }
 
-/* StockVerse Custom Utilities */
-.glass-card {
-  background: rgba(17, 24, 39, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(31, 41, 55, 0.6);
-}
-
-.dark .glass-card {
-  background: rgba(17, 24, 39, 0.8);
-  border: 1px solid rgba(31, 41, 55, 0.6);
-}
-
+/* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
-
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: #d1d5db;
   border-radius: 10px;
 }
-
-.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #374151;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 /* Staggered animation */
 .animate-stagger > * {
   opacity: 0;
-  transform: translateY(10px);
-  animation: fadeInSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform: translateY(8px);
+  animation: fadeInSlide 0.4s ease forwards;
 }
-
 @keyframes fadeInSlide {
   to {
     opacity: 1;
@@ -221,81 +206,103 @@
   }
 }
 
-/* Spring interaction */
-.spring-interaction:active {
-  transform: scale(0.98);
-}
-
-/* Tab transition */
-.tab-transition {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
 /* Number font */
 .font-mono-data {
-  font-family: 'Geist Mono', 'JetBrains Mono', monospace;
+  font-family: 'Geist Mono', 'Inter', monospace;
   font-weight: 500;
   letter-spacing: -0.02em;
 }
 
-/* Trading-specific utility classes */
+/* Trading-specific utility classes - Light Theme */
 .text-profit {
-  color: #10b981;
+  color: #00d09c;
 }
-
 .text-loss {
-  color: #ef4444;
+  color: #eb5b3c;
 }
-
 .bg-profit {
-  background-color: rgba(16, 185, 129, 0.1);
+  background-color: rgba(0, 208, 156, 0.08);
 }
-
 .bg-loss {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(235, 91, 60, 0.08);
 }
-
 .border-profit {
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(0, 208, 156, 0.2);
 }
-
 .border-loss {
-  border-color: rgba(239, 68, 68, 0.2);
+  border-color: rgba(235, 91, 60, 0.2);
 }
 
-/* Glow effects for trading elements */
-.glow-profit {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+/* Groww-style card */
+.groww-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.groww-card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
 }
 
-.glow-loss {
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+/* Groww-style button hover */
+.groww-btn-hover {
+  transition: all 0.15s ease;
+}
+.groww-btn-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(83, 103, 255, 0.25);
+}
+.groww-btn-hover:active {
+  transform: translateY(0);
 }
 
-.glow-primary {
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
-}
-
-/* Subtle card hover effect */
-.trading-card-hover {
+/* Tab transition */
+.tab-transition {
   transition: all 0.2s ease;
 }
 
-.trading-card-hover:hover {
-  border-color: rgba(245, 158, 11, 0.3);
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.05);
-}
-
-/* Pulse animation for live indicators */
+/* Pulse for live indicators */
 @keyframes livePulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
-
 .animate-live-pulse {
   animation: livePulse 2s ease-in-out infinite;
+}
+
+/* Groww-style pill badge */
+.groww-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Groww-style search bar */
+.groww-search {
+  background: #f0f2f5;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+.groww-search:focus-within {
+  background: #ffffff;
+  border-color: #5367ff;
+  box-shadow: 0 0 0 3px rgba(83, 103, 255, 0.1);
+}
+
+/* Profit/Loss pill */
+.pill-profit {
+  background: rgba(0, 208, 156, 0.1);
+  color: #00a87d;
+  border: 1px solid rgba(0, 208, 156, 0.15);
+}
+.pill-loss {
+  background: rgba(235, 91, 60, 0.08);
+  color: #d44a2d;
+  border: 1px solid rgba(235, 91, 60, 0.12);
 }

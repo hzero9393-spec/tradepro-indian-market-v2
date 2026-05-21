@@ -29,9 +29,11 @@ import {
   RotateCcw,
   ArrowUpRight,
   ArrowDownRight,
-  Briefcase,
   CheckCircle2,
   AlertCircle,
+  Sun,
+  Moon,
+  LogOut,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
@@ -78,10 +80,11 @@ function formatDate(dateStr: string | null): string {
 // ─── Component ───────────────────────────────────────────────────
 
 export function ProfilePage() {
-  const { user, token } = useAuthStore()
+  const { user, token, logout } = useAuthStore()
   const { setCurrentPage } = useAppStore()
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [themeDark, setThemeDark] = useState(false)
 
   // ─── Fetch Portfolio ──────────────────────────────────────
   const fetchPortfolio = useCallback(async () => {
@@ -115,111 +118,40 @@ export function ProfilePage() {
     })
   }
 
+  // ─── Theme Toggle ─────────────────────────────────────────
+  const handleThemeToggle = () => {
+    setThemeDark(!themeDark)
+    toast.success(themeDark ? 'Light mode selected (visual only)' : 'Dark mode selected (visual only)')
+  }
+
+  // ─── Logout ───────────────────────────────────────────────
+  const handleLogout = () => {
+    logout()
+    toast.success('Logged out successfully')
+  }
+
   // ─── Derived values ───────────────────────────────────────
   const initialCapital = 100000
   const currentPortfolioValue = portfolio?.totalPortfolioValue ?? (user?.virtualBalance ?? initialCapital)
   const totalPnl = portfolio?.totalPnl ?? user?.totalPnl ?? 0
   const totalReturn = portfolio?.totalReturn ?? 0
   const isProfit = totalPnl >= 0
+  const winRate = user?.winRate ?? 0
+  const totalTrades = portfolio?.totalTrades ?? user?.totalTrades ?? 0
 
-  // ─── Account Stats ────────────────────────────────────────
-  const accountStats = [
-    {
-      label: 'Virtual Balance',
-      value: formatINR(portfolio?.virtualBalance ?? user?.virtualBalance ?? initialCapital),
-      icon: Wallet,
-      borderColor: 'border-l-amber-500',
-      textColor: 'text-amber-500',
-      bgColor: 'bg-amber-500/10',
-    },
-    {
-      label: 'Total Trades',
-      value: String(portfolio?.totalTrades ?? user?.totalTrades ?? 0),
-      icon: BarChart3,
-      borderColor: 'border-l-amber-500',
-      textColor: 'text-amber-500',
-      bgColor: 'bg-amber-500/10',
-    },
-    {
-      label: 'Total P&L',
-      value: `${totalPnl >= 0 ? '+' : '-'}${formatINR(Math.abs(totalPnl))}`,
-      icon: totalPnl >= 0 ? TrendingUp : TrendingDown,
-      borderColor: totalPnl >= 0 ? 'border-l-emerald-500' : 'border-l-red-500',
-      textColor: totalPnl >= 0 ? 'text-emerald-500' : 'text-red-500',
-      bgColor: totalPnl >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10',
-    },
-    {
-      label: 'Win Rate',
-      value: `${(user?.winRate ?? 0).toFixed(1)}%`,
-      icon: Target,
-      borderColor: (user?.winRate ?? 0) >= 50 ? 'border-l-emerald-500' : 'border-l-red-500',
-      textColor: (user?.winRate ?? 0) >= 50 ? 'text-emerald-500' : 'text-red-500',
-      bgColor: (user?.winRate ?? 0) >= 50 ? 'bg-emerald-500/10' : 'bg-red-500/10',
-    },
-    {
-      label: 'Margin Used',
-      value: formatINR(portfolio?.marginUsed ?? user?.marginUsed ?? 0),
-      icon: Landmark,
-      borderColor: 'border-l-gray-500',
-      textColor: 'text-gray-400',
-      bgColor: 'bg-gray-500/10',
-    },
-  ]
-
-  // ─── Profile Info Items ───────────────────────────────────
-  const profileItems = [
-    {
-      icon: Mail,
-      label: 'Email',
-      value: user?.email ?? '—',
-      verified: user?.isEmailVerified ?? false,
-    },
-    {
-      icon: Phone,
-      label: 'Phone',
-      value: user?.phone ?? 'Not set',
-      verified: user?.isPhoneVerified ?? false,
-    },
-    {
-      icon: CreditCard,
-      label: 'PAN Number',
-      value: user?.panNumber ?? 'Not set',
-      verified: !!user?.panNumber,
-    },
-    {
-      icon: Shield,
-      label: 'Role',
-      value: user?.role ?? 'USER',
-      verified: true,
-    },
-    {
-      icon: Crown,
-      label: 'Subscription',
-      value: user?.subscription ?? 'FREE',
-      verified: user?.subscription === 'PREMIUM',
-    },
-    {
-      icon: CalendarDays,
-      label: 'Member Since',
-      value: formatDate(user?.createdAt ?? null),
-      verified: true,
-    },
-  ]
-
-  // ─── Render ───────────────────────────────────────────────
-
+  // ─── Loading State ────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0e17] p-4 sm:p-6 lg:p-8 space-y-5">
+      <div className="min-h-screen bg-[#f5f7fa] p-4 sm:p-6 lg:p-8 space-y-5">
         <div>
-          <Skeleton className="h-8 w-36 mb-2 bg-[#1f2937]" />
-          <Skeleton className="h-4 w-64 bg-[#1f2937]" />
+          <Skeleton className="h-8 w-36 mb-2 bg-[#f0f0f5]" />
+          <Skeleton className="h-4 w-64 bg-[#f0f0f5]" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Skeleton className="h-80 rounded-xl bg-[#1f2937]" />
+          <Skeleton className="h-80 rounded-xl bg-[#f0f0f5]" />
           <div className="lg:col-span-2 space-y-4">
-            <Skeleton className="h-40 rounded-xl bg-[#1f2937]" />
-            <Skeleton className="h-60 rounded-xl bg-[#1f2937]" />
+            <Skeleton className="h-40 rounded-xl bg-[#f0f0f5]" />
+            <Skeleton className="h-60 rounded-xl bg-[#f0f0f5]" />
           </div>
         </div>
       </div>
@@ -227,13 +159,13 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] p-4 sm:p-6 lg:p-8 space-y-5">
+    <div className="min-h-screen bg-[#f5f7fa] p-4 sm:p-6 lg:p-8 space-y-5">
       {/* ── Page Header ─────────────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
           My Account
         </h1>
-        <p className="text-gray-400 mt-1 text-sm">
+        <p className="text-[#6b7280] mt-1 text-sm">
           Manage your account, view stats, and track your trading journey.
         </p>
       </div>
@@ -246,72 +178,86 @@ export function ProfilePage() {
           transition={{ delay: 0 }}
           className="lg:row-span-2"
         >
-          <Card className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-sm h-full">
+          <Card className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm h-full">
             <CardContent className="p-6">
               {/* Avatar + Name */}
               <div className="flex flex-col items-center text-center mb-6">
-                <div className="size-20 rounded-full bg-amber-500/10 flex items-center justify-center mb-3 ring-2 ring-amber-500/30">
-                  <span className="text-2xl font-bold text-amber-500">
+                <div className="size-20 rounded-full bg-[#5367ff]/10 flex items-center justify-center mb-3 ring-2 ring-[#5367ff]/20">
+                  <span className="text-2xl font-bold text-[#5367ff]">
                     {user?.name
                       ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                       : '??'}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-white">{user?.name ?? 'User'}</h2>
-                <p className="text-sm text-gray-400 mt-0.5">{user?.email ?? '—'}</p>
+                <h2 className="text-lg font-bold text-[#1a1a2e]">{user?.name ?? 'User'}</h2>
+                <p className="text-sm text-[#6b7280] mt-0.5">{user?.email ?? '—'}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge className={`border-0 text-[10px] font-semibold ${
                     user?.subscription === 'PREMIUM'
-                      ? 'bg-amber-500/10 text-amber-500'
-                      : 'bg-gray-500/10 text-gray-400'
+                      ? 'bg-[#5367ff]/10 text-[#5367ff]'
+                      : 'bg-[#6b7280]/10 text-[#6b7280]'
                   }`}>
                     <Crown className="size-3 mr-0.5" />
                     {user?.subscription ?? 'FREE'}
                   </Badge>
-                  <Badge className="border-0 text-[10px] font-semibold bg-amber-500/10 text-amber-500">
+                  <Badge className="border-0 text-[10px] font-semibold bg-[#5367ff]/10 text-[#5367ff]">
                     {user?.role ?? 'USER'}
                   </Badge>
                 </div>
               </div>
 
-              <Separator className="bg-[#1f2937]/40 mb-4" />
+              <Separator className="bg-[#e5e7eb] mb-4" />
 
-              {/* Profile Details */}
+              {/* User Info */}
               <div className="space-y-3">
-                {profileItems.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <div key={item.label} className="flex items-start gap-3">
-                      <div className="size-8 rounded-lg bg-[#0d111c] flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon className="size-4 text-gray-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                          {item.label}
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <p className="text-sm font-medium text-white truncate">
-                            {item.value}
-                          </p>
-                          {item.verified && item.label !== 'Member Since' && item.label !== 'Role' && (
-                            <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
-                          )}
-                          {!item.verified && (item.label === 'Phone' || item.label === 'PAN Number') && (
-                            <AlertCircle className="size-3.5 text-gray-400/40 shrink-0" />
-                          )}
-                        </div>
-                      </div>
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-[#f5f7fa] flex items-center justify-center shrink-0">
+                    <Mail className="size-4 text-[#6b7280]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Email</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-[#1a1a2e] truncate">{user?.email ?? '—'}</p>
+                      {user?.isEmailVerified && <CheckCircle2 className="size-3.5 text-[#00d09c] shrink-0" />}
                     </div>
-                  )
-                })}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-[#f5f7fa] flex items-center justify-center shrink-0">
+                    <Phone className="size-4 text-[#6b7280]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Phone</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-[#1a1a2e] truncate">{user?.phone ?? 'Not set'}</p>
+                      {user?.isPhoneVerified ? (
+                        <CheckCircle2 className="size-3.5 text-[#00d09c] shrink-0" />
+                      ) : user?.phone ? (
+                        <AlertCircle className="size-3.5 text-[#6b7280]/40 shrink-0" />
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-lg bg-[#f5f7fa] flex items-center justify-center shrink-0">
+                    <CreditCard className="size-4 text-[#6b7280]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">PAN Number</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-[#1a1a2e] truncate">{user?.panNumber ?? 'Not set'}</p>
+                      {user?.panNumber && <CheckCircle2 className="size-3.5 text-[#00d09c] shrink-0" />}
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <Separator className="bg-[#1f2937]/40 my-4" />
+              <Separator className="bg-[#e5e7eb] my-4" />
 
               {/* Last Login */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Last Login</span>
-                <span className="text-xs font-medium text-white">
+                <span className="text-xs text-[#6b7280]">Last Login</span>
+                <span className="text-xs font-medium text-[#1a1a2e]">
                   {user?.lastLoginAt
                     ? new Date(user.lastLoginAt).toLocaleString('en-IN', {
                         day: '2-digit',
@@ -323,35 +269,71 @@ export function ProfilePage() {
                     : '—'}
                 </span>
               </div>
+
+              <Separator className="bg-[#e5e7eb] my-4" />
+
+              {/* Settings: Theme Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {themeDark ? <Moon className="size-4 text-[#5367ff]" /> : <Sun className="size-4 text-[#5367ff]" />}
+                  <span className="text-sm text-[#1a1a2e]">Dark Mode</span>
+                </div>
+                <button
+                  onClick={handleThemeToggle}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                    themeDark ? 'bg-[#5367ff]' : 'bg-[#e5e7eb]'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'inline-block size-4 transform rounded-full bg-white transition-transform',
+                      themeDark ? 'translate-x-6' : 'translate-x-1'
+                    )}
+                  />
+                </button>
+              </div>
+
+              <Separator className="bg-[#e5e7eb] my-4" />
+
+              {/* Logout Button */}
+              <Button
+                variant="outline"
+                className="w-full gap-2 border-[#eb5b3c]/30 text-[#eb5b3c] hover:bg-[#eb5b3c]/10 hover:text-[#eb5b3c]"
+                onClick={handleLogout}
+              >
+                <LogOut className="size-4" />
+                Logout
+              </Button>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* ── Right: Top Section - Account Balance ──────────── */}
+        {/* ── Right: Top Section - Virtual Balance ──────────── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="lg:col-span-2"
         >
-          <Card className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-sm border-l-4 border-l-amber-500">
+          <Card className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm border-l-4 border-l-[#5367ff]">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-                    Account Balance
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-[#6b7280]">
+                    Virtual Balance
                   </p>
-                  <h3 className="font-mono-data text-2xl sm:text-3xl font-bold text-white mt-1">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] mt-1">
                     {formatINRWhole(currentPortfolioValue)}
                     <span className="text-lg opacity-50">.{Math.abs(currentPortfolioValue % 1).toFixed(2).substring(2)}</span>
                   </h3>
-                  <div className={`mt-2 flex items-center gap-1.5 text-xs font-semibold ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <div className={`mt-2 flex items-center gap-1.5 text-xs font-semibold ${isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
                     {isProfit ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                     {isProfit ? '+' : ''}{totalReturn.toFixed(2)}% overall return
                   </div>
                 </div>
                 <Button
-                  className="gap-1.5 bg-amber-500 text-black font-semibold shadow-md hover:bg-amber-400 active:scale-[0.98]"
+                  className="gap-1.5 bg-[#5367ff] text-white font-semibold shadow-md hover:bg-[#4458e0] active:scale-[0.98]"
                   onClick={() => setCurrentPage('trading')}
                 >
                   <TrendingUp className="size-4" />
@@ -360,71 +342,32 @@ export function ProfilePage() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {/* Initial Capital */}
-                <div className="rounded-xl bg-[#0d111c]/50 p-3 border border-[#1f2937]/30">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                <div className="rounded-xl bg-[#f5f7fa] p-3 border border-[#e5e7eb]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                     Initial Capital
                   </p>
-                  <p className="font-mono-data text-base font-bold text-gray-400 mt-1">
+                  <p className="text-base font-bold text-[#6b7280] mt-1">
                     ₹1,00,000
                   </p>
                 </div>
-
-                {/* Current Value */}
-                <div className="rounded-xl bg-[#0d111c]/50 p-3 border border-[#1f2937]/30">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                <div className="rounded-xl bg-[#f5f7fa] p-3 border border-[#e5e7eb]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                     Current Value
                   </p>
-                  <p className="font-mono-data text-base font-bold text-white mt-1">
+                  <p className="text-base font-bold text-[#1a1a2e] mt-1">
                     {formatINRWhole(currentPortfolioValue)}
                   </p>
                 </div>
-
-                {/* Net P&L */}
                 <div className={`rounded-xl p-3 border ${
                   isProfit
-                    ? 'bg-emerald-500/5 border-emerald-500/20'
-                    : 'bg-red-500/5 border-red-500/20'
+                    ? 'bg-[#00d09c]/5 border-[#00d09c]/20'
+                    : 'bg-[#eb5b3c]/5 border-[#eb5b3c]/20'
                 }`}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                    Net P&L
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
+                    Total P&L
                   </p>
-                  <p className={`font-mono-data text-base font-bold mt-1 ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>
+                  <p className={`text-base font-bold mt-1 ${isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
                     {isProfit ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
-                  </p>
-                </div>
-
-                {/* Realized P&L */}
-                <div className="rounded-xl bg-[#0d111c]/50 p-3 border border-[#1f2937]/30">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                    Realized P&L
-                  </p>
-                  <p className={`font-mono-data text-base font-bold mt-1 ${
-                    (portfolio?.totalRealizedPnl ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'
-                  }`}>
-                    {(portfolio?.totalRealizedPnl ?? 0) >= 0 ? '+' : '-'}{formatINR(Math.abs(portfolio?.totalRealizedPnl ?? 0))}
-                  </p>
-                </div>
-
-                {/* Unrealized P&L */}
-                <div className="rounded-xl bg-[#0d111c]/50 p-3 border border-[#1f2937]/30">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                    Unrealized P&L
-                  </p>
-                  <p className={`font-mono-data text-base font-bold mt-1 ${
-                    (portfolio?.totalUnrealizedPnl ?? 0) >= 0 ? 'text-emerald-500' : 'text-red-500'
-                  }`}>
-                    {(portfolio?.totalUnrealizedPnl ?? 0) >= 0 ? '+' : '-'}{formatINR(Math.abs(portfolio?.totalUnrealizedPnl ?? 0))}
-                  </p>
-                </div>
-
-                {/* Available Margin */}
-                <div className="rounded-xl bg-[#0d111c]/50 p-3 border border-[#1f2937]/30">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                    Available Margin
-                  </p>
-                  <p className="font-mono-data text-base font-bold text-white mt-1">
-                    {formatINR(portfolio?.availableMargin ?? (user?.virtualBalance ?? initialCapital))}
                   </p>
                 </div>
               </div>
@@ -439,52 +382,133 @@ export function ProfilePage() {
           transition={{ delay: 0.2 }}
           className="lg:col-span-2"
         >
-          <Card className="rounded-xl border border-[#1f2937]/60 bg-[#111827] shadow-sm">
+          <Card className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold text-white">
+                <CardTitle className="text-base font-semibold text-[#1a1a2e]">
                   Trading Stats
                 </CardTitle>
-                <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-0 text-xs font-semibold">
+                <Badge variant="secondary" className="bg-[#5367ff]/10 text-[#5367ff] border-0 text-xs font-semibold">
                   {portfolio?.openPositionsCount ?? 0} Open Position{(portfolio?.openPositionsCount ?? 0) !== 1 ? 's' : ''}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {accountStats.map((stat, idx) => {
-                  const Icon = stat.icon
-                  return (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 + idx * 0.05 }}
-                      className={`rounded-xl border border-[#1f2937]/40 bg-[#0d111c]/50 p-3 border-l-4 ${stat.borderColor} hover:bg-[#0d111c]/80 transition-colors`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-400">
-                          {stat.label}
-                        </p>
-                        <div className={`size-6 rounded-md ${stat.bgColor} flex items-center justify-center`}>
-                          <Icon className={`size-3 ${stat.textColor}`} />
-                        </div>
-                      </div>
-                      <p className={`font-mono-data text-sm font-bold ${stat.textColor}`}>
-                        {stat.value}
-                      </p>
-                    </motion.div>
-                  )
-                })}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {/* Total Trades */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] p-3 border-l-4 border-l-[#5367ff]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Total Trades</p>
+                    <div className="size-6 rounded-md bg-[#5367ff]/10 flex items-center justify-center">
+                      <BarChart3 className="size-3 text-[#5367ff]" />
+                    </div>
+                  </div>
+                  <p className="font-mono text-sm font-bold text-[#5367ff]">{totalTrades}</p>
+                </motion.div>
+
+                {/* Win Rate */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className={`rounded-xl border p-3 border-l-4 ${winRate >= 50 ? 'border-l-[#00d09c] bg-[#00d09c]/5 border-[#e5e7eb]' : 'border-l-[#eb5b3c] bg-[#eb5b3c]/5 border-[#e5e7eb]'}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Win Rate</p>
+                    <div className={`size-6 rounded-md flex items-center justify-center ${winRate >= 50 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
+                      <Target className={`size-3 ${winRate >= 50 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`} />
+                    </div>
+                  </div>
+                  <p className={`font-mono text-sm font-bold ${winRate >= 50 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                    {winRate.toFixed(1)}%
+                  </p>
+                </motion.div>
+
+                {/* Total P&L */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className={`rounded-xl border p-3 border-l-4 ${isProfit ? 'border-l-[#00d09c] bg-[#00d09c]/5 border-[#e5e7eb]' : 'border-l-[#eb5b3c] bg-[#eb5b3c]/5 border-[#e5e7eb]'}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Total P&L</p>
+                    <div className={`size-6 rounded-md flex items-center justify-center ${isProfit ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
+                      {isProfit ? <TrendingUp className="size-3 text-[#00d09c]" /> : <TrendingDown className="size-3 text-[#eb5b3c]" />}
+                    </div>
+                  </div>
+                  <p className={`font-mono text-sm font-bold ${isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                    {isProfit ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
+                  </p>
+                </motion.div>
+
+                {/* Margin Used */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.45 }}
+                  className="rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] p-3 border-l-4 border-l-[#6b7280]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Margin Used</p>
+                    <div className="size-6 rounded-md bg-[#6b7280]/10 flex items-center justify-center">
+                      <Landmark className="size-3 text-[#6b7280]" />
+                    </div>
+                  </div>
+                  <p className="font-mono text-sm font-bold text-[#1a1a2e]">
+                    {formatINR(portfolio?.marginUsed ?? user?.marginUsed ?? 0)}
+                  </p>
+                </motion.div>
+
+                {/* Available Margin */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] p-3 border-l-4 border-l-[#5367ff]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Available</p>
+                    <div className="size-6 rounded-md bg-[#5367ff]/10 flex items-center justify-center">
+                      <Wallet className="size-3 text-[#5367ff]" />
+                    </div>
+                  </div>
+                  <p className="font-mono text-sm font-bold text-[#5367ff]">
+                    {formatINR(portfolio?.availableMargin ?? (user?.virtualBalance ?? initialCapital))}
+                  </p>
+                </motion.div>
+
+                {/* Realized P&L */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55 }}
+                  className={`rounded-xl border p-3 border-l-4 ${(portfolio?.totalRealizedPnl ?? 0) >= 0 ? 'border-l-[#00d09c] bg-[#00d09c]/5 border-[#e5e7eb]' : 'border-l-[#eb5b3c] bg-[#eb5b3c]/5 border-[#e5e7eb]'}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Realized P&L</p>
+                    <div className={`size-6 rounded-md flex items-center justify-center ${(portfolio?.totalRealizedPnl ?? 0) >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
+                      <IndianRupee className={`size-3 ${(portfolio?.totalRealizedPnl ?? 0) >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`} />
+                    </div>
+                  </div>
+                  <p className={`font-mono text-sm font-bold ${(portfolio?.totalRealizedPnl ?? 0) >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                    {(portfolio?.totalRealizedPnl ?? 0) >= 0 ? '+' : '-'}{formatINR(Math.abs(portfolio?.totalRealizedPnl ?? 0))}
+                  </p>
+                </motion.div>
               </div>
 
-              <Separator className="bg-[#1f2937]/40 my-5" />
+              <Separator className="bg-[#e5e7eb] my-5" />
 
               {/* Account Actions */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="outline"
-                  className="gap-2 border-[#1f2937]/50 text-gray-400 hover:bg-[#0d111c] hover:text-white"
+                  className="gap-2 border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e]"
                   onClick={() => setCurrentPage('reports')}
                 >
                   <BarChart3 className="size-4" />
@@ -492,15 +516,15 @@ export function ProfilePage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="gap-2 border-[#1f2937]/50 text-gray-400 hover:bg-[#0d111c] hover:text-white"
+                  className="gap-2 border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e]"
                   onClick={() => setCurrentPage('portfolio')}
                 >
-                  <Briefcase className="size-4" />
+                  <Wallet className="size-4" />
                   Portfolio
                 </Button>
                 <Button
                   variant="outline"
-                  className="gap-2 border-red-500/30 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                  className="gap-2 border-[#eb5b3c]/30 text-[#eb5b3c] hover:bg-[#eb5b3c]/10 hover:text-[#eb5b3c]"
                   onClick={handleResetAccount}
                 >
                   <RotateCcw className="size-4" />

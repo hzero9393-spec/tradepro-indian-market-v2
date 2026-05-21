@@ -48,71 +48,71 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
 
   const initials = userName
     ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'SV'
+    : 'TP'
 
   return (
     <aside
-      className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col md:flex"
+      className="fixed left-0 top-0 z-40 hidden h-screen w-[240px] flex-col md:flex"
       role="navigation"
       aria-label="Main navigation"
     >
       <div
         className="flex h-full flex-col border-r"
         style={{
-          background: '#111827',
-          borderColor: '#1f2937',
+          background: '#ffffff',
+          borderColor: '#e5e7eb',
         }}
       >
         {/* Branding Area */}
-        <div className="flex items-center gap-3 px-5 py-4">
+        <div className="flex items-center gap-3 px-5 py-5">
           <div
-            className="flex size-9 items-center justify-center rounded-xl shadow-lg"
+            className="flex size-9 items-center justify-center rounded-lg"
             style={{
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              background: '#5367ff',
             }}
           >
-            <TrendingUp className="size-4.5 text-white" />
+            <TrendingUp className="size-[18px] text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-[#f9fafb]">
-              StockVerse
+            <h1
+              className="text-[15px] font-bold tracking-tight"
+              style={{ color: '#111827' }}
+            >
+              TradePro
             </h1>
             <p
-              className="text-[10px] font-medium tracking-widest uppercase"
+              className="text-[10px] font-medium tracking-wide uppercase"
               style={{ color: '#9ca3af' }}
             >
-              Market Simulator
+              Indian Market Platform
             </p>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="mx-4 h-px" style={{ background: '#1f2937' }} />
-
         {/* User Profile Card */}
         {userName && (
-          <div className="px-3 py-3">
+          <div className="px-3 pb-2">
             <button
               onClick={() => setCurrentPage('profile')}
-              className="flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors duration-200"
-              style={{ background: '#0a0e17' }}
+              className="flex w-full items-center gap-3 rounded-xl p-2.5 transition-colors duration-150 hover:bg-[#f3f4f6]"
+              style={{ background: '#f9fafb' }}
             >
-              <Avatar className="size-8" style={{ border: '1px solid #1f2937' }}>
+              <Avatar className="size-8">
                 <AvatarFallback
                   className="text-xs font-bold"
                   style={{
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    color: '#f59e0b',
+                    background: '#5367ff',
+                    color: '#ffffff',
                   }}
                 >
                   {initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-semibold text-[#f9fafb] truncate">
+                <p className="text-sm font-semibold text-[#111827] truncate">
                   {userName}
                 </p>
-                <p className="text-[10px] truncate" style={{ color: '#9ca3af' }}>
+                <p className="text-[11px] truncate" style={{ color: '#9ca3af' }}>
                   {userEmail || 'Paper Trading'}
                 </p>
               </div>
@@ -120,8 +120,11 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
           </div>
         )}
 
+        {/* Divider */}
+        <div className="mx-4 h-px" style={{ background: '#e5e7eb' }} />
+
         {/* Main Navigation */}
-        <ScrollArea className="flex-1 px-3 py-1 custom-scrollbar-dark">
+        <ScrollArea className="flex-1 px-3 py-2 sidebar-scrollbar">
           <nav className="flex flex-col gap-0.5">
             {mainNavItems.map((item) => {
               const isActive = currentPage === item.id
@@ -131,57 +134,54 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
                   key={item.id}
                   onClick={() => setCurrentPage(item.id)}
                   className={cn(
-                    'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 outline-none',
-                    'focus-visible:ring-2 focus-visible:ring-amber-500/30',
+                    'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150 outline-none',
+                    'focus-visible:ring-2 focus-visible:ring-[#5367ff]/20',
                   )}
                   style={{
-                    background: isActive ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
-                    color: isActive ? '#fbbf24' : '#9ca3af',
-                    borderLeft: isActive ? '3px solid #f59e0b' : '3px solid transparent',
+                    background: isActive ? '#eef0ff' : 'transparent',
+                    color: isActive ? '#5367ff' : '#6b7280',
+                    borderLeft: isActive ? '3px solid #5367ff' : '3px solid transparent',
                   }}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <Icon
-                    className={cn(
-                      'size-[18px] transition-all duration-200',
-                    )}
-                    style={{ color: isActive ? '#fbbf24' : '#6b7280' }}
+                    className="size-[18px] shrink-0 transition-colors duration-150"
+                    style={{ color: isActive ? '#5367ff' : '#9ca3af' }}
                   />
                   <span className={cn(isActive && 'font-semibold')}>
                     {item.label}
                   </span>
-                  {isActive && (
-                    <div
-                      className="ml-auto h-1.5 w-1.5 rounded-full"
-                      style={{ background: '#f59e0b' }}
-                    />
-                  )}
                 </button>
               )
             })}
           </nav>
         </ScrollArea>
 
-        {/* Bottom Section */}
-        <div className="px-3 py-3" style={{ borderTop: '1px solid #1f2937' }}>
+        {/* Bottom Section - Separator */}
+        <div className="px-4 py-2">
+          <div className="h-px" style={{ background: '#e5e7eb' }} />
+        </div>
+
+        {/* Bottom Navigation */}
+        <div className="px-3 pb-4">
           <nav className="flex flex-col gap-0.5">
             {/* Profile */}
             <button
               onClick={() => setCurrentPage('profile')}
               className={cn(
-                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 outline-none',
-                'focus-visible:ring-2 focus-visible:ring-amber-500/30',
+                'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150 outline-none',
+                'focus-visible:ring-2 focus-visible:ring-[#5367ff]/20',
               )}
               style={{
-                background: currentPage === 'profile' ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
-                color: currentPage === 'profile' ? '#fbbf24' : '#9ca3af',
-                borderLeft: currentPage === 'profile' ? '3px solid #f59e0b' : '3px solid transparent',
+                background: currentPage === 'profile' ? '#eef0ff' : 'transparent',
+                color: currentPage === 'profile' ? '#5367ff' : '#6b7280',
+                borderLeft: currentPage === 'profile' ? '3px solid #5367ff' : '3px solid transparent',
               }}
               aria-current={currentPage === 'profile' ? 'page' : undefined}
             >
               <User
-                className="size-[18px] transition-all duration-200"
-                style={{ color: currentPage === 'profile' ? '#fbbf24' : '#6b7280' }}
+                className="size-[18px] shrink-0 transition-colors duration-150"
+                style={{ color: currentPage === 'profile' ? '#5367ff' : '#9ca3af' }}
               />
               <span className={cn(currentPage === 'profile' && 'font-semibold')}>
                 Profile
@@ -191,29 +191,29 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
             {/* Sign Out */}
             <button
               onClick={onLogout}
-              className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 outline-none hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-500/30"
+              className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-150 outline-none hover:bg-[#fef2f2] focus-visible:ring-2 focus-visible:ring-[#eb5b3c]/20"
               style={{ color: '#6b7280', borderLeft: '3px solid transparent' }}
             >
-              <LogOut className="size-[18px] transition-all duration-200 group-hover:text-red-400" />
-              <span className="group-hover:text-red-400 transition-colors duration-200">Sign Out</span>
+              <LogOut className="size-[18px] shrink-0 transition-colors duration-150 group-hover:text-[#eb5b3c]" />
+              <span className="transition-colors duration-150 group-hover:text-[#eb5b3c]">Sign Out</span>
             </button>
           </nav>
         </div>
       </div>
 
       <style jsx global>{`
-        .custom-scrollbar-dark::-webkit-scrollbar {
+        .sidebar-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
-        .custom-scrollbar-dark::-webkit-scrollbar-track {
+        .sidebar-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
-        .custom-scrollbar-dark::-webkit-scrollbar-thumb {
-          background: #374151;
+        .sidebar-scrollbar::-webkit-scrollbar-thumb {
+          background: #d1d5db;
           border-radius: 10px;
         }
-        .custom-scrollbar-dark::-webkit-scrollbar-thumb:hover {
-          background: #4b5563;
+        .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
         }
       `}</style>
     </aside>

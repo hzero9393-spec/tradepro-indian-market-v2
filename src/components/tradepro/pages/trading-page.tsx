@@ -2,63 +2,30 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
-  Area,
-  Bar,
-  ComposedChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Search,
-  LayoutGrid,
-  List,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Plus,
   ArrowUpRight,
   ArrowDownRight,
-  CandlestickChart,
-  Newspaper,
-  Clock,
-  Radio,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  RefreshCw,
+  Minus,
+  Plus,
   Loader2,
-  XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
+import { useAppStore } from '@/lib/store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -114,128 +81,180 @@ interface PortfolioData {
   openPositionsCount: number
 }
 
-// ─── Static Data ──────────────────────────────────────────────────────────
+// ─── Tab Filter Types ─────────────────────────────────────────────────────
 
-const marketNews = [
-  { title: 'RBI Holds Repo Rate Steady at 6.5%', source: 'ET Markets', time: '12m ago', icon: Radio },
-  { title: 'NIFTY 50 Hits All-Time High on FII Inflows', source: 'Moneycontrol', time: '34m ago', icon: TrendingUp },
-  { title: 'SEBI Tightens F&O Margin Rules for Retail Traders', source: 'NDTV Profit', time: '1h ago', icon: CandlestickChart },
+type StockTab = 'all' | 'nifty50' | 'bankNifty' | 'fno' | 'gainers' | 'losers'
+
+const tabs: { id: StockTab; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'nifty50', label: 'NIFTY 50' },
+  { id: 'bankNifty', label: 'Bank Nifty' },
+  { id: 'fno', label: 'F&O' },
+  { id: 'gainers', label: 'Gainers' },
+  { id: 'losers', label: 'Losers' },
 ]
 
-const chartConfig = {
-  price: { label: 'Price', color: '#f59e0b' },
-  volume: { label: 'Volume', color: '#374151' },
-} satisfies ChartConfig
+// NIFTY 50 symbols (major constituents)
+const NIFTY50_SYMBOLS = new Set([
+  'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'HINDUNILVR',
+  'SBIN', 'BHARTIARTL', 'ITC', 'KOTAKBANK', 'LT', 'AXISBANK',
+  'BAJFINANCE', 'ASIANPAINT', 'MARUTI', 'SUNPHARMA', 'TATAMOTORS',
+  'WIPRO', 'HCLTECH', 'ULTRACEMCO', 'TITAN', 'NESTLEIND', 'NTPC',
+  'POWERGRID', 'ONGC', 'TATASTEEL', 'ADANIENT', 'ADANIPORTS',
+  'JSWSTEEL', 'COALINDIA', 'BPCL', 'HINDALCO', 'GRASIM',
+  'TECHM', 'BAJAJFINSV', 'DRREDDY', 'CIPLA', 'EICHERMOT',
+  'TATACONSUM', 'HEROMOTOCO', 'M&M', 'APOLLOHOSP', 'DIVISLAB',
+  'BRITANNIA', 'INDUSINDBK', 'HDFCLIFE', 'SBILIFE', 'TATAMTRDVR',
+])
 
-const timeRanges = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'] as const
+// Bank Nifty symbols
+const BANKNIFTY_SYMBOLS = new Set([
+  'HDFCBANK', 'ICICIBANK', 'SBIN', 'KOTAKBANK', 'AXISBANK',
+  'BANKBARODA', 'PNB', 'INDUSINDBK', 'AUBANK', 'BANDHANBNK',
+  'FEDERALBNK', 'IDFCFIRSTB', 'CANBK', 'UNIONBANK', 'IOB',
+  'CENTRALBK', 'BANKINDIA', 'MAHABANK', 'UCOBANK', 'INDIANB',
+])
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-function generateChartData(basePrice: number) {
-  return Array.from({ length: 48 }, (_, i) => {
-    const range = basePrice * 0.01 // ~1% range
-    const trend = (i / 48) * range
-    const noise = Math.sin(i * 0.5) * (range * 0.3) + Math.cos(i * 0.8) * (range * 0.2)
-    const open = basePrice - range * 0.5 + trend + noise
-    const close = open + (Math.random() - 0.45) * (range * 0.4)
-    const high = Math.max(open, close) + Math.random() * (range * 0.15)
-    const low = Math.min(open, close) - Math.random() * (range * 0.15)
-    const volume = Math.round(2000000 + Math.random() * 3000000)
-    const hour = Math.floor(i / 4)
-    const minute = (i % 4) * 15
-    return {
-      time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
-      price: Math.round(close * 100) / 100,
-      open: Math.round(open * 100) / 100,
-      high: Math.round(high * 100) / 100,
-      low: Math.round(low * 100) / 100,
-      close: Math.round(close * 100) / 100,
-      volume,
-      barValue: close >= open ? volume : -volume,
-    }
-  })
-}
-
 function calculateBrokerage(totalValue: number): number {
-  const brokeragePercent = 0.0005 // 0.05%
+  const brokeragePercent = 0.0005
   const calculated = totalValue * brokeragePercent
   return Math.max(20, Math.min(500, Math.round(calculated * 100) / 100))
 }
 
-function generateSparkline(basePrice: number, changePercent: number): number[] {
-  const points: number[] = []
-  const startPrice = basePrice / (1 + changePercent / 100)
-  for (let i = 0; i < 6; i++) {
-    const progress = i / 5
-    const noise = (Math.random() - 0.5) * basePrice * 0.003
-    points.push(startPrice + (basePrice - startPrice) * progress + noise)
-  }
-  return points
+function formatINR(value: number): string {
+  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-// ─── Mini Sparkline Component ─────────────────────────────────────────────
+function formatVolume(vol: number): string {
+  if (vol >= 10000000) return (vol / 10000000).toFixed(2) + ' Cr'
+  if (vol >= 100000) return (vol / 100000).toFixed(2) + ' L'
+  if (vol >= 1000) return (vol / 1000).toFixed(1) + ' K'
+  return vol.toString()
+}
 
-function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }) {
-  const min = Math.min(...data)
-  const max = Math.max(...data)
-  const range = max - min || 1
-  const w = 60
-  const h = 24
-  const points = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * w
-      const y = h - ((v - min) / range) * h
-      return `${x},${y}`
-    })
-    .join(' ')
+function getSectorColor(sector: string): string {
+  const colors: Record<string, string> = {
+    'Banking': 'bg-[#5367ff]/8 text-[#5367ff]',
+    'IT': 'bg-[#00d09c]/8 text-[#00d09c]',
+    'Pharma': 'bg-purple-500/8 text-purple-600',
+    'Auto': 'bg-orange-500/8 text-orange-600',
+    'FMCG': 'bg-pink-500/8 text-pink-600',
+    'Energy': 'bg-yellow-500/8 text-yellow-700',
+    'Metals': 'bg-gray-500/8 text-gray-600',
+    'Financial Services': 'bg-[#5367ff]/8 text-[#5367ff]',
+    'Telecom': 'bg-teal-500/8 text-teal-600',
+    'Cement': 'bg-amber-500/8 text-amber-700',
+    'Infrastructure': 'bg-sky-500/8 text-sky-600',
+  }
+  return colors[sector] || 'bg-[#6b7280]/8 text-[#6b7280]'
+}
 
+// ─── Skeleton Row ─────────────────────────────────────────────────────────
+
+function SkeletonRow() {
   return (
-    <svg width={w} height={h} className="shrink-0">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={positive ? '#10b981' : '#ef4444'}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <div className="flex items-center justify-between px-5 py-4">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="min-w-0">
+          <Skeleton className="h-4 w-20 mb-1.5 bg-[#f0f0f5]" />
+          <Skeleton className="h-3 w-28 bg-[#f0f0f5]" />
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-5 w-14 bg-[#f0f0f5] rounded-full" />
+        <div className="text-right min-w-[100px]">
+          <Skeleton className="h-5 w-20 mb-1 bg-[#f0f0f5] ml-auto" />
+        </div>
+        <Skeleton className="h-6 w-16 bg-[#f0f0f5] rounded-full" />
+      </div>
+    </div>
   )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────
+// ─── Stock Row Component ──────────────────────────────────────────────────
 
-export function TradingPage() {
-  const { token, user } = useAuthStore()
+function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => void }) {
+  const isPositive = stock.changePercent >= 0
+
+  return (
+    <motion.button
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#f8f9fb] transition-colors cursor-pointer text-left border-b border-[#f0f2f5] last:border-b-0 group"
+      whileTap={{ scale: 0.998 }}
+    >
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-sm text-[#1a1a2e] truncate">{stock.symbol}</span>
+            {stock.isFnoBan && (
+              <span className="text-[8px] font-bold bg-[#eb5b3c]/10 text-[#eb5b3c] px-1.5 py-0.5 rounded uppercase tracking-wider">
+                F&O Ban
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-[#6b7280] truncate mt-0.5 max-w-[200px]">{stock.name}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+        {/* Sector tag - hidden on very small screens */}
+        <span className={`hidden md:inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full ${getSectorColor(stock.sector)}`}>
+          {stock.sector}
+        </span>
+        {/* LTP */}
+        <div className="text-right min-w-[90px]">
+          <span className="text-base font-bold font-mono text-[#1a1a2e]">
+            {formatINR(stock.currentPrice)}
+          </span>
+        </div>
+        {/* Change pill */}
+        <div className={`inline-flex items-center gap-0.5 px-2.5 py-1 rounded-md text-xs font-bold min-w-[72px] justify-center ${
+          isPositive
+            ? 'bg-[#00d09c]/10 text-[#00d09c]'
+            : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+        }`}>
+          {isPositive ? (
+            <ArrowUpRight className="size-3" />
+          ) : (
+            <ArrowDownRight className="size-3" />
+          )}
+          {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
+        </div>
+      </div>
+    </motion.button>
+  )
+}
+
+// ─── Order Panel Component ────────────────────────────────────────────────
+
+function OrderPanel({
+  selectedStock,
+  token,
+  onTradeSuccess: handleTradeSuccess,
+  portfolio,
+  user,
+}: {
+  selectedStock: TradeableStock | null
+  token: string | null
+  onTradeSuccess: () => Promise<void>
+  portfolio: PortfolioData | null
+  user: { virtualBalance?: number; marginUsed?: number } | null
+}) {
   const { showTradeSuccess } = useTradeSuccess()
-
-  // ── State ─────────────────────────────────────────────────────────────
-  const [stocks, setStocks] = useState<TradeableStock[]>([])
-  const [selectedStock, setSelectedStock] = useState<TradeableStock | null>(null)
-  const [positions, setPositions] = useState<Position[]>([])
-  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
-
-  const [loadingStocks, setLoadingStocks] = useState(true)
-  const [loadingPositions, setLoadingPositions] = useState(true)
-  const [placingOrder, setPlacingOrder] = useState(false)
-  const [squaringOff, setSquaringOff] = useState<string | null>(null)
-
-  const [activeRange, setActiveRange] = useState<string>('15m')
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy')
   const [orderType, setOrderType] = useState('MARKET')
   const [productType, setProductType] = useState('INTRADAY')
   const [quantity, setQuantity] = useState(10)
   const [price, setPrice] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [placingOrder, setPlacingOrder] = useState(false)
 
-  // ── Chart Data ────────────────────────────────────────────────────────
-  const chartData = useMemo(() => {
-    const base = selectedStock?.currentPrice ?? 1000
-    return generateChartData(base)
-  }, [selectedStock?.currentPrice])
+  useEffect(() => {
+    if (selectedStock) {
+      setPrice(selectedStock.currentPrice.toFixed(2))
+    }
+  }, [selectedStock])
 
-  // ── Estimated Total & Brokerage ───────────────────────────────────────
   const estimatedTotal = useMemo(() => {
     const p = orderType === 'MARKET'
       ? (selectedStock?.currentPrice ?? 0)
@@ -247,74 +266,9 @@ export function TradingPage() {
     return calculateBrokerage(estimatedTotal)
   }, [estimatedTotal])
 
-  // ── Fetch Stocks ──────────────────────────────────────────────────────
-  const fetchStocks = useCallback(async () => {
-    if (!token) return
-    setLoadingStocks(true)
-    try {
-      const res = await fetch('/api/trade/stocks', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const data = await res.json()
-      if (data.success && Array.isArray(data.data)) {
-        setStocks(data.data)
-        // Default to first stock if none selected
-        if (data.data.length > 0 && !selectedStock) {
-          setSelectedStock(data.data[0])
-        }
-      } else {
-        toast.error('Failed to load stocks')
-      }
-    } catch {
-      toast.error('Network error loading stocks')
-    } finally {
-      setLoadingStocks(false)
-    }
-  }, [token])
+  const availableBalance = portfolio?.virtualBalance ?? user?.virtualBalance ?? 0
+  const buyingPower = portfolio?.availableMargin ?? ((user?.virtualBalance ?? 0) - (user?.marginUsed ?? 0))
 
-  // ── Fetch Positions ───────────────────────────────────────────────────
-  const fetchPositions = useCallback(async () => {
-    if (!token) return
-    setLoadingPositions(true)
-    try {
-      const res = await fetch('/api/trade/positions', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const data = await res.json()
-      if (data.success && Array.isArray(data.data)) {
-        setPositions(data.data)
-      } else {
-        toast.error('Failed to load positions')
-      }
-    } catch {
-      toast.error('Network error loading positions')
-    } finally {
-      setLoadingPositions(false)
-    }
-  }, [token])
-
-  // ── Fetch Portfolio ───────────────────────────────────────────────────
-  const fetchPortfolio = useCallback(async () => {
-    if (!token) return
-    try {
-      const res = await fetch('/api/trade/portfolio', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const data = await res.json()
-      if (data.success && data.data) {
-        setPortfolio(data.data)
-      }
-    } catch {
-      // Silent fail for portfolio - non-critical
-    }
-  }, [token])
-
-  // ── Refresh All After Trade ───────────────────────────────────────────
-  const refreshAfterTrade = useCallback(async () => {
-    await Promise.all([fetchPositions(), fetchPortfolio()])
-  }, [fetchPositions, fetchPortfolio])
-
-  // ── Place Order ───────────────────────────────────────────────────────
   const handlePlaceOrder = async () => {
     if (!token || !selectedStock) return
 
@@ -358,12 +312,11 @@ export function TradingPage() {
         const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
         const fillPrice = orderType === 'MARKET' ? selectedStock.currentPrice : parseFloat(price)
         toast.success(
-          `${direction} ${quantity} ${selectedStock.symbol} @ ₹${fillPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+          `${direction} ${quantity} ${selectedStock.symbol} @ ${formatINR(fillPrice)}`,
           {
-            description: `Order filled successfully • Brokerage: ₹${estimatedBrokerage.toLocaleString('en-IN')}`,
+            description: `Order filled successfully • Brokerage: ${formatINR(estimatedBrokerage)}`,
           }
         )
-        // Show trade success popup
         showTradeSuccess({
           symbol: selectedStock.symbol,
           type: direction,
@@ -375,8 +328,7 @@ export function TradingPage() {
           totalValue: data.order?.totalValue,
           brokerage: data.order?.brokerage,
         })
-        // Refresh data
-        await refreshAfterTrade()
+        await handleTradeSuccess()
       } else {
         toast.error(data.error || 'Failed to place order', {
           description: 'Please check your balance and try again.',
@@ -389,53 +341,351 @@ export function TradingPage() {
     }
   }
 
-  // ── Square Off ────────────────────────────────────────────────────────
-  const handleSquareOff = async (positionId: string, symbol: string) => {
-    if (!token) return
+  if (!selectedStock) {
+    return (
+      <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="size-12 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-3">
+              <TrendingUp className="size-6 text-[#6b7280]/40" />
+            </div>
+            <p className="text-[#1a1a2e] font-semibold text-sm">No Stock Selected</p>
+            <p className="text-[#6b7280] text-xs mt-1">
+              Click on a stock to start trading
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-    setSquaringOff(positionId)
+  const isPositive = selectedStock.changePercent >= 0
+
+  return (
+    <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+      <CardContent className="p-6 space-y-5">
+        {/* Stock Info */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-lg text-[#5367ff]">{selectedStock.symbol}</span>
+              <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                isPositive
+                  ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                  : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+              }`}>
+                {isPositive ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
+                {isPositive ? '+' : ''}{selectedStock.changePercent.toFixed(2)}%
+              </span>
+            </div>
+            <p className="text-xs text-[#6b7280] mt-0.5 truncate max-w-[180px]">{selectedStock.name}</p>
+          </div>
+          <div className="text-right">
+            <span className="text-2xl font-bold font-mono text-[#1a1a2e]">
+              {formatINR(selectedStock.currentPrice)}
+            </span>
+            <p className={`text-xs font-medium ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+              {isPositive ? '+' : ''}{formatINR(selectedStock.change)} today
+            </p>
+          </div>
+        </div>
+
+        {/* Buy/Sell Toggle */}
+        <div className="flex rounded-xl bg-[#f5f7fa] p-1">
+          <button
+            className={`flex-1 h-10 rounded-lg text-sm font-bold transition-all ${
+              orderSide === 'buy'
+                ? 'bg-[#00d09c] text-white shadow-sm'
+                : 'text-[#6b7280] hover:text-[#1a1a2e]'
+            }`}
+            onClick={() => setOrderSide('buy')}
+          >
+            Buy
+          </button>
+          <button
+            className={`flex-1 h-10 rounded-lg text-sm font-bold transition-all ${
+              orderSide === 'sell'
+                ? 'bg-[#eb5b3c] text-white shadow-sm'
+                : 'text-[#6b7280] hover:text-[#1a1a2e]'
+            }`}
+            onClick={() => setOrderSide('sell')}
+          >
+            Sell
+          </button>
+        </div>
+
+        {/* Order Type & Product Type */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
+              Order Type
+            </label>
+            <select
+              value={orderType}
+              onChange={(e) => setOrderType(e.target.value)}
+              className="w-full h-9 rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#1a1a2e] px-3 focus:outline-none focus:ring-2 focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+            >
+              <option value="MARKET">Market</option>
+              <option value="LIMIT">Limit</option>
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
+              Product
+            </label>
+            <select
+              value={productType}
+              onChange={(e) => setProductType(e.target.value)}
+              className="w-full h-9 rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#1a1a2e] px-3 focus:outline-none focus:ring-2 focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+            >
+              <option value="INTRADAY">Intraday</option>
+              <option value="DELIVERY">Delivery</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Quantity */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
+            Quantity
+          </label>
+          <div className="flex items-center gap-2">
+            <button
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e] transition-colors"
+              onClick={() => setQuantity(Math.max(1, quantity - 10))}
+            >
+              <Minus className="size-3.5" />
+            </button>
+            <Input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              className="h-9 text-center font-mono border-[#e5e7eb] bg-white text-[#1a1a2e] focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+            />
+            <button
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e] transition-colors"
+              onClick={() => setQuantity(quantity + 10)}
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Limit Price */}
+        {orderType === 'LIMIT' && (
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
+              Limit Price
+            </label>
+            <Input
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="h-9 font-mono border-[#e5e7eb] bg-white text-[#1a1a2e] focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+              placeholder="0.00"
+            />
+          </div>
+        )}
+
+        {/* Order Summary */}
+        <div className="rounded-xl bg-[#f5f7fa] p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[#6b7280]">Estimated Total</span>
+            <span className="font-mono text-lg font-bold text-[#1a1a2e]">
+              {formatINR(estimatedTotal)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-[#6b7280]">Est. Brokerage (0.05%)</span>
+            <span className="font-mono text-[10px] font-medium text-[#6b7280]">
+              {formatINR(estimatedBrokerage)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between pt-1 border-t border-[#e5e7eb]">
+            <span className="text-[10px] text-[#6b7280]">Total (incl. brokerage)</span>
+            <span className="font-mono text-xs font-bold text-[#1a1a2e]">
+              {formatINR(estimatedTotal + estimatedBrokerage)}
+            </span>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          className={`w-full h-12 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+            orderSide === 'buy'
+              ? 'bg-[#00d09c] hover:bg-[#00b888] active:scale-[0.98]'
+              : 'bg-[#eb5b3c] hover:bg-[#d14e31] active:scale-[0.98]'
+          }`}
+          onClick={handlePlaceOrder}
+          disabled={placingOrder || !selectedStock}
+        >
+          {placingOrder ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="size-4 animate-spin" />
+              Placing Order...
+            </span>
+          ) : (
+            orderSide === 'buy' ? `Buy ${selectedStock.symbol}` : `Sell ${selectedStock.symbol}`
+          )}
+        </button>
+
+        {/* Account Info */}
+        <div className="space-y-2 pt-3 border-t border-[#e5e7eb]">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-[#6b7280]">Available Balance</span>
+            <span className="font-mono text-xs font-semibold text-[#1a1a2e]">
+              {formatINR(availableBalance)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-[#6b7280]">Buying Power</span>
+            <span className="font-mono text-xs font-semibold text-[#1a1a2e]">
+              {formatINR(Math.max(0, buyingPower))}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────
+
+export function TradingPage() {
+  const { token, user } = useAuthStore()
+  const { setCurrentPage } = useAppStore()
+  const { showTradeSuccess } = useTradeSuccess()
+
+  // ── State ─────────────────────────────────────────────────────────────
+  const [stocks, setStocks] = useState<TradeableStock[]>([])
+  const [gainers, setGainers] = useState<TradeableStock[]>([])
+  const [losers, setLosers] = useState<TradeableStock[]>([])
+  const [selectedStock, setSelectedStock] = useState<TradeableStock | null>(null)
+  const [positions, setPositions] = useState<Position[]>([])
+  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
+
+  const [loadingStocks, setLoadingStocks] = useState(true)
+  const [loadingGainers, setLoadingGainers] = useState(true)
+  const [loadingLosers, setLoadingLosers] = useState(true)
+  const [apiError, setApiError] = useState(false)
+
+  const [activeTab, setActiveTab] = useState<StockTab>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showOrderPanel, setShowOrderPanel] = useState(false)
+
+  // ── Fetch Stocks ──────────────────────────────────────────────────────
+  const fetchStocks = useCallback(async () => {
+    if (!token) { setLoadingStocks(false); return }
+    setLoadingStocks(true)
+    setApiError(false)
     try {
-      const res = await fetch('/api/trade/square-off', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ positionId }),
+      const res = await fetch('/api/trade/stocks', {
+        headers: { Authorization: `Bearer ${token}` },
       })
-
       const data = await res.json()
-
-      if (res.ok && data.success) {
-        const closedPos = data.closedPosition
-        const pnlStr = closedPos
-          ? `P&L: ${closedPos.realizedPnl >= 0 ? '+' : ''}₹${Math.abs(closedPos.realizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
-          : ''
-        toast.success(`Squared off ${symbol}`, {
-          description: pnlStr,
-        })
-        await refreshAfterTrade()
+      if (data.success && Array.isArray(data.data)) {
+        setStocks(data.data)
+        if (data.data.length > 0 && !selectedStock) {
+          setSelectedStock(data.data[0])
+        }
       } else {
-        toast.error(data.error || 'Failed to square off position')
+        setApiError(true)
       }
     } catch {
-      toast.error('Network error squaring off position')
+      setApiError(true)
     } finally {
-      setSquaringOff(null)
+      setLoadingStocks(false)
     }
-  }
+  }, [token])
 
-  // ── Select Stock Handler ──────────────────────────────────────────────
+  // ── Fetch Gainers ────────────────────────────────────────────────────
+  const fetchGainers = useCallback(async () => {
+    setLoadingGainers(true)
+    try {
+      const res = await fetch('/api/stocks/gainers')
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data)) {
+        setGainers(data.data)
+      }
+    } catch {
+      // Silent - will show empty state
+    } finally {
+      setLoadingGainers(false)
+    }
+  }, [])
+
+  // ── Fetch Losers ─────────────────────────────────────────────────────
+  const fetchLosers = useCallback(async () => {
+    setLoadingLosers(true)
+    try {
+      const res = await fetch('/api/stocks/losers')
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data)) {
+        setLosers(data.data)
+      }
+    } catch {
+      // Silent - will show empty state
+    } finally {
+      setLoadingLosers(false)
+    }
+  }, [])
+
+  // ── Fetch Positions ──────────────────────────────────────────────────
+  const fetchPositions = useCallback(async () => {
+    if (!token) return
+    try {
+      const res = await fetch('/api/trade/positions', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data)) {
+        setPositions(data.data)
+      }
+    } catch {
+      // Silent
+    }
+  }, [token])
+
+  // ── Fetch Portfolio ──────────────────────────────────────────────────
+  const fetchPortfolio = useCallback(async () => {
+    if (!token) return
+    try {
+      const res = await fetch('/api/trade/portfolio', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success && data.data) {
+        setPortfolio(data.data)
+      }
+    } catch {
+      // Silent
+    }
+  }, [token])
+
+  // ── Refresh After Trade ──────────────────────────────────────────────
+  const refreshAfterTrade = useCallback(async () => {
+    await Promise.all([fetchPositions(), fetchPortfolio()])
+  }, [fetchPositions, fetchPortfolio])
+
+  // ── Select Stock Handler ─────────────────────────────────────────────
   const handleSelectStock = (stock: TradeableStock) => {
     setSelectedStock(stock)
-    // Reset price when changing stock
-    setPrice(stock.currentPrice.toFixed(2))
+    // On mobile, show the order panel
+    setShowOrderPanel(true)
   }
 
-  // ── Effects ───────────────────────────────────────────────────────────
+  // ── Effects ──────────────────────────────────────────────────────────
   useEffect(() => {
     fetchStocks()
   }, [fetchStocks])
+
+  useEffect(() => {
+    fetchGainers()
+  }, [fetchGainers])
+
+  useEffect(() => {
+    fetchLosers()
+  }, [fetchLosers])
 
   useEffect(() => {
     fetchPositions()
@@ -445,632 +695,430 @@ export function TradingPage() {
     fetchPortfolio()
   }, [fetchPortfolio])
 
-  // Set initial price when selected stock changes
-  useEffect(() => {
-    if (selectedStock) {
-      setPrice(selectedStock.currentPrice.toFixed(2))
+  // ── Filtered Stocks ──────────────────────────────────────────────────
+  const displayStocks = useMemo(() => {
+    let list: TradeableStock[]
+
+    switch (activeTab) {
+      case 'gainers':
+        list = gainers
+        break
+      case 'losers':
+        list = losers
+        break
+      case 'nifty50':
+        list = stocks.filter((s) => NIFTY50_SYMBOLS.has(s.symbol))
+        break
+      case 'bankNifty':
+        list = stocks.filter((s) => BANKNIFTY_SYMBOLS.has(s.symbol))
+        break
+      case 'fno':
+        list = stocks.filter((s) => s.isFuturesAvailable || s.isOptionsAvailable)
+        break
+      default:
+        list = stocks
     }
-  }, [selectedStock])
 
-  // ── Filtered Watchlist ────────────────────────────────────────────────
-  const filteredStocks = useMemo(() => {
-    if (!searchQuery.trim()) return stocks
-    const q = searchQuery.toLowerCase()
-    return stocks.filter(
-      (s) =>
-        s.symbol.toLowerCase().includes(q) ||
-        s.name.toLowerCase().includes(q)
-    )
-  }, [stocks, searchQuery])
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      list = list.filter(
+        (s) =>
+          s.symbol.toLowerCase().includes(q) ||
+          s.name.toLowerCase().includes(q)
+      )
+    }
 
-  // ── Available Balance ─────────────────────────────────────────────────
-  const availableBalance = portfolio?.virtualBalance ?? user?.virtualBalance ?? 0
-  const buyingPower = portfolio?.availableMargin ?? ((user?.virtualBalance ?? 0) - (user?.marginUsed ?? 0))
+    return list
+  }, [stocks, gainers, losers, activeTab, searchQuery])
+
+  // ── Loading state for current tab ────────────────────────────────────
+  const isCurrentTabLoading = useMemo(() => {
+    switch (activeTab) {
+      case 'gainers':
+        return loadingGainers
+      case 'losers':
+        return loadingLosers
+      default:
+        return loadingStocks
+    }
+  }, [activeTab, loadingStocks, loadingGainers, loadingLosers])
+
+  // ── Market summary stats ─────────────────────────────────────────────
+  const marketStats = useMemo(() => {
+    const advancing = stocks.filter((s) => s.changePercent > 0).length
+    const declining = stocks.filter((s) => s.changePercent < 0).length
+    const unchanged = stocks.filter((s) => s.changePercent === 0).length
+    return { advancing, declining, unchanged, total: stocks.length }
+  }, [stocks])
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] p-4 sm:p-6 lg:p-8 space-y-5">
-      {/* ── Page Header ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Trade Execution
-          </h1>
-          <p className="text-gray-400 mt-1 text-sm">
-            Execute trades and monitor instruments in real-time.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
-            <Input
-              placeholder="Search instruments..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 w-48 sm:w-64 bg-[#0a0e17] border-[#1f2937] text-sm text-white placeholder:text-gray-500"
-            />
-          </div>
-          <div className="flex items-center rounded-lg border border-[#1f2937] bg-[#111827] p-0.5">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewMode('grid')}
-            >
-              <LayoutGrid className="size-3.5" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="size-3.5" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Watchlist Bar ───────────────────────────────────────────────── */}
-      <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
-        {loadingStocks ? (
-          // Loading skeletons
-          Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="bg-[#111827] border border-[#1f2937] rounded-xl shrink-0 w-[180px] animate-pulse">
-              <CardContent className="p-3 sm:p-4">
-                <div className="h-4 bg-[#1f2937] rounded w-20 mb-2" />
-                <div className="h-6 bg-[#1f2937] rounded w-28 mb-2" />
-                <div className="h-6 bg-[#1f2937] rounded w-16" />
-              </CardContent>
-            </Card>
-          ))
-        ) : filteredStocks.length === 0 ? (
-          <div className="flex items-center justify-center w-full py-8 text-gray-400 text-sm">
-            {searchQuery ? 'No stocks match your search.' : 'No tradeable stocks found.'}
-          </div>
-        ) : (
-          filteredStocks.map((stock) => {
-            const isPositive = stock.changePercent >= 0
-            const isSelected = selectedStock?.symbol === stock.symbol
-            const sparkline = generateSparkline(stock.currentPrice, stock.changePercent)
-            return (
-              <Card
-                key={stock.symbol}
-                className={`bg-[#111827] border border-[#1f2937] rounded-xl shrink-0 w-[180px] hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
-                  isSelected ? 'ring-2 ring-amber-500/50' : ''
-                }`}
-                style={{
-                  borderLeftColor: isPositive ? '#10b981' : '#ef4444',
-                }}
-                onClick={() => handleSelectStock(stock)}
-              >
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-sm text-white">{stock.symbol}</span>
-                    <Badge
-                      variant="secondary"
-                      className={`text-[10px] font-semibold border-0 gap-0.5 px-1.5 py-0 ${
-                        isPositive
-                          ? 'bg-emerald-500/10 text-emerald-500'
-                          : 'bg-red-500/10 text-red-500'
-                      }`}
-                    >
-                      {isPositive ? (
-                        <ArrowUpRight className="size-2.5" />
-                      ) : (
-                        <ArrowDownRight className="size-2.5" />
-                      )}
-                      {isPositive ? '+' : ''}
-                      {stock.changePercent.toFixed(2)}%
-                    </Badge>
-                  </div>
-                  <p className="font-mono-data text-lg font-semibold text-white">
-                    ₹{stock.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </p>
-                  <div className="mt-2">
-                    <MiniSparkline data={sparkline} positive={isPositive} />
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })
-        )}
-      </div>
-
-      {/* ── Main Trading Panel ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
-        {/* Chart Area - Left 3/5 */}
-        <Card className="bg-[#111827] border border-[#1f2937] rounded-xl lg:col-span-3">
-          <CardHeader className="pb-2">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="min-h-screen bg-[#f5f7fa]">
+      {/* ═══ Header ═════════════════════════════════════════════════════════ */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white border-b border-[#e5e7eb] sticky top-0 z-30"
+      >
+        <div className="px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
               <div>
-                {selectedStock ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg font-semibold text-white">
-                        {selectedStock.symbol}
-                      </CardTitle>
-                      <span className="text-sm text-gray-400">{selectedStock.name}</span>
-                      <Badge
-                        variant="secondary"
-                        className={`gap-0.5 border-0 text-[10px] font-semibold ${
-                          selectedStock.changePercent >= 0
-                            ? 'bg-emerald-500/10 text-emerald-500'
-                            : 'bg-red-500/10 text-red-500'
-                        }`}
-                      >
-                        {selectedStock.changePercent >= 0 ? (
-                          <ArrowUpRight className="size-2.5" />
-                        ) : (
-                          <ArrowDownRight className="size-2.5" />
-                        )}
-                        {selectedStock.changePercent >= 0 ? '+' : ''}
-                        {selectedStock.changePercent.toFixed(2)}%
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-2xl font-bold font-mono-data text-white">
-                        ₹{selectedStock.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </span>
-                      <span className={`text-sm font-medium ${
-                        selectedStock.changePercent >= 0 ? 'text-emerald-500' : 'text-red-500'
-                      }`}>
-                        {selectedStock.changePercent >= 0 ? '+' : ''}
-                        ₹{selectedStock.change.toLocaleString('en-IN', { minimumFractionDigits: 2 })} today
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <CardTitle className="text-lg font-semibold text-white">
-                      Select a Stock
-                    </CardTitle>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Click on a stock from the watchlist to view its chart.
-                    </p>
-                  </>
-                )}
-              </div>
-              <div className="flex items-center gap-1 bg-[#0a0e17] rounded-lg p-1 border border-[#1f2937]">
-                {timeRanges.map((range) => (
-                  <Button
-                    key={range}
-                    variant={activeRange === range ? 'default' : 'ghost'}
-                    size="sm"
-                    className={`h-7 px-2.5 text-xs font-medium ${
-                      activeRange === range
-                        ? 'bg-amber-500 text-black hover:bg-amber-600'
-                        : 'text-gray-400 hover:text-white hover:bg-[#1f2937]'
-                    }`}
-                    onClick={() => setActiveRange(range)}
-                  >
-                    {range}
-                  </Button>
-                ))}
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+                  Stocks
+                </h1>
+                <p className="text-xs text-[#6b7280] mt-0.5">
+                  Browse and trade Indian equities
+                </p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="pb-4">
-            {/* Price Chart */}
-            <ChartContainer config={chartConfig} className="h-[260px] sm:h-[300px] w-full">
-              <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis
-                  dataKey="time"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  fontSize={10}
-                  interval={7}
-                  tick={{ fill: '#9ca3af' }}
+            <div className="flex items-center gap-3">
+              {/* Search bar */}
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#6b7280]" />
+                <Input
+                  placeholder="Search stocks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-10 w-full sm:w-72 bg-[#f5f7fa] border-[#e5e7eb] text-sm text-[#1a1a2e] placeholder:text-[#6b7280] focus:ring-[#5367ff]/20 focus:border-[#5367ff] rounded-xl"
                 />
-                <YAxis
-                  yAxisId="price"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  fontSize={10}
-                  domain={['dataMin - 1', 'dataMax + 1']}
-                  tickFormatter={(value: number) => `₹${value.toFixed(0)}`}
-                  tick={{ fill: '#9ca3af' }}
-                />
-                <YAxis
-                  yAxisId="volume"
-                  orientation="right"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={false}
-                  domain={[0, 'dataMax']}
-                />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      className="bg-[#111827] border-[#1f2937] text-white"
-                      formatter={(value, name) => (
-                        <span className="font-mono-data font-semibold">
-                          {name === 'price' ? `₹${Number(value).toFixed(2)}` : Number(value).toLocaleString('en-IN')}
-                        </span>
-                      )}
-                    />
-                  }
-                />
-                <Area
-                  yAxisId="price"
-                  type="monotone"
-                  dataKey="price"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  fill="url(#fillPrice)"
-                />
-                <Bar
-                  yAxisId="volume"
-                  dataKey="volume"
-                  fill="#374151"
-                  opacity={0.4}
-                  barSize={4}
-                />
-              </ComposedChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Order Panel - Right 2/5 */}
-        <Card className="bg-[#111827] border border-[#1f2937] rounded-xl lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold text-white">
-              Order Panel
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Selected Stock Indicator */}
-            {selectedStock && (
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-[#0a0e17] border border-[#1f2937]">
-                <span className="font-bold text-sm text-amber-500">{selectedStock.symbol}</span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-400 truncate">{selectedStock.name}</span>
-                <span className="ml-auto font-mono-data text-sm font-semibold text-white">
-                  ₹{selectedStock.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
               </div>
-            )}
-
-            {/* Buy/Sell Toggle */}
-            <div className="flex rounded-lg bg-[#0a0e17] p-1 border border-[#1f2937]">
+              {/* Refresh button */}
               <Button
-                variant={orderSide === 'buy' ? 'default' : 'ghost'}
-                className={`flex-1 h-9 text-sm font-semibold ${
-                  orderSide === 'buy'
-                    ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                onClick={() => setOrderSide('buy')}
+                variant="outline"
+                size="sm"
+                className="h-10 w-10 p-0 rounded-xl border-[#e5e7eb] text-[#6b7280] hover:text-[#5367ff] hover:border-[#5367ff]/30"
+                onClick={() => {
+                  fetchStocks()
+                  fetchGainers()
+                  fetchLosers()
+                }}
               >
-                Buy
-              </Button>
-              <Button
-                variant={orderSide === 'sell' ? 'default' : 'ghost'}
-                className={`flex-1 h-9 text-sm font-semibold ${
-                  orderSide === 'sell'
-                    ? 'bg-red-500 text-white hover:bg-red-600'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                onClick={() => setOrderSide('sell')}
-              >
-                Sell
+                <RefreshCw className="size-4" />
               </Button>
             </div>
-
-            {/* Order Type */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Order Type
-              </label>
-              <Select value={orderType} onValueChange={setOrderType}>
-                <SelectTrigger className="w-full h-9 bg-[#0a0e17] border-[#1f2937] text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#111827] border-[#1f2937]">
-                  <SelectItem value="MARKET">Market</SelectItem>
-                  <SelectItem value="LIMIT">Limit</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Product Type */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Product Type
-              </label>
-              <Select value={productType} onValueChange={setProductType}>
-                <SelectTrigger className="w-full h-9 bg-[#0a0e17] border-[#1f2937] text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#111827] border-[#1f2937]">
-                  <SelectItem value="INTRADAY">Intraday</SelectItem>
-                  <SelectItem value="DELIVERY">Delivery</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Quantity */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Quantity
-              </label>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 w-9 p-0 border-[#1f2937] text-gray-400 hover:text-white hover:bg-[#1f2937]"
-                  onClick={() => setQuantity(Math.max(1, quantity - 10))}
-                >
-                  <Minus className="size-3.5" />
-                </Button>
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="h-9 text-center font-mono-data bg-[#0a0e17] border-[#1f2937] text-white"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 w-9 p-0 border-[#1f2937] text-gray-400 hover:text-white hover:bg-[#1f2937]"
-                  onClick={() => setQuantity(quantity + 10)}
-                >
-                  <Plus className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Price (for limit orders) */}
-            {orderType === 'LIMIT' && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Limit Price
-                </label>
-                <Input
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  className="h-9 font-mono-data bg-[#0a0e17] border-[#1f2937] text-white"
-                  placeholder="0.00"
-                />
-              </div>
-            )}
-
-            {/* Total & Brokerage */}
-            <div className="rounded-lg bg-[#0a0e17] p-3 border border-[#1f2937] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">Estimated Total</span>
-                <span className="font-mono-data text-lg font-bold text-white">
-                  ₹{estimatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Est. Brokerage (0.05%)</span>
-                <span className="font-mono-data text-xs font-medium text-gray-400">
-                  ₹{estimatedBrokerage.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Total (incl. brokerage)</span>
-                <span className="font-mono-data text-xs font-semibold text-white">
-                  ₹{(estimatedTotal + estimatedBrokerage).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              className={`w-full h-11 text-sm font-semibold ${
-                orderSide === 'buy'
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                  : 'bg-red-500 hover:bg-red-600 text-white'
-              }`}
-              onClick={handlePlaceOrder}
-              disabled={placingOrder || !selectedStock}
-            >
-              {placingOrder ? (
-                <>
-                  <Loader2 className="size-4 mr-2 animate-spin" />
-                  Placing Order...
-                </>
-              ) : (
-                orderSide === 'buy' ? 'Place Buy Order' : 'Place Sell Order'
-              )}
-            </Button>
-
-            {!selectedStock && (
-              <p className="text-xs text-red-500 text-center">
-                Select a stock from the watchlist to trade
-              </p>
-            )}
-
-            {/* Account Stats */}
-            <div className="space-y-2 pt-2 border-t border-[#1f2937]">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Available Balance</span>
-                <span className="font-mono-data text-sm font-semibold text-white">
-                  ₹{availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Buying Power</span>
-                <span className="font-mono-data text-sm font-semibold text-white">
-                  ₹{Math.max(0, buyingPower).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ── Active Positions ──────────────────────────────────────────────── */}
-      <Card className="bg-[#111827] border border-[#1f2937] rounded-xl">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-white">
-              Active Positions
-            </CardTitle>
-            <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-0 text-xs font-semibold">
-              {positions.length} Active
-            </Badge>
           </div>
-        </CardHeader>
-        <CardContent>
-          {loadingPositions ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="size-6 animate-spin text-gray-400" />
-              <span className="ml-2 text-sm text-gray-400">Loading positions...</span>
-            </div>
-          ) : positions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-              <Newspaper className="size-8 mb-2 opacity-40" />
-              <p className="text-sm">No open positions. Place a trade to get started!</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-[#1f2937]">
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">
-                      Symbol
-                    </TableHead>
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">
-                      Side
-                    </TableHead>
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">
-                      Segment
-                    </TableHead>
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">
-                      Qty
-                    </TableHead>
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">
-                      Avg Price
-                    </TableHead>
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">
-                      CMP
-                    </TableHead>
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">
-                      P&amp;L
-                    </TableHead>
-                    <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">
-                      Action
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {positions.map((pos) => {
-                    const isLong = pos.tradeDirection === 'BUY'
-                    return (
-                      <TableRow
-                        key={pos.id}
-                        className="border-[#1f2937] hover:bg-[#1f2937]/50"
-                      >
-                        <TableCell className="font-bold text-amber-500 text-sm">
-                          {pos.symbol}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="secondary"
-                            className={`text-[10px] font-semibold border-0 gap-0.5 ${
-                              isLong
-                                ? 'bg-emerald-500/10 text-emerald-500'
-                                : 'bg-red-500/10 text-red-500'
-                            }`}
-                          >
-                            {isLong ? (
-                              <ArrowUpRight className="size-2.5" />
-                            ) : (
-                              <ArrowDownRight className="size-2.5" />
-                            )}
-                            {isLong ? 'Long' : 'Short'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-gray-400">
-                          {pos.segment}
-                        </TableCell>
-                        <TableCell className="font-mono-data text-sm text-right text-white">
-                          {pos.quantity}
-                        </TableCell>
-                        <TableCell className="font-mono-data text-sm text-right text-gray-400">
-                          ₹{pos.entryPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="font-mono-data text-sm text-right text-white">
-                          ₹{pos.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell
-                          className={`font-mono-data text-sm font-semibold text-right ${
-                            pos.unrealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500'
-                          }`}
-                        >
-                          {pos.unrealizedPnl >= 0 ? '+' : ''}₹{Math.abs(pos.unrealizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs font-semibold border-orange-500/40 text-orange-500 hover:bg-orange-500/10 hover:text-orange-500 gap-1"
-                            onClick={() => handleSquareOff(pos.id, pos.symbol)}
-                            disabled={squaringOff === pos.id}
-                          >
-                            {squaringOff === pos.id ? (
-                              <Loader2 className="size-3 animate-spin" />
-                            ) : (
-                              <XCircle className="size-3" />
-                            )}
-                            Square Off
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+
+          {/* Market stats bar */}
+          {!loadingStocks && stocks.length > 0 && (
+            <div className="flex items-center gap-4 mt-3 text-[11px] font-semibold">
+              <span className="flex items-center gap-1 text-[#00d09c]">
+                <TrendingUp className="size-3" />
+                {marketStats.advancing} Advancing
+              </span>
+              <span className="flex items-center gap-1 text-[#eb5b3c]">
+                <TrendingDown className="size-3" />
+                {marketStats.declining} Declining
+              </span>
+              <span className="text-[#6b7280]">
+                {marketStats.unchanged} Unchanged
+              </span>
+              <span className="text-[#6b7280] ml-auto">
+                {marketStats.total} stocks
+              </span>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* ── Market News ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-stagger">
-        {marketNews.map((news, idx) => {
-          const Icon = news.icon
-          return (
-            <Card
-              key={idx}
-              className="bg-[#111827] border border-[#1f2937] rounded-xl group hover:shadow-md hover:border-amber-500/20 transition-shadow cursor-pointer"
-            >
-              <CardContent className="p-4 sm:p-5">
-                <div className="flex items-start gap-3">
-                  <div className="size-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 group-hover:bg-amber-500/20 transition-colors">
-                    <Icon className="size-4 text-amber-500" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-white leading-snug line-clamp-2">
-                      {news.title}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[11px] font-medium text-amber-500">{news.source}</span>
-                      <span className="text-gray-500">·</span>
-                      <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-                        <Clock className="size-2.5" />
-                        {news.time}
-                      </span>
+        {/* Tab filters */}
+        <div className="px-4 sm:px-6 lg:px-8 pb-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-[#5367ff] text-white shadow-sm shadow-[#5367ff]/20'
+                    : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#e5e7eb] hover:text-[#1a1a2e]'
+                }`}
+              >
+                {tab.label}
+                {tab.id === 'gainers' && gainers.length > 0 && (
+                  <span className={`ml-1 text-[10px] ${activeTab === tab.id ? 'text-white/70' : 'text-[#00d09c]'}`}>
+                    +{gainers.length}
+                  </span>
+                )}
+                {tab.id === 'losers' && losers.length > 0 && (
+                  <span className={`ml-1 text-[10px] ${activeTab === tab.id ? 'text-white/70' : 'text-[#eb5b3c]'}`}>
+                    {losers.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ═══ Main Content ═════════════════════════════════════════════════ */}
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
+        {/* API Error State */}
+        {apiError && !loadingStocks && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Card className="bg-white border border-[#eb5b3c]/20 rounded-xl shadow-sm">
+              <CardContent className="p-6 flex flex-col items-center justify-center text-center">
+                <div className="size-14 rounded-full bg-[#eb5b3c]/10 flex items-center justify-center mb-4">
+                  <AlertCircle className="size-7 text-[#eb5b3c]" />
+                </div>
+                <p className="text-[#1a1a2e] font-bold text-base">Markets data unavailable</p>
+                <p className="text-[#6b7280] text-sm mt-1 max-w-md">
+                  We couldn&apos;t connect to the market data service. Please check your connection and try again.
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-4 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+                  onClick={() => {
+                    fetchStocks()
+                    fetchGainers()
+                    fetchLosers()
+                  }}
+                >
+                  <RefreshCw className="size-3.5" />
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* ── Stock List - Left 2/3 ────────────────────────────────────── */}
+          <div className="lg:col-span-2">
+            <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
+              {/* Table header */}
+              <div className="flex items-center justify-between px-5 py-3 bg-[#f8f9fb] border-b border-[#e5e7eb]">
+                <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
+                  Instrument
+                </span>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <span className="hidden md:inline text-[10px] font-bold text-[#6b7280] uppercase tracking-wider">
+                    Sector
+                  </span>
+                  <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider text-right min-w-[90px]">
+                    LTP
+                  </span>
+                  <span className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider min-w-[72px] text-center">
+                    Change
+                  </span>
+                </div>
+              </div>
+
+              {/* Stock rows */}
+              <AnimatePresence mode="wait">
+                {isCurrentTabLoading ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <SkeletonRow key={i} />
+                    ))}
+                  </motion.div>
+                ) : displayStocks.length === 0 ? (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center justify-center py-16 text-center"
+                  >
+                    <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
+                      {searchQuery ? (
+                        <Search className="size-7 text-[#6b7280]/40" />
+                      ) : activeTab === 'gainers' ? (
+                        <TrendingUp className="size-7 text-[#6b7280]/40" />
+                      ) : activeTab === 'losers' ? (
+                        <TrendingDown className="size-7 text-[#6b7280]/40" />
+                      ) : (
+                        <AlertCircle className="size-7 text-[#6b7280]/40" />
+                      )}
                     </div>
-                  </div>
+                    <p className="text-[#1a1a2e] font-semibold text-sm">
+                      {searchQuery
+                        ? 'No stocks match your search'
+                        : activeTab === 'gainers'
+                          ? 'No gainers found'
+                          : activeTab === 'losers'
+                            ? 'No losers found'
+                            : 'No stocks found'}
+                    </p>
+                    <p className="text-[#6b7280] text-xs mt-1">
+                      {searchQuery
+                        ? 'Try a different search term'
+                        : 'Market data may be temporarily unavailable'}
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key={`list-${activeTab}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="max-h-[calc(100vh-320px)] overflow-y-auto"
+                    style={{
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: '#e5e7eb transparent',
+                    }}
+                  >
+                    {displayStocks.map((stock, index) => (
+                      <motion.div
+                        key={stock.id || stock.symbol}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(index * 0.02, 0.4), duration: 0.3 }}
+                      >
+                        <StockRow
+                          stock={stock}
+                          onClick={() => handleSelectStock(stock)}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </Card>
+          </div>
+
+          {/* ── Order Panel - Right 1/3 ──────────────────────────────────── */}
+          <div className="hidden lg:block">
+            <div className="sticky top-[140px]">
+              <OrderPanel
+                selectedStock={selectedStock}
+                token={token}
+                onTradeSuccess={refreshAfterTrade}
+                portfolio={portfolio}
+                user={user}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Mobile Order Panel Overlay ────────────────────────────────── */}
+        <AnimatePresence>
+          {showOrderPanel && selectedStock && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50 lg:hidden"
+              onClick={() => setShowOrderPanel(false)}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto bg-[#f5f7fa] rounded-t-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="sticky top-0 bg-white border-b border-[#e5e7eb] px-4 py-3 flex items-center justify-between rounded-t-2xl z-10">
+                  <span className="font-bold text-[#1a1a2e]">Place Order</span>
+                  <button
+                    className="size-8 rounded-full flex items-center justify-center hover:bg-[#f5f7fa] text-[#6b7280]"
+                    onClick={() => setShowOrderPanel(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="p-4">
+                  <OrderPanel
+                    selectedStock={selectedStock}
+                    token={token}
+                    onTradeSuccess={async () => {
+                      await refreshAfterTrade()
+                      setShowOrderPanel(false)
+                    }}
+                    portfolio={portfolio}
+                    user={user}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Open Positions Quick View ─────────────────────────────────── */}
+        {positions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mt-6"
+          >
+            <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-[#1a1a2e]">Open Positions</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-[#5367ff] text-xs font-bold hover:underline px-0"
+                    onClick={() => setCurrentPage('positions')}
+                  >
+                    VIEW ALL
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {positions.slice(0, 3).map((pos) => {
+                    const isPositive = pos.unrealizedPnl >= 0
+                    return (
+                      <div
+                        key={pos.id}
+                        className="flex items-center justify-between p-3 rounded-xl bg-[#f5f7fa] border border-[#e5e7eb]"
+                      >
+                        <div className="min-w-0">
+                          <span className="font-bold text-sm text-[#1a1a2e]">{pos.symbol}</span>
+                          <p className="text-[10px] text-[#6b7280] mt-0.5">
+                            {pos.tradeDirection === 'BUY' ? 'Long' : 'Short'} • {pos.quantity} qty
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-sm font-bold font-mono ${
+                            isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                          }`}>
+                            {isPositive ? '+' : ''}{formatINR(pos.unrealizedPnl)}
+                          </span>
+                          <p className={`text-[10px] font-medium ${
+                            isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                          }`}>
+                            {isPositive ? '+' : ''}{pos.unrealizedPnlPercent.toFixed(2)}%
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>
-          )
-        })}
+          </motion.div>
+        )}
       </div>
+
+      {/* ═══ Floating Trade Button (Mobile) ══════════════════════════════ */}
+      {selectedStock && !showOrderPanel && (
+        <div className="fixed bottom-20 right-4 z-40 lg:hidden">
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+          >
+            <Button
+              className="flex items-center gap-2 px-5 py-3 bg-[#5367ff] text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all font-bold text-sm"
+              onClick={() => setShowOrderPanel(true)}
+            >
+              Trade {selectedStock.symbol}
+            </Button>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

@@ -53,36 +53,36 @@ function LoadingScreen() {
   return (
     <div
       className="min-h-screen flex items-center justify-center"
-      style={{ background: '#0a0e17' }}
+      style={{ background: '#f5f7fa' }}
     >
       <div className="flex flex-col items-center gap-4">
         <div
           className="flex size-14 items-center justify-center rounded-2xl animate-pulse"
           style={{
-            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            background: '#5367ff',
             color: '#ffffff',
           }}
         >
           <TrendingUp className="size-7" />
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-bold text-[#f9fafb]">StockVerse</h2>
-          <p className="text-sm mt-1" style={{ color: '#9ca3af' }}>
+          <h2 className="text-lg font-bold" style={{ color: '#1a1a2e' }}>TradePro</h2>
+          <p className="text-sm mt-1" style={{ color: '#6b7280' }}>
             Loading your trading desk...
           </p>
         </div>
         <div className="flex gap-1.5 mt-2">
           <div
-            className="size-2 rounded-full bg-amber-500 animate-bounce"
-            style={{ animationDelay: '0ms' }}
+            className="size-2 rounded-full animate-bounce"
+            style={{ background: '#5367ff', animationDelay: '0ms' }}
           />
           <div
-            className="size-2 rounded-full bg-amber-500 animate-bounce"
-            style={{ animationDelay: '150ms' }}
+            className="size-2 rounded-full animate-bounce"
+            style={{ background: '#5367ff', animationDelay: '150ms' }}
           />
           <div
-            className="size-2 rounded-full bg-amber-500 animate-bounce"
-            style={{ animationDelay: '300ms' }}
+            className="size-2 rounded-full animate-bounce"
+            style={{ background: '#5367ff', animationDelay: '300ms' }}
           />
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function Home() {
 
   return (
     <TradeSuccessProvider>
-      <div className="flex min-h-screen flex-col" style={{ background: '#0a0e17' }}>
+      <div className="flex min-h-screen flex-col" style={{ background: '#f5f7fa' }}>
         {/* Desktop Sidebar */}
         <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} />
 
@@ -132,8 +132,8 @@ export default function Home() {
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="w-[260px] p-0"
-            style={{ background: '#111827', borderRight: '1px solid #1f2937' }}
+            className="w-[240px] p-0"
+            style={{ background: '#ffffff', borderRight: '1px solid #e5e7eb' }}
           >
             <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} />
           </SheetContent>
@@ -146,15 +146,15 @@ export default function Home() {
         <IndexTicker />
 
         {/* Main Content */}
-        <main className="flex-1 md:ml-[260px] pt-20 pb-20 md:pb-0">
+        <main className="flex-1 md:ml-[240px] pt-16 pb-16 md:pb-0">
           <PageContent page={currentPage} />
 
           {/* Sticky Footer */}
           <footer
             className="px-6 py-4"
             style={{
-              background: '#111827',
-              borderTop: '1px solid #1f2937',
+              background: '#ffffff',
+              borderTop: '1px solid #e5e7eb',
             }}
           >
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 max-w-7xl mx-auto">
@@ -162,13 +162,13 @@ export default function Home() {
                 <div
                   className="flex size-6 items-center justify-center rounded-md"
                   style={{
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    background: '#5367ff',
                     color: '#ffffff',
                   }}
                 >
                   <TrendingUp className="size-3.5" />
                 </div>
-                <span className="text-sm font-semibold text-[#f9fafb]">StockVerse</span>
+                <span className="text-sm font-semibold" style={{ color: '#1a1a2e' }}>TradePro</span>
                 <span className="text-xs" style={{ color: '#6b7280' }}>© 2025</span>
               </div>
               <div className="flex items-center gap-4 text-xs" style={{ color: '#6b7280' }}>

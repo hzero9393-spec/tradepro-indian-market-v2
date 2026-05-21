@@ -7,14 +7,6 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -29,33 +21,20 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Search,
   FileText,
-  CheckCircle2,
-  XCircle,
-  IndianRupee,
   ArrowUpRight,
   ArrowDownRight,
   Clock,
   ClipboardList,
-  Loader2,
-  Briefcase,
-  Calendar,
-  Hash,
+  IndianRupee,
+  CheckCircle2,
+  XCircle,
   TrendingUp,
-  TrendingDown,
-  Wallet,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
-import { toast } from 'sonner'
+import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -112,150 +91,23 @@ function formatTime(isoDate: string): string {
   return new Date(isoDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
 
-function formatDate(isoDate: string): string {
-  return new Date(isoDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+function formatShortDateTime(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) + ', ' + formatTime(isoDate)
 }
 
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
-    PENDING: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    PARTIALLY_FILLED: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    FILLED: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    CANCELLED: 'bg-red-500/10 text-red-400 border-red-500/20',
-    REJECTED: 'bg-red-500/10 text-red-400 border-red-500/20',
-    EXPIRED: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+    PENDING: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20',
+    PARTIALLY_FILLED: 'bg-[#5367ff]/10 text-[#5367ff] border-[#5367ff]/20',
+    FILLED: 'bg-[#00d09c]/10 text-[#00d09c] border-[#00d09c]/20',
+    CANCELLED: 'bg-[#eb5b3c]/10 text-[#eb5b3c] border-[#eb5b3c]/20',
+    REJECTED: 'bg-[#eb5b3c]/10 text-[#eb5b3c] border-[#eb5b3c]/20',
+    EXPIRED: 'bg-[#6b7280]/10 text-[#6b7280] border-[#6b7280]/20',
   }
   return (
-    <Badge variant="outline" className={`text-[10px] font-semibold ${variants[status] || ''}`}>
+    <Badge variant="outline" className={`text-[10px] font-bold ${variants[status] || 'bg-[#6b7280]/10 text-[#6b7280] border-[#6b7280]/20'}`}>
       {status.replace('_', ' ')}
     </Badge>
-  )
-}
-
-function isIndexSymbol(symbol: string): boolean {
-  return ['NIFTY', 'BANKNIFTY', 'SENSEX', 'FINNIFTY', 'MIDCPNIFTY'].includes(symbol.toUpperCase())
-}
-
-// ─── Order Detail Dialog ─────────────────────────────────────────
-
-function OrderDetailDialog({
-  open,
-  onClose,
-  order,
-}: {
-  open: boolean
-  onClose: () => void
-  order: OrderData | null
-}) {
-  if (!order) return null
-
-  const isBuy = order.tradeDirection === 'BUY'
-  const isPositive = (order.fillPrice ?? 0) >= order.price
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-[#111827] border-[#1f2937] text-white">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className={`text-lg font-bold ${isBuy ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isBuy ? 'BUY' : 'SELL'}
-            </span>
-            <span className="font-bold text-white">{order.symbol}</span>
-            <StatusBadge status={order.status} />
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 pt-2">
-          {/* Trade Summary */}
-          <div className={`rounded-xl p-4 ${isBuy ? 'bg-emerald-500/5 border border-emerald-500/20' : 'bg-red-500/5 border border-red-500/20'}`}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Symbol</p>
-                <p className="font-bold text-white">{order.symbol}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Trade Type</p>
-                <p className={`font-bold ${isBuy ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {isBuy ? 'BUY' : 'SELL'}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Entry Time</p>
-                <p className="text-sm font-mono text-gray-300">{formatDate(order.placedAt)} {formatTime(order.placedAt)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Exit Time</p>
-                <p className="text-sm font-mono text-gray-300">
-                  {order.filledAt ? `${formatDate(order.filledAt)} ${formatTime(order.filledAt)}` : '—'}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Quantity</p>
-                <p className="text-sm font-mono font-bold text-white">{order.quantity}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Entry Price</p>
-                <p className="text-sm font-mono font-bold text-white">{formatINR(order.fillPrice ?? order.price)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Used Capital</p>
-                <p className="text-sm font-mono font-bold text-white">{formatINR(order.totalValue)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Brokerage</p>
-                <p className="text-sm font-mono text-gray-400">{formatINR(order.brokerage)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Order Details */}
-          <div className="rounded-xl p-4 bg-[#0a0e17] border border-[#1f2937] space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Hash className="size-4 text-amber-500" />
-              <span className="text-sm font-bold text-white">Order Details</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">Order ID</p>
-                <p className="font-mono text-xs text-gray-400">#{order.id.slice(-8).toUpperCase()}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">Order Type</p>
-                <p className="font-mono text-xs text-gray-300">{order.orderType}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">Segment</p>
-                <p className="text-xs text-gray-300">{order.segment}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">Product</p>
-                <p className="text-xs text-gray-300">{order.productType}</p>
-              </div>
-              {order.optionType && (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400">Option Type</p>
-                  <p className="text-xs font-bold text-white">{order.optionType}</p>
-                </div>
-              )}
-              {order.strikePrice && (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400">Strike Price</p>
-                  <p className="text-xs font-mono text-gray-300">{formatINR(order.strikePrice)}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">Order Price</p>
-                <p className="text-xs font-mono text-gray-300">{formatINR(order.price)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400">Fill Price</p>
-                <p className="text-xs font-mono text-gray-300">{order.fillPrice ? formatINR(order.fillPrice) : '—'}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   )
 }
 
@@ -263,18 +115,16 @@ function OrderDetailDialog({
 
 export function OrdersPage() {
   const { token } = useAuthStore()
-  const [filter, setFilter] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const { setCurrentPage } = useAppStore()
   const [orders, setOrders] = useState<OrderData[]>([])
   const [trades, setTrades] = useState<TradeData[]>([])
   const [loadingOrders, setLoadingOrders] = useState(true)
   const [loadingTrades, setLoadingTrades] = useState(true)
-  const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('open')
 
+  // ─── Fetch Orders ────────────────────────────────────────
   const fetchOrders = useCallback(async () => {
-    if (!token) return
-    setLoadingOrders(true)
+    if (!token) { setLoadingOrders(false); return }
     try {
       const res = await fetch('/api/trade/orders', {
         headers: { Authorization: `Bearer ${token}` },
@@ -290,9 +140,9 @@ export function OrdersPage() {
     }
   }, [token])
 
+  // ─── Fetch Trades ────────────────────────────────────────
   const fetchTrades = useCallback(async () => {
-    if (!token) return
-    setLoadingTrades(true)
+    if (!token) { setLoadingTrades(false); return }
     try {
       const res = await fetch('/api/trade/trades?limit=50', {
         headers: { Authorization: `Bearer ${token}` },
@@ -313,32 +163,35 @@ export function OrdersPage() {
     fetchTrades()
   }, [fetchOrders, fetchTrades])
 
-  // Split orders by type
-  const indexOrders = orders.filter(o => isIndexSymbol(o.symbol) || o.segment === 'FUTURES' || o.segment === 'OPTIONS')
-  const stockOrders = orders.filter(o => !isIndexSymbol(o.symbol) && o.segment === 'EQUITY')
-
-  const indexTrades = trades.filter(t => isIndexSymbol(t.symbol) || t.segment === 'FUTURES' || t.segment === 'OPTIONS')
-  const stockTrades = trades.filter(t => !isIndexSymbol(t.symbol) && t.segment === 'EQUITY')
+  // ─── Split orders into open (non-filled/active) and trade history ──
+  const openOrders = orders.filter(o =>
+    o.status === 'PENDING' || o.status === 'PARTIALLY_FILLED'
+  )
 
   // Stats
   const filledCount = orders.filter(o => o.status === 'FILLED').length
   const totalVolume = trades.reduce((s, t) => s + t.totalValue, 0)
 
-  const handleOrderClick = (order: OrderData) => {
-    setSelectedOrder(order)
-    setDetailOpen(true)
-  }
-
-  // ─── Order Table Component ────────────────────────────────
-  const OrderTable = ({ data, showAction = false }: { data: OrderData[]; showAction?: boolean }) => {
-    if (data.length === 0) {
+  // ─── Open Orders Table ───────────────────────────────────
+  const OpenOrdersTable = () => {
+    if (openOrders.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="size-16 rounded-full bg-[#111827] border border-[#1f2937] flex items-center justify-center mb-4">
-            <FileText className="size-7 text-gray-500" />
+          <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
+            <FileText className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-white font-semibold text-sm">No orders found</p>
-          <p className="text-gray-400 text-xs mt-1.5">Your orders will appear here</p>
+          <p className="text-[#1a1a2e] font-semibold text-sm">No orders yet</p>
+          <p className="text-[#6b7280] text-xs mt-1.5">
+            Your pending orders will appear here
+          </p>
+          <Button
+            size="sm"
+            className="mt-5 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+            onClick={() => setCurrentPage('trading')}
+          >
+            <TrendingUp className="size-3.5" />
+            Place Order
+          </Button>
         </div>
       )
     }
@@ -347,53 +200,60 @@ export function OrdersPage() {
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-[#1f2937] bg-[#0a0e17]">
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">Date</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">Symbol</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">Side</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">Qty</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">Fill Price</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">Value</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">Status</TableHead>
+            <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Symbol</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Price</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Status</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Time</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {data.map((order) => {
+          <TableBody className="divide-y divide-[#e5e7eb]">
+            {openOrders.map((order) => {
               const isBuy = order.tradeDirection === 'BUY'
               return (
                 <TableRow
                   key={order.id}
-                  className="border-[#1f2937] hover:bg-[#1f2937]/50 cursor-pointer"
-                  onClick={() => handleOrderClick(order)}
+                  className="hover:bg-[#f8f9fb] transition-colors"
                 >
-                  <TableCell className="text-xs text-gray-400">
-                    <div>{formatDate(order.placedAt)}</div>
-                    <div className="font-mono-data text-[10px]">{formatTime(order.placedAt)}</div>
-                  </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm text-white">{order.symbol}</span>
+                      <span className="font-bold text-sm text-[#1a1a2e]">{order.symbol}</span>
                       {order.optionType && order.strikePrice && (
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-[10px] text-[#6b7280]">
                           {order.strikePrice} {order.optionType}
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className={`text-[10px] font-semibold border-0 gap-0.5 ${isBuy ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                  <TableCell className="py-4">
+                    <span
+                      className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                        isBuy
+                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                      }`}
+                    >
                       {isBuy ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
                       {order.tradeDirection}
-                    </Badge>
+                    </span>
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-white">{order.quantity}</TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-gray-300">
-                    {order.fillPrice ? formatINR(order.fillPrice) : '—'}
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                    {formatINR(order.price)}
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-gray-400">
-                    {formatINR(order.totalValue)}
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                    {order.quantity}
                   </TableCell>
-                  <TableCell><StatusBadge status={order.status} /></TableCell>
+                  <TableCell className="py-4">
+                    <StatusBadge status={order.status} />
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="flex items-center gap-1 text-xs text-[#6b7280]">
+                      <Clock className="size-3" />
+                      {formatShortDateTime(order.placedAt)}
+                    </div>
+                  </TableCell>
                 </TableRow>
               )
             })}
@@ -403,67 +263,86 @@ export function OrdersPage() {
     )
   }
 
-  // ─── Trade Table Component ────────────────────────────────
-  const TradeTable = ({ data }: { data: TradeData[] }) => {
-    if (data.length === 0) {
+  // ─── Trade History Table ─────────────────────────────────
+  const TradeHistoryTable = () => {
+    if (trades.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="size-16 rounded-full bg-[#111827] border border-[#1f2937] flex items-center justify-center mb-4">
-            <Briefcase className="size-7 text-gray-500" />
+          <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
+            <FileText className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-white font-semibold text-sm">No trades yet</p>
-          <p className="text-gray-400 text-xs mt-1.5">Your executed trades will appear here</p>
+          <p className="text-[#1a1a2e] font-semibold text-sm">No trade history</p>
+          <p className="text-[#6b7280] text-xs mt-1.5">
+            Your executed trades will appear here
+          </p>
         </div>
       )
     }
 
     return (
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-[#1f2937] bg-[#0a0e17]">
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">Time</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">Symbol</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider">Side</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">Qty</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">Fill Price</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">Value</TableHead>
-              <TableHead className="text-gray-400 font-semibold text-xs uppercase tracking-wider text-right">P&L</TableHead>
+            <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Symbol</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Type</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Fill Price</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">P&amp;L</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Time</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {data.map((trade) => {
+          <TableBody className="divide-y divide-[#e5e7eb]">
+            {trades.map((trade) => {
               const isPositive = (trade.pnl ?? 0) >= 0
               return (
-                <TableRow key={trade.id} className="border-[#1f2937] hover:bg-[#1f2937]/50">
-                  <TableCell className="text-xs text-gray-400">
-                    <div>{formatDate(trade.executedAt)}</div>
-                    <div className="font-mono-data text-[10px]">{formatTime(trade.executedAt)}</div>
-                  </TableCell>
-                  <TableCell>
+                <TableRow key={trade.id} className="hover:bg-[#f8f9fb] transition-colors">
+                  <TableCell className="py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm text-white">{trade.symbol}</span>
+                      <span className="font-bold text-sm text-[#1a1a2e]">{trade.symbol}</span>
                       {trade.optionType && trade.strikePrice && (
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-[10px] text-[#6b7280]">
                           {trade.strikePrice} {trade.optionType}
                         </span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className={`text-[10px] font-semibold border-0 gap-0.5 ${trade.tradeDirection === 'BUY' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                  <TableCell className="py-4">
+                    <span
+                      className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                        trade.tradeDirection === 'BUY'
+                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                      }`}
+                    >
                       {trade.tradeDirection === 'BUY' ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
                       {trade.tradeDirection}
-                    </Badge>
+                    </span>
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-white">{trade.quantity}</TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-gray-300">{formatINR(trade.fillPrice)}</TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-gray-400">{formatINR(trade.totalValue)}</TableCell>
-                  <TableCell className={`font-mono-data text-sm font-semibold text-right ${trade.pnl !== null ? (isPositive ? 'text-emerald-400' : 'text-red-400') : 'text-gray-400'}`}>
-                    {trade.pnl !== null
-                      ? `${isPositive ? '+' : '-'}${formatINR(Math.abs(trade.pnl))}`
-                      : '—'
-                    }
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                    {formatINR(trade.fillPrice)}
+                  </TableCell>
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                    {trade.quantity}
+                  </TableCell>
+                  <TableCell className="py-4 text-right">
+                    {trade.pnl !== null ? (
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
+                        isPositive
+                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
+                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                      }`}>
+                        {isPositive ? '+' : '-'}{formatINR(Math.abs(trade.pnl))}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#6b7280]">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="flex items-center gap-1 text-xs text-[#6b7280]">
+                      <Clock className="size-3" />
+                      {formatShortDateTime(trade.executedAt)}
+                    </div>
                   </TableCell>
                 </TableRow>
               )
@@ -475,149 +354,110 @@ export function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] p-4 sm:p-6 lg:p-8 space-y-5">
+    <div className="min-h-screen bg-[#f5f7fa] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Order History
-          </h1>
-          <p className="text-gray-400 mt-1 text-sm">
-            View your complete order and trade execution history.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[140px] h-9 bg-[#111827] border-[#1f2937] text-sm text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-[#111827] border-[#1f2937]">
-              <SelectItem value="all" className="text-gray-300 focus:bg-[#1f2937] focus:text-white">All Orders</SelectItem>
-              <SelectItem value="filled" className="text-gray-300 focus:bg-[#1f2937] focus:text-white">Filled</SelectItem>
-              <SelectItem value="cancelled" className="text-gray-300 focus:bg-[#1f2937] focus:text-white">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-500" />
-            <Input
-              placeholder="Search orders..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 w-48 sm:w-56 bg-[#111827] border-[#1f2937] text-sm text-white placeholder:text-gray-500 focus:border-amber-500/50"
-            />
-          </div>
-        </div>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+          Orders
+        </h1>
+        <p className="text-[#6b7280] mt-1 text-sm">
+          View your open orders and complete trade execution history.
+        </p>
+      </motion.div>
 
-      {/* ── Order Stats ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* ── Stats Grid ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+      >
         {[
-          { label: 'Total Orders', value: String(orders.length), icon: ClipboardList, borderColor: 'border-l-amber-500', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-500' },
-          { label: 'Filled', value: String(filledCount), icon: CheckCircle2, borderColor: 'border-l-emerald-500', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400' },
-          { label: 'Cancelled', value: String(orders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-red-500', iconBg: 'bg-red-500/10', iconColor: 'text-red-400' },
-          { label: 'Total Volume', value: totalVolume >= 100000 ? `₹${(totalVolume / 100000).toFixed(1)}L` : `₹${totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, icon: IndianRupee, borderColor: 'border-l-amber-500', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-500' },
+          { label: 'Total Orders', value: String(orders.length), icon: ClipboardList, borderColor: 'border-l-[#5367ff]', iconBg: 'bg-[#5367ff]/10', iconColor: 'text-[#5367ff]' },
+          { label: 'Filled', value: String(filledCount), icon: CheckCircle2, borderColor: 'border-l-[#00d09c]', iconBg: 'bg-[#00d09c]/10', iconColor: 'text-[#00d09c]' },
+          { label: 'Cancelled', value: String(orders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#eb5b3c]/10', iconColor: 'text-[#eb5b3c]' },
+          { label: 'Total Volume', value: totalVolume >= 100000 ? `₹${(totalVolume / 100000).toFixed(1)}L` : `₹${totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, icon: IndianRupee, borderColor: 'border-l-[#5367ff]', iconBg: 'bg-[#5367ff]/10', iconColor: 'text-[#5367ff]' },
         ].map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className={`bg-[#111827] border border-[#1f2937] border-l-4 ${stat.borderColor} rounded-xl shadow-sm`}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+            <Card key={stat.label} className={`bg-white border border-[#e5e7eb] border-l-4 ${stat.borderColor} rounded-xl shadow-sm`}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                     {stat.label}
                   </p>
                   <div className={`size-7 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
                     <Icon className={`size-3.5 ${stat.iconColor}`} />
                   </div>
                 </div>
-                <p className="text-lg font-bold font-mono-data text-white">
+                <p className="text-lg font-bold font-mono-data text-[#1a1a2e]">
                   {stat.value}
                 </p>
               </CardContent>
             </Card>
           )
         })}
-      </div>
+      </motion.div>
 
       {/* ── Orders Table with Tabs ──────────────────────────────────── */}
-      <Card className="bg-[#111827] border border-[#1f2937] rounded-xl shadow-sm">
-        <Tabs defaultValue="index">
-          <div className="p-6 pb-0">
-            <div className="flex items-center justify-between">
-              <TabsList className="bg-[#0a0e17] border border-[#1f2937]">
-                <TabsTrigger
-                  value="index"
-                  className="text-xs font-semibold gap-1.5 data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e17] data-[state=active]:shadow-amber-500/20 data-[state=active]:shadow-sm text-gray-400"
-                >
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/30 text-amber-500">
-                    Index
-                  </Badge>
-                  Index ({indexOrders.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="stock"
-                  className="text-xs font-semibold gap-1.5 data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e17] data-[state=active]:shadow-amber-500/20 data-[state=active]:shadow-sm text-gray-400"
-                >
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-500">
-                    Stock
-                  </Badge>
-                  Stock ({stockOrders.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="trades"
-                  className="text-xs font-semibold gap-1.5 data-[state=active]:bg-amber-500 data-[state=active]:text-[#0a0e17] data-[state=active]:shadow-amber-500/20 data-[state=active]:shadow-sm text-gray-400"
-                >
-                  <IndianRupee className="size-3.5" />
-                  Trade Log ({trades.length})
-                </TabsTrigger>
-              </TabsList>
-            </div>
-          </div>
-          <div className="p-6 pt-4">
-            {loadingOrders || loadingTrades ? (
-              <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <Skeleton className="h-4 w-20 bg-[#1f2937]" />
-                    <Skeleton className="h-4 w-24 bg-[#1f2937]" />
-                    <Skeleton className="h-4 w-16 bg-[#1f2937]" />
-                    <Skeleton className="h-4 w-16 bg-[#1f2937]" />
-                    <Skeleton className="h-4 w-24 bg-[#1f2937]" />
-                  </div>
-                ))}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <CardContent className="p-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="flex items-center justify-between mb-5">
+                <TabsList className="bg-[#f5f7fa] border border-[#e5e7eb] p-1 rounded-lg">
+                  <TabsTrigger
+                    value="open"
+                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#5367ff] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                  >
+                    Open Orders
+                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{openOrders.length}</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="history"
+                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#5367ff] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                  >
+                    Trade History
+                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{trades.length}</span>
+                  </TabsTrigger>
+                </TabsList>
               </div>
-            ) : (
-              <>
-                <TabsContent value="index">
-                  <OrderTable data={indexOrders} />
-                </TabsContent>
-                <TabsContent value="stock">
-                  <OrderTable data={stockOrders} />
-                </TabsContent>
-                <TabsContent value="trades">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4 mb-3">
-                      <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-500">
-                        Index ({indexTrades.length})
-                      </Badge>
-                      <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-500">
-                        Stock ({stockTrades.length})
-                      </Badge>
-                    </div>
-                    <TradeTable data={trades} />
-                  </div>
-                </TabsContent>
-              </>
-            )}
-          </div>
-        </Tabs>
-      </Card>
 
-      {/* ── Order Detail Dialog ─────────────────────────────────────── */}
-      <OrderDetailDialog
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        order={selectedOrder}
-      />
+              {loadingOrders || loadingTrades ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                      <Skeleton className="h-4 w-16 bg-[#f0f0f5]" />
+                      <Skeleton className="h-4 w-16 bg-[#f0f0f5]" />
+                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <TabsContent value="open" className="mt-0">
+                    <OpenOrdersTable />
+                  </TabsContent>
+                  <TabsContent value="history" className="mt-0">
+                    <TradeHistoryTable />
+                  </TabsContent>
+                </>
+              )}
+            </Tabs>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }

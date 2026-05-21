@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, Search, Bell, LogOut, Wallet, ChevronDown } from 'lucide-react'
+import { Menu, Search, Bell, LogOut, Wallet, ChevronDown, User, FileBarChart } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth-store'
 import { Button } from '@/components/ui/button'
@@ -32,23 +32,24 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
   const totalPnl = user?.totalPnl ?? 0
   const isProfit = totalPnl >= 0
 
+  const formatINR = (value: number) =>
+    value.toLocaleString('en-IN', { maximumFractionDigits: 0 })
+
   return (
     <header
       className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center md:left-[260px]"
+      style={{
+        background: '#ffffff',
+        borderBottom: '1px solid #e5e7eb',
+      }}
       role="banner"
     >
-      <div
-        className="flex h-full w-full items-center gap-3 px-3 md:px-5"
-        style={{
-          background: '#111827',
-          borderBottom: '1px solid #1f2937',
-        }}
-      >
+      <div className="flex h-full w-full items-center gap-2 px-3 md:px-5">
         {/* Left: Mobile menu button */}
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden shrink-0 text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5"
+          className="md:hidden shrink-0 text-[#6b7280] hover:text-[#1f2937] hover:bg-[#f0f2f5]"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open navigation menu"
         >
@@ -56,163 +57,193 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
         </Button>
 
         {/* Search - Desktop */}
-        <div className="relative hidden flex-1 max-w-sm md:flex">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#6b7280]" />
+        <div className="relative hidden flex-1 max-w-xs md:flex">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
           <Input
             type="search"
             placeholder="Search stocks, indices..."
-            className="pl-9 h-9 text-sm border-none focus-visible:ring-1 focus-visible:ring-amber-500/30 placeholder:text-[#4b5563]"
+            className="pl-9 h-9 text-sm border-none focus-visible:ring-1 focus-visible:ring-[#5367ff]/30 placeholder:text-[#9ca3af]"
             style={{
-              background: '#0a0e17',
-              color: '#f9fafb',
+              background: '#f0f2f5',
+              color: '#1f2937',
+              borderRadius: '9999px',
             }}
           />
         </div>
 
         {/* Search - Mobile */}
         <div className="relative flex-1 md:hidden">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#6b7280]" />
+          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#9ca3af]" />
           <Input
             type="search"
             placeholder="Search..."
-            className="pl-8 h-9 text-sm border-none focus-visible:ring-1 focus-visible:ring-amber-500/30 placeholder:text-[#4b5563]"
+            className="pl-8 h-9 text-sm border-none focus-visible:ring-1 focus-visible:ring-[#5367ff]/30 placeholder:text-[#9ca3af]"
             style={{
-              background: '#0a0e17',
-              color: '#f9fafb',
+              background: '#f0f2f5',
+              color: '#1f2937',
+              borderRadius: '9999px',
             }}
           />
         </div>
 
+        {/* Spacer */}
+        <div className="flex-1 hidden md:block" />
+
         {/* Right section */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Wallet Balance */}
+        <div className="flex items-center gap-1.5 md:gap-2.5">
+          {/* Wallet Balance Pill */}
           <div
-            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full"
             style={{
-              background: '#0a0e17',
-              border: '1px solid #1f2937',
+              background: '#f0f2f5',
             }}
           >
-            <Wallet className="size-4 text-amber-500" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-medium leading-tight" style={{ color: '#6b7280' }}>
-                Balance
-              </span>
-              <span className="text-xs font-bold font-mono-data text-[#f9fafb] leading-tight">
-                ₹{balance.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </span>
-            </div>
+            <Wallet className="size-3.5 text-[#5367ff]" />
+            <span
+              className="text-xs font-semibold"
+              style={{ color: '#1f2937', fontFamily: "'Geist Sans', system-ui, sans-serif" }}
+            >
+              ₹{formatINR(balance)}
+            </span>
           </div>
 
           {/* P&L Badge */}
           {totalPnl !== 0 && (
             <div
-              className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold font-mono-data"
+              className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold"
               style={{
-                background: isProfit ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                color: isProfit ? '#10b981' : '#ef4444',
-                border: `1px solid ${isProfit ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                background: isProfit ? 'rgba(0, 208, 156, 0.08)' : 'rgba(235, 91, 60, 0.08)',
+                color: isProfit ? '#00d09c' : '#eb5b3c',
+                fontFamily: "'Geist Sans', system-ui, sans-serif",
               }}
             >
-              {isProfit ? '▲' : '▼'}
+              <span>{isProfit ? '▲' : '▼'}</span>
               <span>
-                {isProfit ? '+' : ''}₹{Math.abs(totalPnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                {isProfit ? '+' : ''}₹{formatINR(Math.abs(totalPnl))}
               </span>
             </div>
           )}
 
-          {/* Notifications */}
+          {/* Notification Bell */}
           <Button
             variant="ghost"
             size="icon"
-            className="relative shrink-0 text-[#9ca3af] hover:text-[#f9fafb] hover:bg-white/5"
+            className="relative shrink-0 text-[#6b7280] hover:text-[#1f2937] hover:bg-[#f0f2f5] h-9 w-9"
             aria-label="Notifications"
           >
             <Bell className="size-[18px]" />
-            <span className="absolute right-1.5 top-1.5 flex size-2">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-500 opacity-75" />
-              <span className="relative inline-flex size-2 rounded-full bg-amber-500" />
-            </span>
+            <span
+              className="absolute right-2 top-2 size-1.5 rounded-full"
+              style={{ background: '#5367ff' }}
+            />
           </Button>
 
-          {/* Divider */}
-          <div className="mx-0.5 h-6 w-px hidden md:block" style={{ background: '#1f2937' }} />
-
-          {/* User Menu (Dropdown) - Desktop */}
+          {/* User Menu Dropdown */}
           <DropdownMenu>
+            {/* Desktop Trigger */}
             <DropdownMenuTrigger asChild>
-              <button className="hidden md:flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors duration-200 hover:bg-white/5 outline-none">
-                <Avatar className="size-7" style={{ border: '1px solid #1f2937' }}>
+              <button className="hidden md:flex items-center gap-2 rounded-full px-2 py-1.5 transition-colors duration-150 hover:bg-[#f0f2f5] outline-none">
+                <Avatar className="size-7" style={{ border: '1.5px solid #e5e7eb' }}>
                   <AvatarFallback
                     className="text-[10px] font-bold"
                     style={{
-                      background: 'rgba(245, 158, 11, 0.15)',
-                      color: '#f59e0b',
+                      background: 'rgba(83, 103, 255, 0.08)',
+                      color: '#5367ff',
+                      fontFamily: "'Geist Sans', system-ui, sans-serif",
                     }}
                   >
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start">
-                  <span className="text-xs font-medium text-[#f9fafb] leading-tight">
+                  <span
+                    className="text-xs font-medium leading-tight"
+                    style={{ color: '#1f2937' }}
+                  >
                     {userName || 'User'}
                   </span>
-                  <span className="text-[10px] leading-tight" style={{ color: '#6b7280' }}>
+                  <span
+                    className="text-[10px] leading-tight"
+                    style={{ color: '#9ca3af' }}
+                  >
                     Paper Trading
                   </span>
                 </div>
-                <ChevronDown className="size-3.5 text-[#6b7280]" />
+                <ChevronDown className="size-3.5 text-[#9ca3af]" />
               </button>
             </DropdownMenuTrigger>
+
+            {/* Desktop Dropdown Content */}
             <DropdownMenuContent
               align="end"
               className="w-56"
               style={{
-                background: '#111827',
-                border: '1px solid #1f2937',
-                color: '#f9fafb',
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                color: '#1f2937',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+                borderRadius: '12px',
               }}
             >
               <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span className="font-medium text-[#f9fafb]">{userName || 'User'}</span>
-                  <span className="text-xs" style={{ color: '#6b7280' }}>Paper Trading Account</span>
+                <div className="flex items-center gap-2.5 py-1">
+                  <Avatar className="size-8" style={{ border: '1.5px solid #e5e7eb' }}>
+                    <AvatarFallback
+                      className="text-xs font-bold"
+                      style={{
+                        background: 'rgba(83, 103, 255, 0.08)',
+                        color: '#5367ff',
+                      }}
+                    >
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-sm" style={{ color: '#1f2937' }}>
+                      {userName || 'User'}
+                    </span>
+                    <span className="text-[11px]" style={{ color: '#9ca3af' }}>
+                      Paper Trading Account
+                    </span>
+                  </div>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator style={{ background: '#1f2937' }} />
+              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
               <DropdownMenuItem
                 onClick={() => setCurrentPage('profile')}
-                className="text-[#9ca3af] focus:text-[#f9fafb] focus:bg-white/5 cursor-pointer"
+                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
               >
-                Profile & Settings
+                <User className="size-4 mr-2.5 text-[#9ca3af]" />
+                Profile
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setCurrentPage('reports')}
-                className="text-[#9ca3af] focus:text-[#f9fafb] focus:bg-white/5 cursor-pointer"
+                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
               >
-                My Reports
+                <FileBarChart className="size-4 mr-2.5 text-[#9ca3af]" />
+                Reports
               </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ background: '#1f2937' }} />
+              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
               <DropdownMenuItem
                 onClick={onLogout}
-                className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                className="cursor-pointer text-sm py-2 text-[#eb5b3c] focus:text-[#eb5b3c] focus:bg-[rgba(235,91,60,0.06)]"
               >
-                <LogOut className="size-4 mr-2" />
+                <LogOut className="size-4 mr-2.5" />
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Mobile: Avatar only */}
+          {/* Mobile: Avatar only dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="md:hidden outline-none shrink-0">
-                <Avatar className="size-7" style={{ border: '1px solid #1f2937' }}>
+                <Avatar className="size-7" style={{ border: '1.5px solid #e5e7eb' }}>
                   <AvatarFallback
                     className="text-[10px] font-bold"
                     style={{
-                      background: 'rgba(245, 158, 11, 0.15)',
-                      color: '#f59e0b',
+                      background: 'rgba(83, 103, 255, 0.08)',
+                      color: '#5367ff',
                     }}
                   >
                     {initials}
@@ -222,27 +253,46 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-48"
+              className="w-52"
               style={{
-                background: '#111827',
-                border: '1px solid #1f2937',
-                color: '#f9fafb',
+                background: '#ffffff',
+                border: '1px solid #e5e7eb',
+                color: '#1f2937',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+                borderRadius: '12px',
               }}
             >
-              <DropdownMenuLabel className="text-[#f9fafb]">{userName || 'User'}</DropdownMenuLabel>
-              <DropdownMenuSeparator style={{ background: '#1f2937' }} />
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm" style={{ color: '#1f2937' }}>
+                    {userName || 'User'}
+                  </span>
+                  <span className="text-[11px]" style={{ color: '#9ca3af' }}>
+                    Paper Trading
+                  </span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
               <DropdownMenuItem
                 onClick={() => setCurrentPage('profile')}
-                className="text-[#9ca3af] focus:text-[#f9fafb] focus:bg-white/5 cursor-pointer"
+                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
               >
+                <User className="size-4 mr-2.5 text-[#9ca3af]" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ background: '#1f2937' }} />
+              <DropdownMenuItem
+                onClick={() => setCurrentPage('reports')}
+                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
+              >
+                <FileBarChart className="size-4 mr-2.5 text-[#9ca3af]" />
+                Reports
+              </DropdownMenuItem>
+              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
               <DropdownMenuItem
                 onClick={onLogout}
-                className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+                className="cursor-pointer text-sm py-2 text-[#eb5b3c] focus:text-[#eb5b3c] focus:bg-[rgba(235,91,60,0.06)]"
               >
-                <LogOut className="size-4 mr-2" />
+                <LogOut className="size-4 mr-2.5" />
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
