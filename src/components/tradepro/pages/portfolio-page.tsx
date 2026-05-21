@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table'
 import {
   Landmark,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Wallet,
   Download,
@@ -39,57 +39,57 @@ import {
 
 const holdings = [
   {
-    symbol: 'TSLA',
-    company: 'Tesla Motors Inc.',
+    symbol: 'RELIANCE',
+    company: 'Reliance Industries',
     quantity: 450,
-    avgPrice: 174.2,
-    cmp: 238.45,
-    pnlPercent: +36.88,
-    pnlValue: +28912.5,
+    avgPrice: 2680.00,
+    cmp: 2945.30,
+    pnlPercent: +9.90,
+    pnlValue: +119348.50,
   },
   {
-    symbol: 'AAPL',
-    company: 'Apple Inc.',
-    quantity: 1200,
-    avgPrice: 182.1,
-    cmp: 191.04,
-    pnlPercent: +4.91,
-    pnlValue: +10728.0,
+    symbol: 'TCS',
+    company: 'Tata Consultancy Services',
+    quantity: 200,
+    avgPrice: 3650.00,
+    cmp: 3812.75,
+    pnlPercent: +4.46,
+    pnlValue: +32550.00,
   },
   {
-    symbol: 'NVDA',
-    company: 'NVIDIA Corporation',
-    quantity: 120,
-    avgPrice: 915.5,
-    cmp: 874.12,
-    pnlPercent: -4.52,
-    pnlValue: -4965.6,
-  },
-  {
-    symbol: 'MSFT',
-    company: 'Microsoft Corp.',
+    symbol: 'HDFCBANK',
+    company: 'HDFC Bank',
     quantity: 300,
-    avgPrice: 412.0,
-    cmp: 425.22,
-    pnlPercent: +3.21,
-    pnlValue: +3966.0,
+    avgPrice: 1680.00,
+    cmp: 1645.20,
+    pnlPercent: -2.07,
+    pnlValue: -10440.00,
   },
   {
-    symbol: 'BTC/USD',
-    company: 'Bitcoin / Dollar',
-    quantity: 2.5,
-    avgPrice: 42150.0,
-    cmp: 68410.2,
-    pnlPercent: +62.3,
-    pnlValue: +65650.5,
+    symbol: 'INFY',
+    company: 'Infosys',
+    quantity: 500,
+    avgPrice: 1480.00,
+    cmp: 1523.80,
+    pnlPercent: +2.96,
+    pnlValue: +21900.00,
+  },
+  {
+    symbol: 'ITC',
+    company: 'ITC Limited',
+    quantity: 800,
+    avgPrice: 440.00,
+    cmp: 456.35,
+    pnlPercent: +3.71,
+    pnlValue: +13080.00,
   },
 ]
 
 const allocationData = [
-  { name: 'Tech Stocks', value: 612450, color: '#0058be' },
-  { name: 'Crypto Assets', value: 171125, color: '#006c49' },
-  { name: 'Forex', value: 98000, color: '#b61722' },
-  { name: 'Cash Reserves', value: 98427, color: '#c2c6d6' },
+  { name: 'Blue Chip', value: 612450, color: '#0058be' },
+  { name: 'Mid Cap', value: 171125, color: '#006c49' },
+  { name: 'Small Cap', value: 98000, color: '#b61722' },
+  { name: 'Cash', value: 98427, color: '#c2c6d6' },
 ]
 
 const ALLOCATION_TOTAL = allocationData.reduce((s, d) => s + d.value, 0)
@@ -102,16 +102,16 @@ function formatCurrency(value: number): string {
     abs >= 1000
       ? abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : abs.toFixed(2)
-  return `${value < 0 ? '-' : ''}$${formatted}`
+  return `${value < 0 ? '-' : ''}₹${formatted}`
 }
 
 function formatCompactCurrency(value: number): string {
   const abs = Math.abs(value)
   const sign = value < 0 ? '-' : '+'
   if (abs >= 1000) {
-    return `${sign}$${abs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    return `${sign}₹${abs.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
-  return `${sign}$${abs.toFixed(2)}`
+  return `${sign}₹${abs.toFixed(2)}`
 }
 
 // ─── Component ───────────────────────────────────────────────
@@ -155,7 +155,7 @@ export default function PortfolioPage() {
             <Landmark className="size-5 text-tp-primary" />
           </div>
           <h3 className="font-mono-data text-2xl font-bold text-tp-on-surface sm:text-3xl lg:text-[32px] lg:leading-[1.25]">
-            $1,248,502<span className="text-lg opacity-50 sm:text-xl">.40</span>
+            ₹1,24,850<span className="text-lg opacity-50 sm:text-xl">.40</span>
           </h3>
           <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-tp-secondary">
             <TrendingUp className="size-3.5" />
@@ -169,10 +169,10 @@ export default function PortfolioPage() {
             <p className="text-[11px] font-semibold uppercase tracking-wider text-tp-on-surface-variant">
               Invested Amount
             </p>
-            <DollarSign className="size-5 text-tp-outline" />
+            <IndianRupee className="size-5 text-tp-outline" />
           </div>
           <h3 className="font-mono-data text-2xl font-bold text-tp-on-surface sm:text-3xl lg:text-[32px] lg:leading-[1.25]">
-            $980,000<span className="text-lg opacity-50 sm:text-xl">.00</span>
+            ₹98,000<span className="text-lg opacity-50 sm:text-xl">.00</span>
           </h3>
           <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-tp-on-surface-variant">
             9 positions active
@@ -188,7 +188,7 @@ export default function PortfolioPage() {
             <TrendingUp className="size-5 text-tp-secondary" />
           </div>
           <h3 className="font-mono-data text-2xl font-bold text-tp-secondary sm:text-3xl lg:text-[32px] lg:leading-[1.25]">
-            +$268,502<span className="text-lg opacity-70 sm:text-xl">.40</span>
+            +₹26,850<span className="text-lg opacity-70 sm:text-xl">.40</span>
           </h3>
           <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-tp-secondary">
             <ArrowUpRight className="size-3.5" />
@@ -205,7 +205,7 @@ export default function PortfolioPage() {
             <Wallet className="size-5 text-tp-tertiary" />
           </div>
           <h3 className="font-mono-data text-2xl font-bold text-tp-tertiary sm:text-3xl lg:text-[32px] lg:leading-[1.25]">
-            -$12,450<span className="text-lg opacity-70 sm:text-xl">.00</span>
+            -₹1,245<span className="text-lg opacity-70 sm:text-xl">.00</span>
           </h3>
           <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-tp-tertiary">
             <ArrowDownRight className="size-3.5" />
@@ -368,7 +368,7 @@ export default function PortfolioPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => `$${value.toLocaleString()}`}
+                    formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
                     contentStyle={{
                       backgroundColor: 'rgba(255,255,255,0.95)',
                       border: '1px solid #c2c6d6',
@@ -401,7 +401,7 @@ export default function PortfolioPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-mono-data text-sm text-tp-on-surface">
-                        ${item.value.toLocaleString()}
+                        ₹{item.value.toLocaleString('en-IN')}
                       </span>
                       <Badge
                         variant="outline"

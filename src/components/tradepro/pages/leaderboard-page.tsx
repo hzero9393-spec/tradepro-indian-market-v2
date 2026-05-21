@@ -35,8 +35,8 @@ import {
 const top3 = [
   {
     rank: 2,
-    name: 'Sarah Chen',
-    initials: 'SC',
+    name: 'Priya Sharma',
+    initials: 'PS',
     roi: 287.4,
     winRate: 82.1,
     borderColor: '#C0C0C0',
@@ -46,8 +46,8 @@ const top3 = [
   },
   {
     rank: 1,
-    name: 'Marcus Williams',
-    initials: 'MW',
+    name: 'Rahul Gupta',
+    initials: 'RG',
     roi: 342.8,
     winRate: 89.3,
     borderColor: '#FFD700',
@@ -57,8 +57,8 @@ const top3 = [
   },
   {
     rank: 3,
-    name: 'Raj Patel',
-    initials: 'RP',
+    name: 'Amit Patel',
+    initials: 'AP',
     roi: 256.1,
     winRate: 76.5,
     borderColor: '#CD7F32',
@@ -69,16 +69,16 @@ const top3 = [
 ]
 
 const leaderboardData = [
-  { rank: 4, name: 'Emily Zhang', initials: 'EZ', roi: 198.6, winRate: 74.2, totalTrades: 2156, pnl: '+$124.3k', trend: 'up' },
-  { rank: 5, name: 'David Kim', initials: 'DK', roi: 187.2, winRate: 71.8, totalTrades: 1890, pnl: '+$98.7k', trend: 'up' },
-  { rank: 6, name: 'Lisa Anderson', initials: 'LA', roi: 165.4, winRate: 69.5, totalTrades: 2340, pnl: '+$87.2k', trend: 'down' },
-  { rank: 7, name: 'James Miller', initials: 'JM', roi: 152.8, winRate: 67.9, totalTrades: 1567, pnl: '+$76.5k', trend: 'up' },
-  { rank: 8, name: 'Priya Sharma', initials: 'PS', roi: 141.3, winRate: 66.2, totalTrades: 1923, pnl: '+$65.8k', trend: 'down' },
-  { rank: 9, name: 'Michael Brown', initials: 'MB', roi: 128.7, winRate: 64.8, totalTrades: 2890, pnl: '+$54.3k', trend: 'up' },
-  { rank: 10, name: 'Anna Schmidt', initials: 'AS', roi: 115.2, winRate: 62.1, totalTrades: 1678, pnl: '+$43.1k', trend: 'down' },
-  { rank: 11, name: 'Carlos Rivera', initials: 'CR', roi: 102.8, winRate: 60.4, totalTrades: 2145, pnl: '+$38.9k', trend: 'up' },
-  { rank: 12, name: 'Yuki Tanaka', initials: 'YT', roi: 95.4, winRate: 58.7, totalTrades: 1345, pnl: '+$29.4k', trend: 'down' },
-  { rank: 13, name: 'Olga Petrova', initials: 'OP', roi: 88.1, winRate: 56.3, totalTrades: 2567, pnl: '+$22.7k', trend: 'up' },
+  { rank: 4, name: 'Emily Zhang', initials: 'EZ', roi: 198.6, winRate: 74.2, totalTrades: 2156, pnl: '+₹1.24L', trend: 'up' },
+  { rank: 5, name: 'David Kim', initials: 'DK', roi: 187.2, winRate: 71.8, totalTrades: 1890, pnl: '+₹98.7K', trend: 'up' },
+  { rank: 6, name: 'Lisa Anderson', initials: 'LA', roi: 165.4, winRate: 69.5, totalTrades: 2340, pnl: '+₹87.2K', trend: 'down' },
+  { rank: 7, name: 'James Miller', initials: 'JM', roi: 152.8, winRate: 67.9, totalTrades: 1567, pnl: '+₹76.5K', trend: 'up' },
+  { rank: 8, name: 'Priya Sharma', initials: 'PS', roi: 141.3, winRate: 66.2, totalTrades: 1923, pnl: '+₹65.8K', trend: 'down' },
+  { rank: 9, name: 'Michael Brown', initials: 'MB', roi: 128.7, winRate: 64.8, totalTrades: 2890, pnl: '+₹54.3K', trend: 'up' },
+  { rank: 10, name: 'Anna Schmidt', initials: 'AS', roi: 115.2, winRate: 62.1, totalTrades: 1678, pnl: '+₹43.1K', trend: 'down' },
+  { rank: 11, name: 'Carlos Rivera', initials: 'CR', roi: 102.8, winRate: 60.4, totalTrades: 2145, pnl: '+₹38.9K', trend: 'up' },
+  { rank: 12, name: 'Yuki Tanaka', initials: 'YT', roi: 95.4, winRate: 58.7, totalTrades: 1345, pnl: '+₹29.4K', trend: 'down' },
+  { rank: 13, name: 'Olga Petrova', initials: 'OP', roi: 88.1, winRate: 56.3, totalTrades: 2567, pnl: '+₹22.7K', trend: 'up' },
 ]
 
 const yourRow = {
@@ -88,12 +88,12 @@ const yourRow = {
   roi: 68.4,
   winRate: 68.4,
   totalTrades: 1284,
-  pnl: '+$42.5k',
+  pnl: '+₹42.5K',
   trend: 'up',
 }
 
 const timeFilters = ['Weekly', 'Monthly', 'All Time'] as const
-const categoryFilters = ['Overall', 'Equity', 'Crypto', 'Forex'] as const
+const categoryFilters = ['Overall', 'Equity', 'F&O', 'Index'] as const
 
 // ─── Trend Icon (declared outside render) ──────────────────────────────────────
 

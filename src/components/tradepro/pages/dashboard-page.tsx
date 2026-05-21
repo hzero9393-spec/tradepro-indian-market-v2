@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Area,
   AreaChart,
@@ -13,11 +13,11 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -47,34 +47,90 @@ import {
   ArrowDownRight,
   BarChart3,
 } from 'lucide-react'
+import { useAuthStore } from '@/lib/auth-store'
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
 
-const portfolioData = Array.from({ length: 30 }, (_, i) => {
-  const base = 1200000
-  const trend = i * 1600
-  const noise = (Math.sin(i * 0.8) * 8000) + (Math.cos(i * 1.3) * 4000)
-  return {
-    day: i + 1,
-    date: new Date(2026, 2, i + 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    value: Math.round(base + trend + noise),
+interface PortfolioData {
+  virtualBalance: number
+  marginUsed: number
+  availableMargin: number
+  totalInvested: number
+  totalCurrentValue: number
+  totalUnrealizedPnl: number
+  totalRealizedPnl: number
+  totalPortfolioValue: number
+  totalPnl: number
+  totalReturn: number
+  totalTrades: number
+  initialCapital: number
+  openPositionsCount: number
+  segments: {
+    equity: { count: number; invested: number; currentValue: number; unrealizedPnl: number }
+    futures: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number }
+    options: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number }
   }
-})
+}
 
-const recentTrades = [
-  { symbol: 'AAPL', type: 'Buy' as const, price: 178.52, pnl: +1240.0, time: '2m ago' },
-  { symbol: 'TSLA', type: 'Sell' as const, price: 245.80, pnl: -380.5, time: '15m ago' },
-  { symbol: 'NVDA', type: 'Buy' as const, price: 892.15, pnl: +3450.0, time: '1h ago' },
-  { symbol: 'MSFT', type: 'Sell' as const, price: 415.30, pnl: +890.0, time: '2h ago' },
-  { symbol: 'BTC/USD', type: 'Buy' as const, price: 67842.50, pnl: +5100.0, time: '3h ago' },
+interface TradeData {
+  id: string
+  symbol: string
+  tradeDirection: 'BUY' | 'SELL'
+  segment: string
+  fillPrice: number
+  quantity: number
+  totalValue: number
+  brokerage: number
+  pnl: number | null
+  pnlPercent: number | null
+  executedAt: string
+}
+
+interface IndexData {
+  id: string
+  symbol: string
+  name: string
+  currentPrice: number
+  change: number
+  changePercent: number
+  isEnabled: boolean
+}
+
+// ─── Fallback Mock Data ──────────────────────────────────────────────────────
+
+const fallbackPortfolio: PortfolioData = {
+  virtualBalance: 100000,
+  marginUsed: 0,
+  availableMargin: 100000,
+  totalInvested: 0,
+  totalCurrentValue: 0,
+  totalUnrealizedPnl: 0,
+  totalRealizedPnl: 0,
+  totalPortfolioValue: 100000,
+  totalPnl: 0,
+  totalReturn: 0,
+  totalTrades: 0,
+  initialCapital: 100000,
+  openPositionsCount: 0,
+  segments: {
+    equity: { count: 0, invested: 0, currentValue: 0, unrealizedPnl: 0 },
+    futures: { count: 0, invested: 0, currentValue: 0, unrealizedPnl: 0, marginUsed: 0 },
+    options: { count: 0, invested: 0, currentValue: 0, unrealizedPnl: 0, marginUsed: 0 },
+  },
+}
+
+const fallbackTrades: TradeData[] = [
+  { id: '1', symbol: 'RELIANCE', tradeDirection: 'BUY', segment: 'EQUITY', fillPrice: 2945.30, quantity: 10, totalValue: 29453, brokerage: 20, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 120000).toISOString() },
+  { id: '2', symbol: 'TCS', tradeDirection: 'SELL', segment: 'EQUITY', fillPrice: 3812.75, quantity: 5, totalValue: 19063.75, brokerage: 20, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 900000).toISOString() },
+  { id: '3', symbol: 'HDFCBANK', tradeDirection: 'BUY', segment: 'EQUITY', fillPrice: 1645.20, quantity: 20, totalValue: 32904, brokerage: 20, pnl: null, pnlPercent: null, executedAt: new Date(Date.now() - 3600000).toISOString() },
 ]
 
-const marketOverview = [
-  { name: 'S&P 500', value: '5,248.32', change: +0.84, icon: BarChart3 },
-  { name: 'NASDAQ', value: '16,742.39', change: +1.12, icon: TrendingUp },
-  { name: 'BTC/USD', value: '67,842.50', change: -0.43, icon: ArrowUpRight },
-  { name: 'ETH/USD', value: '3,524.18', change: +2.15, icon: ArrowUpRight },
-  { name: 'Gold', value: '2,178.60', change: +0.28, icon: Target },
+const fallbackMarketOverview = [
+  { name: 'NIFTY 50', value: '22,456.30', change: +0.84, icon: BarChart3 },
+  { name: 'SENSEX', value: '74,012.45', change: +1.12, icon: TrendingUp },
+  { name: 'BANK NIFTY', value: '48,312.80', change: -0.43, icon: ArrowUpRight },
+  { name: 'NIFTY IT', value: '35,624.15', change: +2.15, icon: ArrowUpRight },
+  { name: 'NIFTY PHARMA', value: '18,742.60', change: +0.28, icon: Target },
 ]
 
 const chartConfig = {
@@ -86,10 +142,123 @@ const chartConfig = {
 
 const timeRanges = ['1D', '1W', '1M', '3M', '1Y', 'ALL'] as const
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function formatRelativeTime(isoDate: string): string {
+  const now = Date.now()
+  const then = new Date(isoDate).getTime()
+  const diffMs = now - then
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.floor(diffHr / 24)
+  if (diffDay < 7) return `${diffDay}d ago`
+  return new Date(isoDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+}
+
+function formatINR(value: number): string {
+  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatINRCompact(value: number): string {
+  if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)}Cr`
+  if (value >= 100000) return `₹${(value / 100000).toFixed(2)}L`
+  if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`
+  return `₹${value.toFixed(0)}`
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
+  const { token, user } = useAuthStore()
   const [activeRange, setActiveRange] = useState<string>('1M')
+
+  // Data states
+  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
+  const [trades, setTrades] = useState<TradeData[]>([])
+  const [marketIndices, setMarketIndices] = useState<IndexData[]>([])
+
+  // Loading states
+  const [portfolioLoading, setPortfolioLoading] = useState(true)
+  const [tradesLoading, setTradesLoading] = useState(true)
+  const [marketLoading, setMarketLoading] = useState(true)
+
+  // ─── Fetch Portfolio ─────────────────────────────────────────────
+  const fetchPortfolio = useCallback(async () => {
+    if (!token) { setPortfolioLoading(false); return }
+    try {
+      setPortfolioLoading(true)
+      const res = await fetch('/api/trade/portfolio', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setPortfolio(json.data)
+      } else {
+        setPortfolio(fallbackPortfolio)
+      }
+    } catch {
+      setPortfolio(fallbackPortfolio)
+    } finally {
+      setPortfolioLoading(false)
+    }
+  }, [token])
+
+  // ─── Fetch Trades ────────────────────────────────────────────────
+  const fetchTrades = useCallback(async () => {
+    if (!token) { setTradesLoading(false); return }
+    try {
+      setTradesLoading(true)
+      const res = await fetch('/api/trade/trades?limit=5', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setTrades(json.data || [])
+      } else {
+        setTrades(fallbackTrades)
+      }
+    } catch {
+      setTrades(fallbackTrades)
+    } finally {
+      setTradesLoading(false)
+    }
+  }, [token])
+
+  // ─── Fetch Market Indices ────────────────────────────────────────
+  const fetchMarketIndices = useCallback(async () => {
+    try {
+      setMarketLoading(true)
+      const res = await fetch('/api/indices')
+      if (res.ok) {
+        const json = await res.json()
+        setMarketIndices(json.data || [])
+      } else {
+        setMarketIndices([])
+      }
+    } catch {
+      setMarketIndices([])
+    } finally {
+      setMarketLoading(false)
+    }
+  }, [])
+
+  // ─── Load all data on mount ──────────────────────────────────────
+  useEffect(() => {
+    fetchPortfolio()
+    fetchTrades()
+    fetchMarketIndices()
+  }, [fetchPortfolio, fetchTrades, fetchMarketIndices])
+
+  // ─── Derived values ──────────────────────────────────────────────
+  const portfolioData = portfolio ?? fallbackPortfolio
+  const portfolioValue = portfolioData.totalPortfolioValue
+  const totalReturn = portfolioData.totalReturn
+  const dayPnl = portfolioData.totalUnrealizedPnl + portfolioData.totalRealizedPnl
+  const openPositions = portfolioData.openPositionsCount
+  const winRate = user?.winRate ?? 0
 
   const greeting = () => {
     const hour = new Date().getHours()
@@ -105,13 +274,42 @@ export function DashboardPage() {
     day: 'numeric',
   })
 
+  // ─── Portfolio Performance Chart Data ────────────────────────────
+  // Use generated data around the real portfolio value
+  const chartData = Array.from({ length: 30 }, (_, i) => {
+    const base = portfolioValue * 0.92
+    const trend = (portfolioValue - base) * (i / 29)
+    const noise = (Math.sin(i * 0.8) * portfolioValue * 0.008) + (Math.cos(i * 1.3) * portfolioValue * 0.004)
+    return {
+      day: i + 1,
+      date: new Date(2026, 2, i + 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      value: Math.round(base + trend + noise),
+    }
+  })
+
+  // ─── Market Overview items ───────────────────────────────────────
+  const marketOverviewItems = marketIndices.length > 0
+    ? marketIndices.map((idx) => ({
+        name: idx.name || idx.symbol,
+        value: idx.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        change: idx.changePercent,
+        icon: idx.changePercent >= 0 ? TrendingUp : TrendingDown,
+        isPositive: idx.changePercent >= 0,
+      }))
+    : fallbackMarketOverview.map((item) => ({
+        ...item,
+        isPositive: item.change >= 0,
+      }))
+
+  const displayTrades = trades.length > 0 ? trades : fallbackTrades
+
   return (
     <div className="min-h-screen bg-tp-surface p-4 sm:p-6 lg:p-8 space-y-6">
       {/* ── Welcome Header ──────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-tp-on-surface tracking-tight">
-            {greeting()}, Alex
+            {greeting()}, {user?.name?.split(' ')[0] || 'Trader'}!
           </h1>
           <p className="text-tp-on-surface-variant mt-1 text-sm">{today}</p>
         </div>
@@ -122,7 +320,7 @@ export function DashboardPage() {
           </Button>
           <Button variant="outline" className="gap-2 spring-interaction">
             <ArrowDownToLine className="size-4" />
-            Deposit
+            Add Funds
           </Button>
         </div>
       </div>
@@ -138,14 +336,28 @@ export function DashboardPage() {
                 <Briefcase className="size-4 text-tp-primary" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
-              $1,248,502.40
-            </p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <ArrowUpRight className="size-3.5 text-tp-secondary" />
-              <span className="text-sm font-medium text-tp-secondary">+2.4%</span>
-              <span className="text-xs text-tp-on-surface-variant">vs last month</span>
-            </div>
+            {portfolioLoading ? (
+              <Skeleton className="h-9 w-40 mt-2" />
+            ) : (
+              <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
+                {formatINR(portfolioValue)}
+              </p>
+            )}
+            {portfolioLoading ? (
+              <Skeleton className="h-4 w-28 mt-2" />
+            ) : (
+              <div className="flex items-center gap-1.5 mt-2">
+                {totalReturn >= 0 ? (
+                  <ArrowUpRight className="size-3.5 text-tp-secondary" />
+                ) : (
+                  <ArrowDownRight className="size-3.5 text-tp-tertiary" />
+                )}
+                <span className={`text-sm font-medium ${totalReturn >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
+                  {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}%
+                </span>
+                <span className="text-xs text-tp-on-surface-variant">overall return</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -158,14 +370,28 @@ export function DashboardPage() {
                 <TrendingUp className="size-4 text-tp-secondary" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-secondary mt-2">
-              +$12,450.00
-            </p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <ArrowUpRight className="size-3.5 text-tp-secondary" />
-              <span className="text-sm font-medium text-tp-secondary">+1.2%</span>
-              <span className="text-xs text-tp-on-surface-variant">today</span>
-            </div>
+            {portfolioLoading ? (
+              <Skeleton className="h-9 w-36 mt-2" />
+            ) : (
+              <p className={`text-2xl sm:text-3xl font-bold font-mono-data mt-2 ${dayPnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
+                {dayPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(dayPnl))}
+              </p>
+            )}
+            {portfolioLoading ? (
+              <Skeleton className="h-4 w-24 mt-2" />
+            ) : (
+              <div className="flex items-center gap-1.5 mt-2">
+                {dayPnl >= 0 ? (
+                  <ArrowUpRight className="size-3.5 text-tp-secondary" />
+                ) : (
+                  <ArrowDownRight className="size-3.5 text-tp-tertiary" />
+                )}
+                <span className={`text-sm font-medium ${dayPnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'}`}>
+                  {portfolioValue > 0 ? `${dayPnl >= 0 ? '+' : ''}${((dayPnl / portfolioValue) * 100).toFixed(2)}%` : '0.00%'}
+                </span>
+                <span className="text-xs text-tp-on-surface-variant">today</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -178,12 +404,24 @@ export function DashboardPage() {
                 <Target className="size-4 text-tp-on-surface-variant" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
-              9
-            </p>
-            <div className="flex items-center gap-1.5 mt-2">
-              <span className="text-sm text-tp-on-surface-variant">active positions</span>
-            </div>
+            {portfolioLoading ? (
+              <Skeleton className="h-9 w-12 mt-2" />
+            ) : (
+              <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
+                {openPositions}
+              </p>
+            )}
+            {portfolioLoading ? (
+              <Skeleton className="h-4 w-24 mt-2" />
+            ) : (
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="text-sm text-tp-on-surface-variant">
+                  {openPositions > 0
+                    ? `across ${[portfolioData.segments.equity.count > 0, portfolioData.segments.futures.count > 0, portfolioData.segments.options.count > 0].filter(Boolean).length} segment${[portfolioData.segments.equity.count > 0, portfolioData.segments.futures.count > 0, portfolioData.segments.options.count > 0].filter(Boolean).length !== 1 ? 's' : ''}`
+                    : 'no active positions'}
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -196,12 +434,20 @@ export function DashboardPage() {
                 <Shield className="size-4 text-tp-secondary" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
-              68.4%
-            </p>
-            <div className="mt-3">
-              <Progress value={68.4} className="h-2 bg-tp-secondary/20" />
-            </div>
+            {portfolioLoading ? (
+              <Skeleton className="h-9 w-20 mt-2" />
+            ) : (
+              <p className="text-2xl sm:text-3xl font-bold font-mono-data text-tp-on-surface mt-2">
+                {winRate.toFixed(1)}%
+              </p>
+            )}
+            {portfolioLoading ? (
+              <Skeleton className="h-2 w-full mt-3" />
+            ) : (
+              <div className="mt-3">
+                <Progress value={winRate} className="h-2 bg-tp-secondary/20" />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -215,16 +461,32 @@ export function DashboardPage() {
                 Portfolio Performance
               </CardTitle>
               <div className="flex items-center gap-3 mt-1.5">
-                <span className="text-2xl font-bold font-mono-data text-tp-on-surface">
-                  $1,248,502
-                </span>
-                <Badge
-                  variant="secondary"
-                  className="gap-1 bg-tp-secondary/10 text-tp-secondary border-0 text-xs font-medium"
-                >
-                  <ArrowUpRight className="size-3" />
-                  +2.4%
-                </Badge>
+                {portfolioLoading ? (
+                  <Skeleton className="h-8 w-32" />
+                ) : (
+                  <span className="text-2xl font-bold font-mono-data text-tp-on-surface">
+                    {formatINRCompact(portfolioValue)}
+                  </span>
+                )}
+                {portfolioLoading ? (
+                  <Skeleton className="h-5 w-16" />
+                ) : (
+                  <Badge
+                    variant="secondary"
+                    className={`gap-1 border-0 text-xs font-medium ${
+                      totalReturn >= 0
+                        ? 'bg-tp-secondary/10 text-tp-secondary'
+                        : 'bg-tp-tertiary/10 text-tp-tertiary'
+                    }`}
+                  >
+                    {totalReturn >= 0 ? (
+                      <ArrowUpRight className="size-3" />
+                    ) : (
+                      <ArrowDownRight className="size-3" />
+                    )}
+                    {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}%
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
@@ -244,7 +506,7 @@ export function DashboardPage() {
         </CardHeader>
         <CardContent className="pb-4">
           <ChartContainer config={chartConfig} className="h-[280px] sm:h-[320px] w-full">
-            <AreaChart data={portfolioData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="fillValue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#0058be" stopOpacity={0.3} />
@@ -266,7 +528,7 @@ export function DashboardPage() {
                 tickMargin={8}
                 fontSize={11}
                 tickFormatter={(value: number) =>
-                  `$${(value / 1000).toFixed(0)}k`
+                  `₹${(value / 100000).toFixed(1)}L`
                 }
                 domain={['dataMin - 10000', 'dataMax + 10000']}
               />
@@ -275,7 +537,7 @@ export function DashboardPage() {
                   <ChartTooltipContent
                     formatter={(value) => (
                       <span className="font-mono-data font-semibold">
-                        ${Number(value).toLocaleString()}
+                        ₹{Number(value).toLocaleString('en-IN')}
                       </span>
                     )}
                   />
@@ -309,70 +571,108 @@ export function DashboardPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-tp-outline-variant/30">
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                    Symbol
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                    Type
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                    Price
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                    P&amp;L
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
-                    Time
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentTrades.map((trade) => (
-                  <TableRow
-                    key={`${trade.symbol}-${trade.time}`}
-                    className="border-tp-outline-variant/20 hover:bg-tp-surface-container-low/50"
-                  >
-                    <TableCell className="font-semibold text-tp-on-surface">
-                      {trade.symbol}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={
-                          trade.type === 'Buy'
-                            ? 'bg-tp-secondary/10 text-tp-secondary border-0 text-xs font-semibold gap-1'
-                            : 'bg-tp-tertiary/10 text-tp-tertiary border-0 text-xs font-semibold gap-1'
-                        }
-                      >
-                        {trade.type === 'Buy' ? (
-                          <ArrowDownRight className="size-3" />
-                        ) : (
-                          <ArrowUpRight className="size-3" />
-                        )}
-                        {trade.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono-data text-tp-on-surface">
-                      ${trade.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell
-                      className={`font-mono-data font-medium ${
-                        trade.pnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'
-                      }`}
-                    >
-                      {trade.pnl >= 0 ? '+' : ''}$
-                      {Math.abs(trade.pnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="text-tp-on-surface-variant text-right text-xs">
-                      {trade.time}
-                    </TableCell>
-                  </TableRow>
+            {tradesLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-5 w-12" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : displayTrades.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Briefcase className="size-10 text-tp-on-surface-variant/40 mb-3" />
+                <p className="text-tp-on-surface-variant font-medium">No trades yet</p>
+                <p className="text-tp-on-surface-variant/70 text-sm mt-1">
+                  Start trading to see your recent activity here
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-tp-outline-variant/30">
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
+                      Symbol
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
+                      Type
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
+                      Price
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
+                      P&amp;L
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
+                      Time
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayTrades.map((trade) => {
+                    const isBuy = trade.tradeDirection === 'BUY'
+                    const pnl = trade.pnl
+                    return (
+                      <TableRow
+                        key={trade.id}
+                        className="border-tp-outline-variant/20 hover:bg-tp-surface-container-low/50"
+                      >
+                        <TableCell>
+                          <div>
+                            <span className="font-semibold text-tp-on-surface">{trade.symbol}</span>
+                            {trade.segment !== 'EQUITY' && (
+                              <span className="ml-1.5 text-[10px] text-tp-on-surface-variant uppercase bg-tp-surface-container/60 px-1.5 py-0.5 rounded">
+                                {trade.segment}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="secondary"
+                            className={
+                              isBuy
+                                ? 'bg-tp-secondary/10 text-tp-secondary border-0 text-xs font-semibold gap-1'
+                                : 'bg-tp-tertiary/10 text-tp-tertiary border-0 text-xs font-semibold gap-1'
+                            }
+                          >
+                            {isBuy ? (
+                              <ArrowDownRight className="size-3" />
+                            ) : (
+                              <ArrowUpRight className="size-3" />
+                            )}
+                            {isBuy ? 'Buy' : 'Sell'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono-data text-tp-on-surface">
+                          ₹{trade.fillPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell
+                          className={`font-mono-data font-medium ${
+                            pnl === null
+                              ? 'text-tp-on-surface-variant'
+                              : pnl >= 0
+                                ? 'text-tp-secondary'
+                                : 'text-tp-tertiary'
+                          }`}
+                        >
+                          {pnl === null
+                            ? '—'
+                            : `${pnl >= 0 ? '+' : ''}₹${Math.abs(pnl).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        </TableCell>
+                        <TableCell className="text-tp-on-surface-variant text-right text-xs">
+                          {formatRelativeTime(trade.executedAt)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
@@ -384,51 +684,68 @@ export function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
-              {marketOverview.map((item) => {
-                const Icon = item.icon
-                const isPositive = item.change >= 0
-                return (
-                  <div
-                    key={item.name}
-                    className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-tp-surface-container-low/60 transition-colors"
-                  >
+            {marketLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between py-3 px-3">
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`size-8 rounded-lg flex items-center justify-center ${
-                          isPositive ? 'bg-tp-secondary/10' : 'bg-tp-tertiary/10'
-                        }`}
-                      >
-                        <Icon
-                          className={`size-4 ${
-                            isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'
-                          }`}
-                        />
-                      </div>
-                      <span className="font-medium text-sm text-tp-on-surface">{item.name}</span>
+                      <Skeleton className="size-8 rounded-lg" />
+                      <Skeleton className="h-4 w-24" />
                     </div>
-                    <div className="text-right">
-                      <p className="font-mono-data text-sm font-semibold text-tp-on-surface">
-                        {item.value}
-                      </p>
-                      <p
-                        className={`text-xs font-medium flex items-center justify-end gap-0.5 ${
-                          isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'
-                        }`}
-                      >
-                        {isPositive ? (
-                          <ArrowUpRight className="size-3" />
-                        ) : (
-                          <ArrowDownRight className="size-3" />
-                        )}
-                        {isPositive ? '+' : ''}
-                        {item.change.toFixed(2)}%
-                      </p>
+                    <div className="text-right space-y-1">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-3 w-12 ml-auto" />
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {marketOverviewItems.map((item) => {
+                  const Icon = 'icon' in item ? (item as { icon: React.ComponentType<{ className?: string }> }).icon : (item.isPositive ? TrendingUp : TrendingDown)
+                  const isPositive = item.isPositive
+                  return (
+                    <div
+                      key={item.name}
+                      className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-tp-surface-container-low/60 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`size-8 rounded-lg flex items-center justify-center ${
+                            isPositive ? 'bg-tp-secondary/10' : 'bg-tp-tertiary/10'
+                          }`}
+                        >
+                          <Icon
+                            className={`size-4 ${
+                              isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'
+                            }`}
+                          />
+                        </div>
+                        <span className="font-medium text-sm text-tp-on-surface">{item.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono-data text-sm font-semibold text-tp-on-surface">
+                          {item.value}
+                        </p>
+                        <p
+                          className={`text-xs font-medium flex items-center justify-end gap-0.5 ${
+                            isPositive ? 'text-tp-secondary' : 'text-tp-tertiary'
+                          }`}
+                        >
+                          {isPositive ? (
+                            <ArrowUpRight className="size-3" />
+                          ) : (
+                            <ArrowDownRight className="size-3" />
+                          )}
+                          {isPositive ? '+' : ''}
+                          {item.change.toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

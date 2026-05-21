@@ -36,7 +36,7 @@ import {
   FileText,
   CheckCircle2,
   XCircle,
-  DollarSign,
+  IndianRupee,
   ArrowUpRight,
   ArrowDownRight,
   Clock,
@@ -69,37 +69,37 @@ interface Trade {
 }
 
 const openOrders: Order[] = [
-  { id: 'ORD-001', time: '09:42:18', instrument: 'AAPL', type: 'Buy', qty: 150, price: 190.50, status: 'Pending' },
-  { id: 'ORD-002', time: '09:38:05', instrument: 'TSLA', type: 'Sell', qty: 80, price: 240.00, status: 'Partial', filledQty: 35 },
-  { id: 'ORD-003', time: '09:31:42', instrument: 'NVDA', type: 'Buy', qty: 50, price: 872.00, status: 'Pending' },
-  { id: 'ORD-004', time: '09:25:11', instrument: 'BTC/USD', type: 'Buy', qty: 1.5, price: 68200.00, status: 'Partial', filledQty: 0.8 },
-  { id: 'ORD-005', time: '09:18:33', instrument: 'MSFT', type: 'Sell', qty: 200, price: 428.00, status: 'Pending' },
+  { id: 'ORD-001', time: '09:42:18', instrument: 'RELIANCE', type: 'Buy', qty: 150, price: 2940.50, status: 'Pending' },
+  { id: 'ORD-002', time: '09:38:05', instrument: 'TCS', type: 'Sell', qty: 80, price: 3820.00, status: 'Partial', filledQty: 35 },
+  { id: 'ORD-003', time: '09:31:42', instrument: 'HDFCBANK', type: 'Buy', qty: 50, price: 1640.00, status: 'Pending' },
+  { id: 'ORD-004', time: '09:25:11', instrument: 'INFY', type: 'Buy', qty: 100, price: 1520.00, status: 'Partial', filledQty: 45 },
+  { id: 'ORD-005', time: '09:18:33', instrument: 'KOTAKBANK', type: 'Sell', qty: 200, price: 1795.00, status: 'Pending' },
 ]
 
 const orderHistory: Order[] = [
-  { id: 'ORD-006', time: '09:12:45', instrument: 'AAPL', type: 'Buy', qty: 100, price: 189.80, status: 'Filled', fillPrice: 189.82 },
-  { id: 'ORD-007', time: '08:58:22', instrument: 'ETH/USD', type: 'Sell', qty: 10, price: 3480.00, status: 'Filled', fillPrice: 3482.50 },
-  { id: 'ORD-008', time: '08:45:10', instrument: 'TSLA', type: 'Buy', qty: 60, price: 235.50, status: 'Filled', fillPrice: 235.48 },
-  { id: 'ORD-009', time: '08:30:55', instrument: 'NVDA', type: 'Sell', qty: 25, price: 878.00, status: 'Cancelled' },
-  { id: 'ORD-010', time: '08:15:30', instrument: 'MSFT', type: 'Buy', qty: 150, price: 423.00, status: 'Filled', fillPrice: 423.15 },
-  { id: 'ORD-011', time: '07:52:18', instrument: 'BTC/USD', type: 'Sell', qty: 0.5, price: 67500.00, status: 'Cancelled' },
-  { id: 'ORD-012', time: '07:40:05', instrument: 'AAPL', type: 'Buy', qty: 200, price: 188.50, status: 'Filled', fillPrice: 188.55 },
+  { id: 'ORD-006', time: '09:12:45', instrument: 'RELIANCE', type: 'Buy', qty: 100, price: 2930.80, status: 'Filled', fillPrice: 2930.82 },
+  { id: 'ORD-007', time: '08:58:22', instrument: 'ITC', type: 'Sell', qty: 500, price: 458.00, status: 'Filled', fillPrice: 457.50 },
+  { id: 'ORD-008', time: '08:45:10', instrument: 'TCS', type: 'Buy', qty: 60, price: 3795.50, status: 'Filled', fillPrice: 3795.48 },
+  { id: 'ORD-009', time: '08:30:55', instrument: 'HDFCBANK', type: 'Sell', qty: 25, price: 1660.00, status: 'Cancelled' },
+  { id: 'ORD-010', time: '08:15:30', instrument: 'KOTAKBANK', type: 'Buy', qty: 150, price: 1785.00, status: 'Filled', fillPrice: 1785.15 },
+  { id: 'ORD-011', time: '07:52:18', instrument: 'INFY', type: 'Sell', qty: 200, price: 1515.00, status: 'Cancelled' },
+  { id: 'ORD-012', time: '07:40:05', instrument: 'RELIANCE', type: 'Buy', qty: 200, price: 2915.50, status: 'Filled', fillPrice: 2915.55 },
 ]
 
 const tradeLog: Trade[] = [
-  { id: 'TRD-001', time: '09:12:45', instrument: 'AAPL', side: 'Buy', qty: 100, price: 189.82, pnl: 0 },
-  { id: 'TRD-002', time: '08:58:22', instrument: 'ETH/USD', side: 'Sell', qty: 10, price: 3482.50, pnl: -85.00 },
-  { id: 'TRD-003', time: '08:45:10', instrument: 'TSLA', side: 'Buy', qty: 60, price: 235.48, pnl: +177.20 },
-  { id: 'TRD-004', time: '08:15:30', instrument: 'MSFT', side: 'Buy', qty: 150, price: 423.15, pnl: +311.25 },
-  { id: 'TRD-005', time: '07:40:05', instrument: 'AAPL', side: 'Buy', qty: 200, price: 188.55, pnl: +498.00 },
-  { id: 'TRD-006', time: '07:22:41', instrument: 'BTC/USD', side: 'Sell', qty: 2.0, price: 67950.00, pnl: +1420.00 },
+  { id: 'TRD-001', time: '09:12:45', instrument: 'RELIANCE', side: 'Buy', qty: 100, price: 2930.82, pnl: 0 },
+  { id: 'TRD-002', time: '08:58:22', instrument: 'ITC', side: 'Sell', qty: 500, price: 457.50, pnl: -850.00 },
+  { id: 'TRD-003', time: '08:45:10', instrument: 'TCS', side: 'Buy', qty: 60, price: 3795.48, pnl: +1772.00 },
+  { id: 'TRD-004', time: '08:15:30', instrument: 'KOTAKBANK', side: 'Buy', qty: 150, price: 1785.15, pnl: +3112.50 },
+  { id: 'TRD-005', time: '07:40:05', instrument: 'RELIANCE', side: 'Buy', qty: 200, price: 2915.55, pnl: +4980.00 },
+  { id: 'TRD-006', time: '07:22:41', instrument: 'INFY', side: 'Sell', qty: 300, price: 1518.00, pnl: +1420.00 },
 ]
 
 const stats = [
   { label: 'Open Orders', value: '4', icon: Clock, color: 'tp-primary' as const },
   { label: 'Filled Today', value: '12', icon: CheckCircle2, color: 'tp-secondary' as const },
   { label: 'Cancelled', value: '2', icon: XCircle, color: 'tp-tertiary' as const },
-  { label: 'Total Volume', value: '$2.4M', icon: DollarSign, color: 'tp-primary' as const },
+  { label: 'Total Volume', value: '₹24L', icon: IndianRupee, color: 'tp-primary' as const },
 ]
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -217,7 +217,7 @@ export function OrdersPage() {
                   Order History
                 </TabsTrigger>
                 <TabsTrigger value="trades" className="text-xs font-semibold gap-1.5">
-                  <DollarSign className="size-3.5" />
+                  <IndianRupee className="size-3.5" />
                   Trade Log
                 </TabsTrigger>
               </TabsList>
@@ -297,7 +297,7 @@ export function OrdersPage() {
                           )}
                         </TableCell>
                         <TableCell className="font-mono-data text-sm text-right text-tp-on-surface">
-                          ${order.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          ₹{order.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell>
                           <StatusBadge status={order.status} />
@@ -387,11 +387,11 @@ export function OrdersPage() {
                           {order.qty}
                         </TableCell>
                         <TableCell className="font-mono-data text-sm text-right text-tp-on-surface-variant">
-                          ${order.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          ₹{order.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="font-mono-data text-sm text-right text-tp-on-surface">
                           {order.fillPrice
-                            ? `$${order.fillPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                            ? `₹${order.fillPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
                             : '—'}
                         </TableCell>
                         <TableCell>
@@ -474,7 +474,7 @@ export function OrdersPage() {
                           {trade.qty}
                         </TableCell>
                         <TableCell className="font-mono-data text-sm text-right text-tp-on-surface">
-                          ${trade.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          ₹{trade.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell
                           className={`font-mono-data text-sm font-semibold text-right ${
@@ -483,7 +483,7 @@ export function OrdersPage() {
                         >
                           {trade.pnl === 0
                             ? '—'
-                            : `${trade.pnl >= 0 ? '+' : ''}$${Math.abs(trade.pnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                            : `${trade.pnl >= 0 ? '+' : ''}₹${Math.abs(trade.pnl).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                         </TableCell>
                       </TableRow>
                     ))}

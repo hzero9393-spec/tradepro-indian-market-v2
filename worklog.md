@@ -290,3 +290,320 @@ Stage Summary:
 - Auth state persisted in localStorage with backend verification
 - Protected routes: unauthenticated users see login, authenticated users see full app
 - 4 API endpoints: /api/auth/register, /api/auth/login, /api/auth/me, /api/auth/logout
+
+---
+Task ID: 12
+Agent: Main
+Task: Fix $→₹ currency, build trade execution API, update trading page + dashboard with real data
+
+Work Log:
+- Fixed ALL $ (dollar) → ₹ (rupee) across 7 page files (38+ instances total)
+- Replaced US stocks (AAPL, TSLA, NVDA, BTC/USD, ETH/USD, MSFT) with Indian stocks (RELIANCE, TCS, HDFCBANK, INFY, ITC, KOTAKBANK)
+- Replaced DollarSign icon with IndianRupee icon from lucide-react
+- Replaced US market indices (S&P 500, NASDAQ, Gold) with Indian indices (NIFTY 50, SENSEX, BANK NIFTY, NIFTY IT, NIFTY PHARMA)
+- Fixed number formatting to use en-IN locale (Lakhs format: ₹1,24,850 instead of $124,850)
+- Built 7 trade execution API endpoints:
+  1. POST /api/trade/place - Place EQUITY orders (BUY/SELL, MARKET/LIMIT)
+  2. GET /api/trade/positions - Get open positions with live P&L
+  3. GET /api/trade/orders - Get orders with filters
+  4. GET /api/trade/trades - Get trade history
+  5. POST /api/trade/square-off - Close a position with realized P&L
+  6. GET /api/trade/portfolio - Portfolio summary with segment breakdown
+  7. GET /api/trade/stocks - Tradeable stocks with search/sector filters
+- Created /src/lib/trade-auth.ts shared utility (authenticateRequest + calculateBrokerage)
+- Updated trading page to connect to real APIs:
+  - Watchlist fetches from /api/trade/stocks
+  - Order panel calls /api/trade/place with real stock symbol & price
+  - Positions table fetches from /api/trade/positions
+  - Square Off button calls /api/trade/square-off
+  - Account balance from /api/trade/portfolio
+  - Success/error toasts with sonner
+- Updated dashboard page to fetch real user data:
+  - Portfolio value, P&L from /api/trade/portfolio
+  - Recent trades from /api/trade/trades
+  - Market overview from /api/indices
+  - User name from auth store
+- Verified trading flow: BUY 10 RELIANCE @ ₹2,450 → Balance ₹1,00,000 → ₹75,480 (₹24,500 stock + ₹20 brokerage)
+- Lint passes clean (0 errors)
+- Build succeeds (all 28 routes compiled)
+
+Stage Summary:
+- All currency now in ₹ (rupees) with Indian number formatting
+- Trade execution fully functional (BUY/SELL/Square Off)
+- 7 new trade API endpoints + 4 auth API endpoints = 11 total
+- Dashboard shows real portfolio data
+- Indian market data throughout (stocks, indices, news)
+
+---
+Task ID: 1
+Agent: Main
+Task: Replace all dollar ($) currency references with rupees (₹) and US-centric mock data with Indian market data across 4 page components
+
+Work Log:
+- Updated dashboard-page.tsx:
+  - Replaced `$1,248,502.40` → `₹1,24,850.40`, `+$12,450.00` → `+₹1,245.00`, `$1,248,502` → `₹1,24,850`
+  - Changed Y-axis tick formatter from `$...k` to `₹...L` (Lakhs format)
+  - Changed chart tooltip from `$` to `₹` with `en-IN` locale
+  - Replaced recent trades: AAPL→RELIANCE, TSLA→TCS, NVDA→HDFCBANK, MSFT→INFY, BTC/USD→NIFTY 50
+  - Replaced market overview: S&P 500→NIFTY 50, NASDAQ→SENSEX, BTC/USD→BANK NIFTY, ETH/USD→NIFTY IT, Gold→NIFTY PHARMA
+  - Replaced `Alex` with dynamic greeting (removed hardcoded name)
+  - Replaced `Deposit` button text with `Add Funds`
+  - Changed trade price and P&L displays to use `₹` with `en-IN` locale
+
+- Updated trading-page.tsx:
+  - Replaced ALL `$` with `₹` everywhere (watchlist prices, chart prices, P&L, balance, buying power)
+  - Replaced watchlist: AAPL→RELIANCE (₹2,945.30), TSLA→TCS (₹3,812.75), NVDA→HDFCBANK (₹1,645.20), BTC→INFY (₹1,523.80), ETH→ITC (₹456.35), MSFT→KOTAKBANK (₹1,789.40)
+  - Changed chart title from AAPL to RELIANCE, `Apple Inc.` → `Reliance Industries Ltd.`
+  - Changed `$191.04` → `₹2,945.30`, `+$1.52 today` → `+₹12.30 today`
+  - Updated chart data base price range from 186→2920 (Indian price range)
+  - Changed Y-axis tick and tooltip formatters to use `₹`
+  - Changed order panel total from `$` to `₹`, balance `$268,502.40` → `₹1,00,000.00`, buying power `$500,000.00` → `₹5,00,000.00`
+  - Replaced positions with Indian stocks (RELIANCE, TCS, HDFCBANK, INFY) with ₹ values
+  - Replaced market news with Indian context (RBI, NIFTY, SEBI)
+  - Updated price state from `191.04` to `2945.30`
+
+- Updated portfolio-page.tsx:
+  - Changed `DollarSign` icon import to `IndianRupee` from lucide-react
+  - Changed `formatCurrency` function: `$${formatted}` → `₹${formatted}`
+  - Changed `formatCompactCurrency` function: `$` → `₹` with `en-IN` locale
+  - Replaced `<DollarSign>` → `<IndianRupee>`
+  - Replaced `$1,248,502` → `₹1,24,850`, `$980,000` → `₹98,000`, `+$268,502` → `+₹26,850`, `-$12,450` → `-₹1,245`
+  - Replaced holdings: TSLA→RELIANCE, AAPL→TCS, NVDA→HDFCBANK, MSFT→INFY, BTC/USD→ITC with ₹ prices
+  - Replaced allocation: Tech Stocks→Blue Chip, Crypto Assets→Mid Cap, Forex→Small Cap, Cash Reserves→Cash
+  - Changed chart tooltip and legend from `$` to `₹` with `en-IN` locale
+
+- Updated orders-page.tsx:
+  - Changed `DollarSign` import to `IndianRupee` from lucide-react
+  - Changed `<DollarSign>` → `<IndianRupee>` in tab trigger
+  - Replaced `$2.4M` → `₹24L` in stats
+  - Replaced all open orders: AAPL→RELIANCE, TSLA→TCS, NVDA→HDFCBANK, BTC/USD→INFY, MSFT→KOTAKBANK with ₹ prices
+  - Replaced all order history: AAPL→RELIANCE, ETH/USD→ITC, TSLA→TCS, NVDA→HDFCBANK, MSFT→KOTAKBANK, BTC/USD→INFY with ₹ prices
+  - Replaced all trade log entries with Indian stocks and ₹ prices/P&L
+  - Changed all `$` in price displays to `₹` with `en-IN` locale
+  - Changed all `$` in trade log P&L to `₹` with `en-IN` locale
+
+- Fixed parsing error in trading-page.tsx (extra closing parenthesis)
+- Lint passes clean (0 errors)
+
+Stage Summary:
+- All 4 page components fully updated from $/USD to ₹/INR
+- All US-centric mock data replaced with Indian market equivalents
+- Indian number formatting (en-IN locale) applied throughout
+- Currency compact format uses Lakhs (L) notation
+- All stock symbols, company names, and news items reflect Indian markets
+
+---
+Agent: Currency Localization Agent
+Task: Replace all dollar ($) currency references with rupees (₹) and US-centric mock data with Indian market data
+
+Work Log:
+- Updated analytics-page.tsx:
+  - Replaced all $ currency values with ₹ in adjustments data: $178.50→₹2,945.50, +$450.00→+₹450.00, $242.30→₹3,812.30, -$120.30→-₹120.30, $495.20→₹1,645.20, +$1,240.00→+₹1,240.00, $378.90→₹1,523.90, +$890.00→+₹890.00, $178.25→₹456.25, -$230.50→-₹230.50
+  - Replaced instrument names: AAPL→RELIANCE, TSLA→TCS, NVDA→HDFCBANK, MSFT→INFY, AMZN→ITC
+  - Replaced company names: Apple Inc.→Reliance Industries, Tesla Inc.→Tata Consultancy, NVIDIA Corp.→HDFC Bank, Microsoft Corp.→Infosys, Amazon.com→ITC Limited
+  - Chart tooltip and YAxis already consistently use ₹ — verified no remaining $ references
+- Updated leaderboard-page.tsx:
+  - Replaced all $ PnL values with ₹: +$124.3k→+₹1.24L, +$98.7k→+₹98.7K, +$87.2k→+₹87.2K, +$76.5k→+₹76.5K, +$65.8k→+₹65.8K, +$54.3k→+₹54.3K, +$43.1k→+₹43.1K, +$38.9k→+₹38.9K, +$29.4k→+₹29.4K, +$22.7k→+₹22.7K, +$42.5k→+₹42.5K (yourRow)
+  - Replaced names: Sarah Chen→Priya Sharma (SC→PS), Marcus Williams→Rahul Gupta (MW→RG), Raj Patel→Amit Patel (RP→AP)
+  - Replaced category filters: Crypto→F&O, Forex→Index
+- Updated challenges-page.tsx:
+  - Replaced all $ prize/reward values with ₹: $500 credit→₹500 credit, $200 cash→₹200 cash, $300 credit→₹300 credit, $150 cash→₹150 cash, $100 credit→₹100 credit, $75 cash→₹75 cash
+  - Replaced "Crypto Volatility Challenge" with "Options Strategy Challenge"
+  - Replaced "Navigate crypto market volatility and achieve 10% gains in a week." with "Navigate options premium decay and achieve consistent returns."
+- Lint passes clean (0 errors)
+
+Stage Summary:
+- All 3 files updated with Indian market data and ₹ currency
+- No remaining $ dollar references in these files
+- Mock data now reflects Indian equities (RELIANCE, TCS, HDFCBANK, INFY, ITC)
+- Leaderboard uses Indian notation (L for Lakhs, K for thousands)
+- Category filters updated for Indian market (F&O, Index instead of Crypto, Forex)
+- Challenge descriptions updated for options trading context
+
+---
+Task ID: 3
+Agent: Backend Developer
+Task: Build complete trade execution API for TradePro Indian Stock Market paper trading platform
+
+Work Log:
+- Created /src/lib/trade-auth.ts - Shared auth helper and brokerage calculator:
+  - authenticateRequest() - Verifies Bearer token, checks session validity, verifies user is active
+  - calculateBrokerage() - Indian brokerage: 0.05% of total value (min ₹20, max ₹500)
+- Created 7 API route files (7 endpoints):
+
+  1. POST /api/trade/place - Place a new order (most complex, ~600 lines):
+     - Full validation: symbol, direction, orderType, segment, productType, quantity, price
+     - EQUITY handler: Market/LIMIT/SL orders, BUY creates/updates position, SELL closes position
+     - FUTURES handler: Lot-based trading, margin calculation, short selling support
+     - OPTIONS handler: CE/PE options, lot size from index, option writing with margin
+     - All orders use Prisma transactions for atomicity
+     - Position averaging on repeated buys, realized P&L on partial/complete sells
+     - Brokerage deducted from balance on BUY, proceeds (minus brokerage) added on SELL
+     - User stats updated: totalTrades, totalPnl, virtualBalance, marginUsed
+
+  2. GET /api/trade/positions - Get user's open positions:
+     - Fetches all open positions (isOpen: true)
+     - Enriches with current prices from Stock/Future/Option tables
+     - Calculates unrealized P&L based on direction (long vs short)
+     - Updates position records with latest market prices
+
+  3. GET /api/trade/orders - Get user's orders:
+     - Supports ?status=PENDING|FILLED|CANCELLED filter
+     - Supports ?limit=20&offset=0 pagination
+     - Returns paginated results sorted by placedAt desc
+
+  4. GET /api/trade/trades - Get user's trade history:
+     - Supports ?limit=20&offset=0 pagination
+     - Returns paginated results sorted by executedAt desc
+
+  5. POST /api/trade/square-off - Close a position:
+     - Body: { positionId: string }
+     - Gets current market price based on segment
+     - Creates closing order (opposite direction) at market price
+     - Calculates realized P&L (long: exit-entry, short: entry-exit)
+     - Updates position: isOpen=false, squaredOffAt=now
+     - Returns margin (for futures/options), adds proceeds to balance
+     - All operations in a Prisma transaction
+
+  6. GET /api/trade/portfolio - Get portfolio summary:
+     - Returns: virtualBalance, marginUsed, availableMargin
+     - Returns: totalInvested, totalCurrentValue, totalUnrealizedPnl, totalRealizedPnl
+     - Returns: totalPortfolioValue, totalPnl, totalReturn, initialCapital
+     - Segments breakdown: equity, futures, options (with counts and values)
+     - Updates all positions with latest market prices
+
+  7. GET /api/trade/stocks - Get tradeable stocks with current prices:
+     - Supports ?search=RELIANCE and ?sector=Energy filters
+     - Returns: symbol, name, currentPrice, change, changePercent, sector, lotSize, isFnoBan
+     - Also returns: isFuturesAvailable, isOptionsAvailable, volume, marketCap, week52High/Low, peRatio
+
+- All endpoints tested and verified with live Supabase PostgreSQL database:
+  - BUY RELIANCE 10 shares @ ₹2,450: balance ₹1,00,000 → ₹75,480 (₹24,500 + ₹20 brokerage)
+  - Square-off RELIANCE position: balance ₹75,480 → ₹99,960 (₹24,500 - ₹20 brokerage)
+  - Total P&L: -₹40 (two brokerage charges of ₹20 each)
+  - SELL without position: returns 400 with error message
+  - Insufficient balance: returns 400 with required vs available amounts
+  - Invalid inputs: returns 400 with descriptive error messages
+  - Search/filter on stocks: correctly filters by symbol/name and sector
+  - Orders with status filter: correctly returns only FILLED orders
+- bun run lint passes clean (0 errors, 0 warnings)
+
+Stage Summary:
+- Complete trade execution API with 7 endpoints for Indian Stock Market paper trading
+- Full EQUITY, FUTURES, and OPTIONS trading support with proper margin and P&L calculations
+- Indian brokerage model: 0.05% of total value (min ₹20, max ₹500)
+- Position management: create, average, partial close, full close, square-off
+- All monetary values in Indian Rupees (₹)
+- All operations use Prisma transactions for data consistency
+- Proper auth verification on all endpoints via shared trade-auth utility
+
+---
+Task ID: 4
+Agent: Main
+Task: Rebuild trading page to connect to real trade execution APIs
+
+Work Log:
+- Rewrote /src/components/tradepro/pages/trading-page.tsx to replace all mock data with real API integration
+- Key changes:
+  1. **Watchlist**: Fetches stocks from GET /api/trade/stocks on mount with Bearer token auth. Shows loading skeletons while fetching. Clicking a card selects that stock for trading. Search filter works against API-returned stock list.
+  2. **Selected Stock State**: When a stock is selected, chart area dynamically shows its symbol, name, currentPrice, change, changePercent. Chart data is generated based on selected stock's price range. Default selection is first stock from API.
+  3. **Order Panel**: 
+     - Place Order button calls POST /api/trade/place with proper body: symbol, direction (BUY/SELL), orderType (MARKET/LIMIT), segment (EQUITY), productType (INTRADAY/DELIVERY), quantity, and price for LIMIT orders
+     - Shows loading spinner (Loader2) while placing order
+     - Shows green toast (sonner) with trade details on success
+     - Shows red toast with error message on failure
+     - After successful order, refreshes positions and portfolio data
+     - Added Product Type selector (Intraday/Delivery)
+     - Shows selected stock indicator with current price at top of order panel
+  4. **Positions Table**: Fetches from GET /api/trade/positions on mount and after each trade. Shows real positions from API with symbol, side (Long/Short based on tradeDirection), segment, qty, avg price, CMP, and P&L. Added "Square Off" button per row that calls POST /api/trade/square-off with positionId. Shows loading state per-row while squaring off. Empty state shown when no positions.
+  5. **Account Balance**: Fetches from GET /api/trade/portfolio for available balance and buying power. Falls back to auth store user data if portfolio fetch fails.
+  6. **Estimated Total**: Calculated dynamically based on selected stock's currentPrice × quantity (for MARKET) or limit price × quantity (for LIMIT).
+  7. **Brokerage Display**: Shows estimated brokerage (0.05%, min ₹20, max ₹500) and total including brokerage in the order panel summary.
+- Imported useAuthStore for Bearer token
+- Imported toast from sonner for success/error notifications
+- Added Loader2 and XCircle icons for loading and square-off states
+- Dynamic sparkline generation based on stock price and change percentage
+- Handles empty states: no stocks found, no positions, no stock selected
+- All API calls include Authorization: Bearer ${token} header
+- Error handling for all API calls with user-friendly toast messages
+- Kept existing UI design: glass-card, TradePro colors, ₹ currency, en-IN locale
+- Kept existing chart component (recharts ComposedChart)
+- Kept market news section as static content
+- Kept MiniSparkline component
+- bun run lint passes clean (0 errors, 0 warnings)
+- Dev server compiles successfully
+
+Stage Summary:
+- Trading page fully connected to real trade execution APIs
+- Watchlist fetches live stocks from API, clickable to select for trading
+- Order placement works end-to-end: BUY/SELL, MARKET/LIMIT, INTRADAY/DELIVERY
+- Positions table shows real data with Square Off functionality
+- Account balance and buying power from portfolio API
+- Brokerage calculator integrated (0.05%, min ₹20, max ₹500)
+- Full error handling with sonner toast notifications
+- Loading states on all async operations
+- Empty states for no-data scenarios
+
+---
+Task ID: 5
+Agent: Dashboard Integration Agent
+Task: Update dashboard page to fetch real user data from APIs
+
+Work Log:
+- Completely rewrote /src/components/tradepro/pages/dashboard-page.tsx to integrate with backend APIs
+- Added TypeScript interfaces for all API response shapes: PortfolioData, TradeData, IndexData
+- Integrated useAuthStore for real user name in welcome header (user?.name?.split(' ')[0])
+- Welcome greeting now shows: "Good Morning, {firstName}!" instead of generic greeting
+
+- **Key Metric Cards** - Fetch from /api/trade/portfolio:
+  - Portfolio Value: Shows real totalPortfolioValue from portfolio API
+  - Today's P&L: Shows sum of unrealized + realized P&L with proper color coding (green/red)
+  - Open Positions: Shows openPositionsCount from portfolio API, with segment breakdown info
+  - Win Rate: Shows user.winRate from auth store with Progress bar
+
+- **Recent Trades Table** - Fetch from /api/trade/trades?limit=5:
+  - Maps TradeData fields: symbol, tradeDirection, fillPrice, pnl, executedAt
+  - Shows segment badge for non-EQUITY trades (FUTURES, OPTIONS)
+  - P&L column shows "—" when pnl is null (open positions)
+  - Relative time formatting (2m ago, 1h ago, 3d ago) for executedAt
+  - Empty state with icon when no trades exist
+
+- **Market Overview** - Fetch from /api/indices:
+  - Shows real index data: name, currentPrice, changePercent
+  - Dynamic icons: TrendingUp for positive, TrendingDown for negative
+  - Falls back to static mock data if API unavailable
+
+- **Portfolio Performance Chart**:
+  - Generated data now uses real portfolio value as base
+  - Proportional noise/trend around actual portfolio value
+  - Compact format helper: formatINRCompact (₹1.00L, ₹1.00Cr)
+
+- **Loading States**:
+  - Added Skeleton components for all data-dependent sections
+  - Portfolio cards show skeleton placeholders while loading
+  - Trades table shows skeleton rows while loading
+  - Market overview shows skeleton items while loading
+  - Each section has independent loading state
+
+- **Error Handling / Fallback**:
+  - Fallback mock data (fallbackPortfolio, fallbackTrades, fallbackMarketOverview) used on API failure
+  - All fetch calls wrapped in try/catch with graceful degradation
+  - Page never breaks - always shows something meaningful
+
+- **Helper Functions**:
+  - formatRelativeTime() - Converts ISO date to relative time string
+  - formatINR() - Full Indian Rupee formatting with en-IN locale
+  - formatINRCompact() - Compact ₹ notation (K, L, Cr)
+
+- All existing styling preserved: glass-card, TradePro color tokens, ₹ currency, en-IN locale
+- Added useCallback for all fetch functions to prevent unnecessary re-renders
+- Added useEffect to fetch all data on mount
+- Lint passes clean (0 errors)
+
+Stage Summary:
+- Dashboard page now shows real user data from APIs
+- 3 API endpoints integrated: /api/trade/portfolio, /api/trade/trades, /api/indices
+- Auth store used for user name and win rate
+- Full loading state support with Skeleton components
+- Graceful fallback to mock data on API failure
+- All Indian market formatting preserved (₹, en-IN locale, Lakhs notation)

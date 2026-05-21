@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   Area,
   Bar,
@@ -53,53 +53,72 @@ import {
   Newspaper,
   Clock,
   Radio,
+  Loader2,
+  XCircle,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { useAuthStore } from '@/lib/auth-store'
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────
 
-const watchlist = [
-  { symbol: 'AAPL', price: 191.04, change: 0.8, trend: [188, 189, 190, 189.5, 190.5, 191] },
-  { symbol: 'TSLA', price: 238.45, change: 2.1, trend: [232, 234, 236, 235, 237, 238] },
-  { symbol: 'NVDA', price: 874.12, change: -0.5, trend: [880, 878, 876, 877, 875, 874] },
-  { symbol: 'BTC', price: 68410, change: 3.2, trend: [66200, 66800, 67100, 67500, 68000, 68410] },
-  { symbol: 'ETH', price: 3452, change: -1.1, trend: [3500, 3490, 3480, 3470, 3460, 3452] },
-  { symbol: 'MSFT', price: 425.22, change: 0.4, trend: [422, 423, 423.5, 424, 424.5, 425.22] },
-]
+interface TradeableStock {
+  id: string
+  symbol: string
+  name: string
+  currentPrice: number
+  change: number
+  changePercent: number
+  sector: string
+  lotSize: number
+  isFnoBan: boolean
+  isFuturesAvailable: boolean
+  isOptionsAvailable: boolean
+  volume: number
+  marketCap: number
+  week52High: number
+  week52Low: number
+  peRatio: number | null
+}
 
-const chartData = Array.from({ length: 48 }, (_, i) => {
-  const base = 186
-  const trend = (i / 48) * 5
-  const noise = Math.sin(i * 0.5) * 2 + Math.cos(i * 0.8) * 1.5
-  const open = base + trend + noise
-  const close = open + (Math.random() - 0.45) * 2.5
-  const high = Math.max(open, close) + Math.random() * 1.2
-  const low = Math.min(open, close) - Math.random() * 1.2
-  const volume = Math.round(2000000 + Math.random() * 3000000)
-  const hour = Math.floor(i / 4)
-  const minute = (i % 4) * 15
-  return {
-    time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
-    price: Math.round(close * 100) / 100,
-    open: Math.round(open * 100) / 100,
-    high: Math.round(high * 100) / 100,
-    low: Math.round(low * 100) / 100,
-    close: Math.round(close * 100) / 100,
-    volume,
-    barValue: close >= open ? volume : -volume,
-  }
-})
+interface Position {
+  id: string
+  segment: string
+  productType: string
+  tradeDirection: string
+  symbol: string
+  quantity: number
+  entryPrice: number
+  currentPrice: number
+  totalInvested: number
+  currentValue: number
+  unrealizedPnl: number
+  unrealizedPnlPercent: number
+  marginUsed: number
+  isOpen: boolean
+  createdAt: string
+}
 
-const openPositions = [
-  { symbol: 'AAPL', side: 'Long' as const, qty: 150, avgPrice: 185.20, cmp: 191.04, pnl: +876.00 },
-  { symbol: 'TSLA', side: 'Long' as const, qty: 80, avgPrice: 230.50, cmp: 238.45, pnl: +636.00 },
-  { symbol: 'NVDA', side: 'Short' as const, qty: 30, avgPrice: 882.00, cmp: 874.12, pnl: +236.40 },
-  { symbol: 'ETH/USD', side: 'Long' as const, qty: 5, avgPrice: 3520.00, cmp: 3452.00, pnl: -340.00 },
-]
+interface PortfolioData {
+  virtualBalance: number
+  marginUsed: number
+  availableMargin: number
+  totalInvested: number
+  totalCurrentValue: number
+  totalUnrealizedPnl: number
+  totalRealizedPnl: number
+  totalPortfolioValue: number
+  totalPnl: number
+  totalReturn: number
+  initialCapital: number
+  openPositionsCount: number
+}
+
+// ─── Static Data ──────────────────────────────────────────────────────────
 
 const marketNews = [
-  { title: 'Fed Signals Rate Pause Through Q2', source: 'Reuters', time: '12m ago', icon: Radio },
-  { title: 'Tech Earnings Beat Expectations', source: 'Bloomberg', time: '34m ago', icon: TrendingUp },
-  { title: 'Crypto Rally Continues as BTC Hits $68K', source: 'CoinDesk', time: '1h ago', icon: CandlestickChart },
+  { title: 'RBI Holds Repo Rate Steady at 6.5%', source: 'ET Markets', time: '12m ago', icon: Radio },
+  { title: 'NIFTY 50 Hits All-Time High on FII Inflows', source: 'Moneycontrol', time: '34m ago', icon: TrendingUp },
+  { title: 'SEBI Tightens F&O Margin Rules for Retail Traders', source: 'NDTV Profit', time: '1h ago', icon: CandlestickChart },
 ]
 
 const chartConfig = {
@@ -109,7 +128,51 @@ const chartConfig = {
 
 const timeRanges = ['1m', '5m', '15m', '1H', '4H', '1D', '1W'] as const
 
-// ─── Mini Sparkline Component ─────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────
+
+function generateChartData(basePrice: number) {
+  return Array.from({ length: 48 }, (_, i) => {
+    const range = basePrice * 0.01 // ~1% range
+    const trend = (i / 48) * range
+    const noise = Math.sin(i * 0.5) * (range * 0.3) + Math.cos(i * 0.8) * (range * 0.2)
+    const open = basePrice - range * 0.5 + trend + noise
+    const close = open + (Math.random() - 0.45) * (range * 0.4)
+    const high = Math.max(open, close) + Math.random() * (range * 0.15)
+    const low = Math.min(open, close) - Math.random() * (range * 0.15)
+    const volume = Math.round(2000000 + Math.random() * 3000000)
+    const hour = Math.floor(i / 4)
+    const minute = (i % 4) * 15
+    return {
+      time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+      price: Math.round(close * 100) / 100,
+      open: Math.round(open * 100) / 100,
+      high: Math.round(high * 100) / 100,
+      low: Math.round(low * 100) / 100,
+      close: Math.round(close * 100) / 100,
+      volume,
+      barValue: close >= open ? volume : -volume,
+    }
+  })
+}
+
+function calculateBrokerage(totalValue: number): number {
+  const brokeragePercent = 0.0005 // 0.05%
+  const calculated = totalValue * brokeragePercent
+  return Math.max(20, Math.min(500, Math.round(calculated * 100) / 100))
+}
+
+function generateSparkline(basePrice: number, changePercent: number): number[] {
+  const points: number[] = []
+  const startPrice = basePrice / (1 + changePercent / 100)
+  for (let i = 0; i < 6; i++) {
+    const progress = i / 5
+    const noise = (Math.random() - 0.5) * basePrice * 0.003
+    points.push(startPrice + (basePrice - startPrice) * progress + noise)
+  }
+  return points
+}
+
+// ─── Mini Sparkline Component ─────────────────────────────────────────────
 
 function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }) {
   const min = Math.min(...data)
@@ -139,22 +202,255 @@ function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }
   )
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Component ────────────────────────────────────────────────────────────
 
 export function TradingPage() {
+  const { token, user } = useAuthStore()
+
+  // ── State ─────────────────────────────────────────────────────────────
+  const [stocks, setStocks] = useState<TradeableStock[]>([])
+  const [selectedStock, setSelectedStock] = useState<TradeableStock | null>(null)
+  const [positions, setPositions] = useState<Position[]>([])
+  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
+
+  const [loadingStocks, setLoadingStocks] = useState(true)
+  const [loadingPositions, setLoadingPositions] = useState(true)
+  const [placingOrder, setPlacingOrder] = useState(false)
+  const [squaringOff, setSquaringOff] = useState<string | null>(null)
+
   const [activeRange, setActiveRange] = useState<string>('15m')
   const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy')
-  const [orderType, setOrderType] = useState('market')
-  const [quantity, setQuantity] = useState(100)
-  const [price, setPrice] = useState('191.04')
+  const [orderType, setOrderType] = useState('MARKET')
+  const [productType, setProductType] = useState('INTRADAY')
+  const [quantity, setQuantity] = useState(10)
+  const [price, setPrice] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const total = useMemo(() => {
-    const qty = quantity
-    const p = orderType === 'market' ? 191.04 : parseFloat(price) || 0
-    return qty * p
-  }, [quantity, price, orderType])
+  // ── Chart Data ────────────────────────────────────────────────────────
+  const chartData = useMemo(() => {
+    const base = selectedStock?.currentPrice ?? 1000
+    return generateChartData(base)
+  }, [selectedStock?.currentPrice])
+
+  // ── Estimated Total & Brokerage ───────────────────────────────────────
+  const estimatedTotal = useMemo(() => {
+    const p = orderType === 'MARKET'
+      ? (selectedStock?.currentPrice ?? 0)
+      : (parseFloat(price) || 0)
+    return quantity * p
+  }, [quantity, price, orderType, selectedStock?.currentPrice])
+
+  const estimatedBrokerage = useMemo(() => {
+    return calculateBrokerage(estimatedTotal)
+  }, [estimatedTotal])
+
+  // ── Fetch Stocks ──────────────────────────────────────────────────────
+  const fetchStocks = useCallback(async () => {
+    if (!token) return
+    setLoadingStocks(true)
+    try {
+      const res = await fetch('/api/trade/stocks', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data)) {
+        setStocks(data.data)
+        // Default to first stock if none selected
+        if (data.data.length > 0 && !selectedStock) {
+          setSelectedStock(data.data[0])
+        }
+      } else {
+        toast.error('Failed to load stocks')
+      }
+    } catch {
+      toast.error('Network error loading stocks')
+    } finally {
+      setLoadingStocks(false)
+    }
+  }, [token])
+
+  // ── Fetch Positions ───────────────────────────────────────────────────
+  const fetchPositions = useCallback(async () => {
+    if (!token) return
+    setLoadingPositions(true)
+    try {
+      const res = await fetch('/api/trade/positions', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success && Array.isArray(data.data)) {
+        setPositions(data.data)
+      } else {
+        toast.error('Failed to load positions')
+      }
+    } catch {
+      toast.error('Network error loading positions')
+    } finally {
+      setLoadingPositions(false)
+    }
+  }, [token])
+
+  // ── Fetch Portfolio ───────────────────────────────────────────────────
+  const fetchPortfolio = useCallback(async () => {
+    if (!token) return
+    try {
+      const res = await fetch('/api/trade/portfolio', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (data.success && data.data) {
+        setPortfolio(data.data)
+      }
+    } catch {
+      // Silent fail for portfolio - non-critical
+    }
+  }, [token])
+
+  // ── Refresh All After Trade ───────────────────────────────────────────
+  const refreshAfterTrade = useCallback(async () => {
+    await Promise.all([fetchPositions(), fetchPortfolio()])
+  }, [fetchPositions, fetchPortfolio])
+
+  // ── Place Order ───────────────────────────────────────────────────────
+  const handlePlaceOrder = async () => {
+    if (!token || !selectedStock) return
+
+    if (orderType === 'LIMIT' && (!price || parseFloat(price) <= 0)) {
+      toast.error('Please enter a valid price for LIMIT orders')
+      return
+    }
+
+    if (quantity <= 0) {
+      toast.error('Quantity must be at least 1')
+      return
+    }
+
+    setPlacingOrder(true)
+    try {
+      const body: Record<string, unknown> = {
+        symbol: selectedStock.symbol,
+        direction: orderSide === 'buy' ? 'BUY' : 'SELL',
+        orderType: orderType,
+        segment: 'EQUITY',
+        productType: productType,
+        quantity: quantity,
+      }
+
+      if (orderType === 'LIMIT' && price) {
+        body.price = parseFloat(price)
+      }
+
+      const res = await fetch('/api/trade/place', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
+        toast.success(
+          `${direction} ${quantity} ${selectedStock.symbol} @ ₹${orderType === 'MARKET' ? selectedStock.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : parseFloat(price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+          {
+            description: `Order filled successfully • Brokerage: ₹${estimatedBrokerage.toLocaleString('en-IN')}`,
+          }
+        )
+        // Refresh data
+        await refreshAfterTrade()
+      } else {
+        toast.error(data.error || 'Failed to place order', {
+          description: 'Please check your balance and try again.',
+        })
+      }
+    } catch {
+      toast.error('Network error placing order')
+    } finally {
+      setPlacingOrder(false)
+    }
+  }
+
+  // ── Square Off ────────────────────────────────────────────────────────
+  const handleSquareOff = async (positionId: string, symbol: string) => {
+    if (!token) return
+
+    setSquaringOff(positionId)
+    try {
+      const res = await fetch('/api/trade/square-off', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ positionId }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        const closedPos = data.closedPosition
+        const pnlStr = closedPos
+          ? `P&L: ${closedPos.realizedPnl >= 0 ? '+' : ''}₹${Math.abs(closedPos.realizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+          : ''
+        toast.success(`Squared off ${symbol}`, {
+          description: pnlStr,
+        })
+        await refreshAfterTrade()
+      } else {
+        toast.error(data.error || 'Failed to square off position')
+      }
+    } catch {
+      toast.error('Network error squaring off position')
+    } finally {
+      setSquaringOff(null)
+    }
+  }
+
+  // ── Select Stock Handler ──────────────────────────────────────────────
+  const handleSelectStock = (stock: TradeableStock) => {
+    setSelectedStock(stock)
+    // Reset price when changing stock
+    setPrice(stock.currentPrice.toFixed(2))
+  }
+
+  // ── Effects ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchStocks()
+  }, [fetchStocks])
+
+  useEffect(() => {
+    fetchPositions()
+  }, [fetchPositions])
+
+  useEffect(() => {
+    fetchPortfolio()
+  }, [fetchPortfolio])
+
+  // Set initial price when selected stock changes
+  useEffect(() => {
+    if (selectedStock) {
+      setPrice(selectedStock.currentPrice.toFixed(2))
+    }
+  }, [selectedStock])
+
+  // ── Filtered Watchlist ────────────────────────────────────────────────
+  const filteredStocks = useMemo(() => {
+    if (!searchQuery.trim()) return stocks
+    const q = searchQuery.toLowerCase()
+    return stocks.filter(
+      (s) =>
+        s.symbol.toLowerCase().includes(q) ||
+        s.name.toLowerCase().includes(q)
+    )
+  }, [stocks, searchQuery])
+
+  // ── Available Balance ─────────────────────────────────────────────────
+  const availableBalance = portfolio?.virtualBalance ?? user?.virtualBalance ?? 0
+  const buyingPower = portfolio?.availableMargin ?? ((user?.virtualBalance ?? 0) - (user?.marginUsed ?? 0))
 
   return (
     <div className="min-h-screen bg-tp-surface p-4 sm:p-6 lg:p-8 space-y-5">
@@ -201,46 +497,68 @@ export function TradingPage() {
 
       {/* ── Watchlist Bar ───────────────────────────────────────────────── */}
       <div className="flex gap-3 overflow-x-auto pb-1 custom-scrollbar">
-        {watchlist.map((item) => {
-          const isPositive = item.change >= 0
-          return (
-            <Card
-              key={item.symbol}
-              className="glass-card rounded-xl shadow-sm shrink-0 w-[180px] hover:shadow-md transition-shadow cursor-pointer border-l-4"
-              style={{
-                borderLeftColor: isPositive ? '#006c49' : '#b61722',
-              }}
-            >
+        {loadingStocks ? (
+          // Loading skeletons
+          Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="glass-card rounded-xl shadow-sm shrink-0 w-[180px] animate-pulse">
               <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-bold text-sm text-tp-on-surface">{item.symbol}</span>
-                  <Badge
-                    variant="secondary"
-                    className={`text-[10px] font-semibold border-0 gap-0.5 px-1.5 py-0 ${
-                      isPositive
-                        ? 'bg-tp-secondary/10 text-tp-secondary'
-                        : 'bg-tp-tertiary/10 text-tp-tertiary'
-                    }`}
-                  >
-                    {isPositive ? (
-                      <ArrowUpRight className="size-2.5" />
-                    ) : (
-                      <ArrowDownRight className="size-2.5" />
-                    )}
-                    {isPositive ? '+' : ''}
-                    {item.change}%
-                  </Badge>
-                </div>
-                <p className="font-mono-data text-lg font-semibold text-tp-on-surface">
-                  ${item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <div className="mt-2">
-                  <MiniSparkline data={item.trend} positive={isPositive} />
-                </div>
+                <div className="h-4 bg-muted rounded w-20 mb-2" />
+                <div className="h-6 bg-muted rounded w-28 mb-2" />
+                <div className="h-6 bg-muted rounded w-16" />
               </CardContent>
             </Card>
-          )
-        })}
+          ))
+        ) : filteredStocks.length === 0 ? (
+          <div className="flex items-center justify-center w-full py-8 text-tp-on-surface-variant text-sm">
+            {searchQuery ? 'No stocks match your search.' : 'No tradeable stocks found.'}
+          </div>
+        ) : (
+          filteredStocks.map((stock) => {
+            const isPositive = stock.changePercent >= 0
+            const isSelected = selectedStock?.symbol === stock.symbol
+            const sparkline = generateSparkline(stock.currentPrice, stock.changePercent)
+            return (
+              <Card
+                key={stock.symbol}
+                className={`glass-card rounded-xl shadow-sm shrink-0 w-[180px] hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
+                  isSelected ? 'ring-2 ring-tp-primary/50' : ''
+                }`}
+                style={{
+                  borderLeftColor: isPositive ? '#006c49' : '#b61722',
+                }}
+                onClick={() => handleSelectStock(stock)}
+              >
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-sm text-tp-on-surface">{stock.symbol}</span>
+                    <Badge
+                      variant="secondary"
+                      className={`text-[10px] font-semibold border-0 gap-0.5 px-1.5 py-0 ${
+                        isPositive
+                          ? 'bg-tp-secondary/10 text-tp-secondary'
+                          : 'bg-tp-tertiary/10 text-tp-tertiary'
+                      }`}
+                    >
+                      {isPositive ? (
+                        <ArrowUpRight className="size-2.5" />
+                      ) : (
+                        <ArrowDownRight className="size-2.5" />
+                      )}
+                      {isPositive ? '+' : ''}
+                      {stock.changePercent.toFixed(2)}%
+                    </Badge>
+                  </div>
+                  <p className="font-mono-data text-lg font-semibold text-tp-on-surface">
+                    ₹{stock.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                  <div className="mt-2">
+                    <MiniSparkline data={sparkline} positive={isPositive} />
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })
+        )}
       </div>
 
       {/* ── Main Trading Panel ──────────────────────────────────────────── */}
@@ -250,25 +568,52 @@ export function TradingPage() {
           <CardHeader className="pb-2">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg font-semibold text-tp-on-surface">
-                    AAPL
-                  </CardTitle>
-                  <span className="text-sm text-tp-on-surface-variant">Apple Inc.</span>
-                  <Badge
-                    variant="secondary"
-                    className="gap-0.5 bg-tp-secondary/10 text-tp-secondary border-0 text-[10px] font-semibold"
-                  >
-                    <ArrowUpRight className="size-2.5" />
-                    +0.80%
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-2xl font-bold font-mono-data text-tp-on-surface">
-                    $191.04
-                  </span>
-                  <span className="text-sm text-tp-secondary font-medium">+$1.52 today</span>
-                </div>
+                {selectedStock ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg font-semibold text-tp-on-surface">
+                        {selectedStock.symbol}
+                      </CardTitle>
+                      <span className="text-sm text-tp-on-surface-variant">{selectedStock.name}</span>
+                      <Badge
+                        variant="secondary"
+                        className={`gap-0.5 border-0 text-[10px] font-semibold ${
+                          selectedStock.changePercent >= 0
+                            ? 'bg-tp-secondary/10 text-tp-secondary'
+                            : 'bg-tp-tertiary/10 text-tp-tertiary'
+                        }`}
+                      >
+                        {selectedStock.changePercent >= 0 ? (
+                          <ArrowUpRight className="size-2.5" />
+                        ) : (
+                          <ArrowDownRight className="size-2.5" />
+                        )}
+                        {selectedStock.changePercent >= 0 ? '+' : ''}
+                        {selectedStock.changePercent.toFixed(2)}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-2xl font-bold font-mono-data text-tp-on-surface">
+                        ₹{selectedStock.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className={`text-sm font-medium ${
+                        selectedStock.changePercent >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'
+                      }`}>
+                        {selectedStock.changePercent >= 0 ? '+' : ''}
+                        ₹{selectedStock.change.toLocaleString('en-IN', { minimumFractionDigits: 2 })} today
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <CardTitle className="text-lg font-semibold text-tp-on-surface">
+                      Select a Stock
+                    </CardTitle>
+                    <p className="text-sm text-tp-on-surface-variant mt-1">
+                      Click on a stock from the watchlist to view its chart.
+                    </p>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
                 {timeRanges.map((range) => (
@@ -311,7 +656,7 @@ export function TradingPage() {
                   tickMargin={8}
                   fontSize={10}
                   domain={['dataMin - 1', 'dataMax + 1']}
-                  tickFormatter={(value: number) => `$${value.toFixed(0)}`}
+                  tickFormatter={(value: number) => `₹${value.toFixed(0)}`}
                 />
                 <YAxis
                   yAxisId="volume"
@@ -326,7 +671,7 @@ export function TradingPage() {
                     <ChartTooltipContent
                       formatter={(value, name) => (
                         <span className="font-mono-data font-semibold">
-                          {name === 'price' ? `$${Number(value).toFixed(2)}` : Number(value).toLocaleString()}
+                          {name === 'price' ? `₹${Number(value).toFixed(2)}` : Number(value).toLocaleString('en-IN')}
                         </span>
                       )}
                     />
@@ -360,6 +705,18 @@ export function TradingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Selected Stock Indicator */}
+            {selectedStock && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-tp-surface-container-low/80 border border-tp-outline-variant/20">
+                <span className="font-bold text-sm text-tp-primary">{selectedStock.symbol}</span>
+                <span className="text-xs text-tp-on-surface-variant">•</span>
+                <span className="text-xs text-tp-on-surface-variant truncate">{selectedStock.name}</span>
+                <span className="ml-auto font-mono-data text-sm font-semibold text-tp-on-surface">
+                  ₹{selectedStock.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
+
             {/* Buy/Sell Toggle */}
             <div className="flex rounded-lg bg-muted/50 p-1">
               <Button
@@ -396,9 +753,24 @@ export function TradingPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="market">Market</SelectItem>
-                  <SelectItem value="limit">Limit</SelectItem>
-                  <SelectItem value="stop-loss">Stop Loss</SelectItem>
+                  <SelectItem value="MARKET">Market</SelectItem>
+                  <SelectItem value="LIMIT">Limit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Product Type */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-tp-on-surface-variant uppercase tracking-wider">
+                Product Type
+              </label>
+              <Select value={productType} onValueChange={setProductType}>
+                <SelectTrigger className="w-full h-9 bg-tp-surface-container-lowest border-tp-outline-variant/40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="INTRADAY">Intraday</SelectItem>
+                  <SelectItem value="DELIVERY">Delivery</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -434,11 +806,11 @@ export function TradingPage() {
               </div>
             </div>
 
-            {/* Price (for limit/stop orders) */}
-            {orderType !== 'market' && (
+            {/* Price (for limit orders) */}
+            {orderType === 'LIMIT' && (
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-tp-on-surface-variant uppercase tracking-wider">
-                  Price
+                  Limit Price
                 </label>
                 <Input
                   type="number"
@@ -450,12 +822,24 @@ export function TradingPage() {
               </div>
             )}
 
-            {/* Total */}
-            <div className="rounded-lg bg-tp-surface-container-low/80 p-3 border border-tp-outline-variant/20">
+            {/* Total & Brokerage */}
+            <div className="rounded-lg bg-tp-surface-container-low/80 p-3 border border-tp-outline-variant/20 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-tp-on-surface-variant">Estimated Total</span>
                 <span className="font-mono-data text-lg font-bold text-tp-on-surface">
-                  ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ₹{estimatedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-tp-on-surface-variant">Est. Brokerage (0.05%)</span>
+                <span className="font-mono-data text-xs font-medium text-tp-on-surface-variant">
+                  ₹{estimatedBrokerage.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-tp-on-surface-variant">Total (incl. brokerage)</span>
+                <span className="font-mono-data text-xs font-semibold text-tp-on-surface">
+                  ₹{(estimatedTotal + estimatedBrokerage).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -467,22 +851,37 @@ export function TradingPage() {
                   ? 'bg-tp-secondary hover:bg-tp-secondary/90 text-white'
                   : 'bg-tp-tertiary hover:bg-tp-tertiary/90 text-white'
               }`}
+              onClick={handlePlaceOrder}
+              disabled={placingOrder || !selectedStock}
             >
-              {orderSide === 'buy' ? 'Place Buy Order' : 'Place Sell Order'}
+              {placingOrder ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Placing Order...
+                </>
+              ) : (
+                orderSide === 'buy' ? 'Place Buy Order' : 'Place Sell Order'
+              )}
             </Button>
+
+            {!selectedStock && (
+              <p className="text-xs text-tp-tertiary text-center">
+                Select a stock from the watchlist to trade
+              </p>
+            )}
 
             {/* Account Stats */}
             <div className="space-y-2 pt-2 border-t border-tp-outline-variant/20">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-tp-on-surface-variant">Available Balance</span>
                 <span className="font-mono-data text-sm font-semibold text-tp-on-surface">
-                  $268,502.40
+                  ₹{availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-tp-on-surface-variant">Buying Power</span>
                 <span className="font-mono-data text-sm font-semibold text-tp-on-surface">
-                  $500,000.00
+                  ₹{Math.max(0, buyingPower).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -498,82 +897,122 @@ export function TradingPage() {
               Open Positions
             </CardTitle>
             <Badge variant="secondary" className="bg-tp-primary/10 text-tp-primary border-0 text-xs font-semibold">
-              {openPositions.length} Active
+              {positions.length} Active
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent border-tp-outline-variant/30">
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                    Symbol
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
-                    Side
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
-                    Qty
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
-                    Avg Price
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
-                    CMP
-                  </TableHead>
-                  <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
-                    P&amp;L
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {openPositions.map((pos) => (
-                  <TableRow
-                    key={pos.symbol}
-                    className="border-tp-outline-variant/20 hover:bg-tp-surface-container-low/50"
-                  >
-                    <TableCell className="font-bold text-tp-primary text-sm">
-                      {pos.symbol}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={`text-[10px] font-semibold border-0 gap-0.5 ${
-                          pos.side === 'Long'
-                            ? 'bg-tp-secondary/10 text-tp-secondary'
-                            : 'bg-tp-tertiary/10 text-tp-tertiary'
-                        }`}
-                      >
-                        {pos.side === 'Long' ? (
-                          <ArrowUpRight className="size-2.5" />
-                        ) : (
-                          <ArrowDownRight className="size-2.5" />
-                        )}
-                        {pos.side}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-tp-on-surface">
-                      {pos.qty}
-                    </TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-tp-on-surface-variant">
-                      ${pos.avgPrice.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-tp-on-surface">
-                      ${pos.cmp.toFixed(2)}
-                    </TableCell>
-                    <TableCell
-                      className={`font-mono-data text-sm font-semibold text-right ${
-                        pos.pnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'
-                      }`}
-                    >
-                      {pos.pnl >= 0 ? '+' : ''}${Math.abs(pos.pnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </TableCell>
+          {loadingPositions ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="size-6 animate-spin text-tp-on-surface-variant" />
+              <span className="ml-2 text-sm text-tp-on-surface-variant">Loading positions...</span>
+            </div>
+          ) : positions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-tp-on-surface-variant">
+              <Newspaper className="size-8 mb-2 opacity-40" />
+              <p className="text-sm">No open positions. Place a trade to get started!</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-tp-outline-variant/30">
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
+                      Symbol
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
+                      Side
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider">
+                      Segment
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
+                      Qty
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
+                      Avg Price
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
+                      CMP
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
+                      P&amp;L
+                    </TableHead>
+                    <TableHead className="text-tp-on-surface-variant font-semibold text-xs uppercase tracking-wider text-right">
+                      Action
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {positions.map((pos) => {
+                    const isLong = pos.tradeDirection === 'BUY'
+                    return (
+                      <TableRow
+                        key={pos.id}
+                        className="border-tp-outline-variant/20 hover:bg-tp-surface-container-low/50"
+                      >
+                        <TableCell className="font-bold text-tp-primary text-sm">
+                          {pos.symbol}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="secondary"
+                            className={`text-[10px] font-semibold border-0 gap-0.5 ${
+                              isLong
+                                ? 'bg-tp-secondary/10 text-tp-secondary'
+                                : 'bg-tp-tertiary/10 text-tp-tertiary'
+                            }`}
+                          >
+                            {isLong ? (
+                              <ArrowUpRight className="size-2.5" />
+                            ) : (
+                              <ArrowDownRight className="size-2.5" />
+                            )}
+                            {isLong ? 'Long' : 'Short'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-tp-on-surface-variant">
+                          {pos.segment}
+                        </TableCell>
+                        <TableCell className="font-mono-data text-sm text-right text-tp-on-surface">
+                          {pos.quantity}
+                        </TableCell>
+                        <TableCell className="font-mono-data text-sm text-right text-tp-on-surface-variant">
+                          ₹{pos.entryPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="font-mono-data text-sm text-right text-tp-on-surface">
+                          ₹{pos.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell
+                          className={`font-mono-data text-sm font-semibold text-right ${
+                            pos.unrealizedPnl >= 0 ? 'text-tp-secondary' : 'text-tp-tertiary'
+                          }`}
+                        >
+                          {pos.unrealizedPnl >= 0 ? '+' : ''}₹{Math.abs(pos.unrealizedPnl).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs font-semibold border-tp-tertiary/40 text-tp-tertiary hover:bg-tp-tertiary/10 hover:text-tp-tertiary gap-1"
+                            onClick={() => handleSquareOff(pos.id, pos.symbol)}
+                            disabled={squaringOff === pos.id}
+                          >
+                            {squaringOff === pos.id ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <XCircle className="size-3" />
+                            )}
+                            Square Off
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
