@@ -225,3 +225,68 @@ Stage Summary:
 - 16 API endpoints connected to Supabase PostgreSQL
 - Database tables: users, sessions, indices, index_history, stocks, stock_history, futures, options, orders, trades, positions, portfolios, sectors, market_holidays, fno_ban_entries, market_breadth, challenges, challenge_participations, learning_paths, learning_modules, user_progress
 - All data seeded with Indian market data
+
+---
+Task ID: 11
+Agent: Main
+Task: Build Login and Signup authentication system
+
+Work Log:
+- Installed bcryptjs and jsonwebtoken (+ TypeScript types) for password hashing and JWT
+- Added JWT_SECRET and JWT_EXPIRES_IN to .env
+- Created /src/lib/auth.ts with auth utilities:
+  - hashPassword() - bcrypt with salt rounds 12
+  - verifyPassword() - bcrypt compare
+  - generateToken() - JWT with 7-day expiry
+  - verifyToken() - JWT verification
+  - getTokenFromHeaders() - Extract Bearer token from request headers
+- Created 4 API routes:
+  1. POST /api/auth/register - User registration with validation, email/phone uniqueness check, ₹1,00,000 default balance, JWT + session creation
+  2. POST /api/auth/login - Email/password login with account active check, session creation, last login update
+  3. GET /api/auth/me - Token verification, session validation, fresh user data with trade/order/position counts
+  4. POST /api/auth/logout - Session deletion, token cleanup
+- Created /src/lib/auth-store.ts - Zustand auth state store:
+  - User type with all fields from Prisma model
+  - setAuth(), setUser(), logout(), setLoading(), initialize()
+  - Token stored in localStorage as 'tradepro_token'
+  - Auto-initialize on mount via /api/auth/me verification
+- Created /src/components/tradepro/auth-page.tsx - Beautiful login/signup page:
+  - Split-screen design: Left panel with branding + features (desktop), Right panel with form
+  - Left panel: TradePro logo, tagline, 3 feature cards (Real-time Data, Risk-Free Trading, F&O Trading), stats (50+ stocks, 5 indices, ₹1L cash)
+  - Animated background with floating shapes, grid pattern
+  - Login form: email, password with show/hide toggle, forgot password link
+  - Signup form: name, email, phone (optional), password with strength indicator, confirm password with match validation, terms checkbox
+  - Smooth Framer Motion transitions between login/signup modes
+  - Error/success message animations
+  - Mobile responsive with compact logo
+- Updated /src/components/tradepro/sidebar.tsx:
+  - Added props: onLogout, userName, userEmail, userRole
+  - User profile card in sidebar showing name and subscription
+  - Logout button now calls onLogout prop
+  - Changed bottom nav from HelpCircle to Settings icon
+- Updated /src/components/tradepro/topbar.tsx:
+  - Added props: userName, onLogout
+  - User dropdown menu with Settings, Analytics, Sign Out options
+  - Dynamic avatar initials from user name
+  - Mobile avatar dropdown menu
+- Updated /src/app/page.tsx with auth gate:
+  - Loading screen with animated dots while initializing
+  - Shows AuthPage if not authenticated
+  - Shows full app with auth-gated navigation if authenticated
+  - Passes user info and logout handler to Sidebar and TopBar
+- All API endpoints tested and verified:
+  - Registration: 201 with user + token + ₹1,00,000 balance
+  - Login: 200 with user + token
+  - Duplicate email: 409 with error message
+  - Wrong password: 401 with error message
+  - Auth me: 200 with user data + counts
+- Lint passes clean (0 errors)
+- Dev server compiles successfully
+
+Stage Summary:
+- Complete authentication system with JWT + session-based auth
+- Beautiful split-screen login/signup UI with Framer Motion animations
+- User registration creates ₹1,00,000 virtual balance
+- Auth state persisted in localStorage with backend verification
+- Protected routes: unauthenticated users see login, authenticated users see full app
+- 4 API endpoints: /api/auth/register, /api/auth/login, /api/auth/me, /api/auth/logout

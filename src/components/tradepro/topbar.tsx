@@ -1,14 +1,31 @@
 'use client'
 
-import { Menu, Search, Bell, Settings } from 'lucide-react'
+import { Menu, Search, Bell, LogOut } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
-export function TopBar() {
-  const { setSidebarOpen } = useAppStore()
+interface TopBarProps {
+  userName?: string | null
+  onLogout?: () => void
+}
+
+export function TopBar({ userName, onLogout }: TopBarProps) {
+  const { setSidebarOpen, setCurrentPage } = useAppStore()
+
+  const initials = userName
+    ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'TP'
 
   return (
     <header
@@ -65,42 +82,80 @@ export function TopBar() {
             </span>
           </Button>
 
-          {/* Settings */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden md:inline-flex"
-            aria-label="Settings"
-          >
-            <Settings className="size-5 text-tp-on-surface-variant" />
-          </Button>
-
           {/* Divider */}
           <Separator orientation="vertical" className="mx-1 h-6 hidden md:block" />
 
-          {/* User Avatar & Name */}
-          <button className="hidden md:flex items-center gap-2.5 rounded-full px-2 py-1.5 transition-colors hover:bg-accent">
-            <Avatar className="size-8 border border-tp-outline-variant/50">
-              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                TP
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-tp-on-surface leading-tight">
-                TradePro User
-              </span>
-              <span className="text-[11px] text-tp-outline leading-tight">
-                Pro Account
-              </span>
-            </div>
-          </button>
+          {/* User Menu (Dropdown) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="hidden md:flex items-center gap-2.5 rounded-full px-2 py-1.5 transition-colors hover:bg-accent outline-none">
+                <Avatar className="size-8 border border-tp-outline-variant/50">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-tp-on-surface leading-tight">
+                    {userName || 'TradePro User'}
+                  </span>
+                  <span className="text-[11px] text-tp-outline leading-tight">
+                    Paper Trading
+                  </span>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>
+                <div className="flex flex-col">
+                  <span className="font-medium">{userName || 'User'}</span>
+                  <span className="text-xs text-muted-foreground">Paper Trading Account</span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCurrentPage('settings')}>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setCurrentPage('analytics')}>
+                My Analytics
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onLogout}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="size-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* Mobile: Avatar only */}
-          <Avatar className="size-8 border border-tp-outline-variant/50 md:hidden">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-              TP
-            </AvatarFallback>
-          </Avatar>
+          {/* Mobile: Avatar only (dropdown) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="md:hidden outline-none">
+                <Avatar className="size-8 border border-tp-outline-variant/50">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>{userName || 'User'}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCurrentPage('settings')}>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={onLogout}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="size-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

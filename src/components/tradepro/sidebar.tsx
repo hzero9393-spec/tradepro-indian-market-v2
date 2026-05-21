@@ -15,11 +15,14 @@ import {
   ShieldCheck,
   LogOut,
   TrendingUp,
+  Settings,
+  Crown,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 interface NavItem {
   id: PageId
@@ -41,12 +44,27 @@ const mainNavItems: NavItem[] = [
 ]
 
 const bottomNavItems: NavItem[] = [
-  { id: 'settings', label: 'Support', icon: HelpCircle },
+  { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'admin', label: 'Admin', icon: ShieldCheck },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  onLogout?: () => void
+  userName?: string | null
+  userEmail?: string | null
+  userRole?: string | null
+}
+
+export function Sidebar({ onLogout, userName, userEmail, userRole }: SidebarProps) {
   const { currentPage, setCurrentPage } = useAppStore()
+
+  const initials = userName
+    ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'TP'
+
+  const subscriptionLabel = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN'
+    ? 'Admin'
+    : 'Free Account'
 
   return (
     <aside
@@ -73,8 +91,32 @@ export function Sidebar() {
 
         <Separator className="mx-4 w-auto" />
 
+        {/* User Profile Card */}
+        {userName && (
+          <div className="px-4 py-3">
+            <div className="flex items-center gap-3 rounded-xl bg-tp-surface-container-low p-3">
+              <Avatar className="size-9 border border-tp-outline-variant/50">
+                <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-tp-on-surface truncate">
+                  {userName}
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <Crown className="size-3 text-tp-outline" />
+                  <p className="text-[11px] text-tp-outline">
+                    {subscriptionLabel}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Navigation */}
-        <ScrollArea className="flex-1 px-3 py-4 custom-scrollbar">
+        <ScrollArea className="flex-1 px-3 py-2 custom-scrollbar">
           <nav className="flex flex-col gap-1">
             {mainNavItems.map((item) => {
               const isActive = currentPage === item.id
@@ -145,6 +187,7 @@ export function Sidebar() {
             <Separator className="my-2" />
 
             <button
+              onClick={onLogout}
               className="group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-tp-on-surface-variant transition-all duration-200 hover:bg-destructive/5 hover:text-destructive outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
             >
               <LogOut className="size-5 transition-transform duration-200 group-hover:scale-110" />
