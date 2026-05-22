@@ -21,7 +21,9 @@ model User {
   email           String    @unique
   phone           String?   @unique
   panNumber       String?   @unique
-  passwordHash    String
+  passwordHash    String?   // Optional for OAuth users (Google sign-in)
+  oauthProvider   String?   // 'google', 'github', etc.
+  oauthId         String?   // Provider-specific user ID
   avatar          String?
   role            UserRole  @default(USER)
   subscription    SubscriptionTier @default(FREE)
@@ -51,6 +53,7 @@ model User {
   portfolios      Portfolio[]
   sessions        Session[]
 
+  @@unique([oauthProvider, oauthId])
   @@map("users")
 }
 

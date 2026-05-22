@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useAppStore } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth-store'
 import { AuthPage } from '@/components/tradepro/auth-page'
@@ -132,12 +132,40 @@ function LoadingScreen() {
 
 export default function Home() {
   const { currentPage, sidebarOpen, setSidebarOpen } = useAppStore()
-  const { isAuthenticated, isInitializing, initialize, logout, user, token } = useAuthStore()
+  const { isAuthenticated, isInitializing, initialize, logout, user, token, setAuth } = useAuthStore()
+
+  // Handle OAuth callback token from URL
+  const handleOAuthCallback = useCallback(async () => {
+    const params = new URLSearchParams(window.location.search)
+    const authToken = params.get('auth_token')
+
+    if (authToken) {
+      try {
+        // Verify token with backend and get user data
+        const response = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${authToken}` },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setAuth(data.user, authToken)
+        } else {
+          console.error('OAuth token verification failed')
+        }
+      } catch (err) {
+        console.error('OAuth callback error:', err)
+      }
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [setAuth])
 
   // Initialize auth on mount
   useEffect(() => {
+    // Check for OAuth callback first
+    handleOAuthCallback()
     initialize()
-  }, [initialize])
+  }, [initialize, handleOAuthCallback])
 
   // Show loading while checking auth
   if (isInitializing) {

@@ -21,6 +21,8 @@ interface User {
   lastLoginAt: string | null
   createdAt: string
   updatedAt: string
+  oauthProvider: string | null
+  oauthId: string | null
   _count?: {
     trades: number
     orders: number

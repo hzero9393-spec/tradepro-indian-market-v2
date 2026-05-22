@@ -33,6 +33,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user signed up via OAuth (no password)
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        { error: 'This account uses Google Sign-In. Please sign in with Google.' },
+        { status: 401 }
+      )
+    }
+
     // Verify password
     const isValid = await verifyPassword(password, user.passwordHash)
     if (!isValid) {
