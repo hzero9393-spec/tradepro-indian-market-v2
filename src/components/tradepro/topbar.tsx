@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, Search, Bell, LogOut, Wallet, ChevronDown, User, FileBarChart } from 'lucide-react'
+import { Menu, Search, Bell, LogOut, ChevronDown, User, FileBarChart, TrendingUp } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth-store'
 import { Button } from '@/components/ui/button'
@@ -26,7 +26,7 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
 
   const initials = userName
     ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'SV'
+    : 'TP'
 
   const balance = user?.virtualBalance ?? 100000
   const totalPnl = user?.totalPnl ?? 0
@@ -37,169 +37,148 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
 
   return (
     <header
-      className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center md:left-[260px]"
+      className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center"
       style={{
         background: '#ffffff',
-        borderBottom: '1px solid #e5e7eb',
+        borderBottom: '1px solid #f0f0f0',
       }}
       role="banner"
     >
-      <div className="flex h-full w-full items-center gap-2 px-3 md:px-5">
-        {/* Left: Mobile menu button */}
+      <div className="flex h-full w-full items-center gap-3 px-4 md:px-6">
+        {/* Left: Mobile menu + Logo */}
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden shrink-0 text-[#6b7280] hover:text-[#1f2937] hover:bg-[#f0f2f5]"
+          className="md:hidden shrink-0 text-[#4a4a4a] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] h-9 w-9"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open navigation menu"
         >
           <Menu className="size-5" />
         </Button>
 
-        {/* Search - Desktop */}
-        <div className="relative hidden flex-1 max-w-xs md:flex">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
-          <Input
-            type="search"
-            placeholder="Search stocks, indices..."
-            className="pl-9 h-9 text-sm border-none focus-visible:ring-1 focus-visible:ring-[#5367ff]/30 placeholder:text-[#9ca3af]"
-            style={{
-              background: '#f0f2f5',
-              color: '#1f2937',
-              borderRadius: '9999px',
-            }}
-          />
-        </div>
+        {/* Logo */}
+        <button
+          onClick={() => setCurrentPage('dashboard')}
+          className="flex items-center gap-2 shrink-0"
+        >
+          <div
+            className="flex size-8 items-center justify-center rounded-lg"
+            style={{ background: '#00D09C' }}
+          >
+            <TrendingUp className="size-4 text-white" />
+          </div>
+          <span className="text-lg font-bold hidden sm:inline" style={{ color: '#1a1a1a' }}>
+            TradePro
+          </span>
+        </button>
 
-        {/* Search - Mobile */}
-        <div className="relative flex-1 md:hidden">
+        {/* Desktop Nav Links - Groww style */}
+        <nav className="hidden lg:flex items-center gap-1 ml-4">
+          {[
+            { label: 'Home', page: 'dashboard' as const },
+            { label: 'Stocks', page: 'trading' as const },
+            { label: 'Options', page: 'optionChain' as const },
+            { label: 'Portfolio', page: 'portfolio' as const },
+            { label: 'Learn', page: 'learning' as const },
+          ].map((item) => (
+            <button
+              key={item.page}
+              onClick={() => setCurrentPage(item.page)}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-[#f5f5f5]"
+              style={{ color: '#4a4a4a' }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Search */}
+        <div className="relative hidden md:flex max-w-[240px] flex-1">
           <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#9ca3af]" />
           <Input
             type="search"
-            placeholder="Search..."
-            className="pl-8 h-9 text-sm border-none focus-visible:ring-1 focus-visible:ring-[#5367ff]/30 placeholder:text-[#9ca3af]"
+            placeholder="Search stocks, indices..."
+            className="pl-9 h-8 text-sm border-none focus-visible:ring-1 focus-visible:ring-[#00D09C]/30 placeholder:text-[#9ca3af]"
             style={{
-              background: '#f0f2f5',
-              color: '#1f2937',
-              borderRadius: '9999px',
+              background: '#f5f5f5',
+              color: '#1a1a1a',
+              borderRadius: '8px',
             }}
           />
         </div>
 
-        {/* Spacer */}
-        <div className="flex-1 hidden md:block" />
-
         {/* Right section */}
-        <div className="flex items-center gap-1.5 md:gap-2.5">
-          {/* Wallet Balance Pill */}
+        <div className="flex items-center gap-2">
+          {/* Balance Pill - Groww style */}
           <div
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-            style={{
-              background: '#f0f2f5',
-            }}
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[#f5f5f5]"
+            onClick={() => setCurrentPage('portfolio')}
           >
-            <Wallet className="size-3.5 text-[#5367ff]" />
-            <span
-              className="text-xs font-semibold"
-              style={{ color: '#1f2937', fontFamily: "'Geist Sans', system-ui, sans-serif" }}
-            >
+            <span className="text-xs" style={{ color: '#9ca3af' }}>Balance</span>
+            <span className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>
               ₹{formatINR(balance)}
             </span>
+            {totalPnl !== 0 && (
+              <span
+                className="text-xs font-semibold px-1.5 py-0.5 rounded"
+                style={{
+                  color: isProfit ? '#00D09C' : '#eb5b3c',
+                  background: isProfit ? 'rgba(0,208,156,0.08)' : 'rgba(235,91,60,0.08)',
+                }}
+              >
+                {isProfit ? '+' : ''}{isProfit ? '+' : '-'}₹{formatINR(Math.abs(totalPnl))}
+              </span>
+            )}
           </div>
 
-          {/* P&L Badge */}
-          {totalPnl !== 0 && (
-            <div
-              className="hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold"
-              style={{
-                background: isProfit ? 'rgba(0, 208, 156, 0.08)' : 'rgba(235, 91, 60, 0.08)',
-                color: isProfit ? '#00d09c' : '#eb5b3c',
-                fontFamily: "'Geist Sans', system-ui, sans-serif",
-              }}
-            >
-              <span>{isProfit ? '▲' : '▼'}</span>
-              <span>
-                {isProfit ? '+' : ''}₹{formatINR(Math.abs(totalPnl))}
-              </span>
-            </div>
-          )}
-
-          {/* Notification Bell */}
+          {/* Notification */}
           <Button
             variant="ghost"
             size="icon"
-            className="relative shrink-0 text-[#6b7280] hover:text-[#1f2937] hover:bg-[#f0f2f5] h-9 w-9"
+            className="relative shrink-0 text-[#9ca3af] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] h-9 w-9"
             aria-label="Notifications"
           >
             <Bell className="size-[18px]" />
-            <span
-              className="absolute right-2 top-2 size-1.5 rounded-full"
-              style={{ background: '#5367ff' }}
-            />
           </Button>
 
-          {/* User Menu Dropdown */}
+          {/* User Menu */}
           <DropdownMenu>
-            {/* Desktop Trigger */}
             <DropdownMenuTrigger asChild>
-              <button className="hidden md:flex items-center gap-2 rounded-full px-2 py-1.5 transition-colors duration-150 hover:bg-[#f0f2f5] outline-none">
-                <Avatar className="size-7" style={{ border: '1.5px solid #e5e7eb' }}>
-                  <AvatarFallback
-                    className="text-[10px] font-bold"
-                    style={{
-                      background: 'rgba(83, 103, 255, 0.08)',
-                      color: '#5367ff',
-                      fontFamily: "'Geist Sans', system-ui, sans-serif",
-                    }}
-                  >
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col items-start">
-                  <span
-                    className="text-xs font-medium leading-tight"
-                    style={{ color: '#1f2937' }}
-                  >
-                    {userName || 'User'}
-                  </span>
-                  <span
-                    className="text-[10px] leading-tight"
-                    style={{ color: '#9ca3af' }}
-                  >
-                    Paper Trading
-                  </span>
+              <button className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[#f5f5f5] outline-none">
+                <div
+                  className="flex size-7 items-center justify-center rounded-full text-[10px] font-bold"
+                  style={{ background: '#00D09C', color: '#ffffff' }}
+                >
+                  {initials}
                 </div>
-                <ChevronDown className="size-3.5 text-[#9ca3af]" />
+                <ChevronDown className="size-3 text-[#9ca3af] hidden md:block" />
               </button>
             </DropdownMenuTrigger>
 
-            {/* Desktop Dropdown Content */}
             <DropdownMenuContent
               align="end"
               className="w-56"
               style={{
                 background: '#ffffff',
-                border: '1px solid #e5e7eb',
-                color: '#1f2937',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+                border: '1px solid #f0f0f0',
+                color: '#1a1a1a',
+                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
                 borderRadius: '12px',
               }}
             >
               <DropdownMenuLabel>
                 <div className="flex items-center gap-2.5 py-1">
-                  <Avatar className="size-8" style={{ border: '1.5px solid #e5e7eb' }}>
-                    <AvatarFallback
-                      className="text-xs font-bold"
-                      style={{
-                        background: 'rgba(83, 103, 255, 0.08)',
-                        color: '#5367ff',
-                      }}
-                    >
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div
+                    className="flex size-9 items-center justify-center rounded-full text-xs font-bold"
+                    style={{ background: '#00D09C', color: '#ffffff' }}
+                  >
+                    {initials}
+                  </div>
                   <div className="flex flex-col">
-                    <span className="font-medium text-sm" style={{ color: '#1f2937' }}>
+                    <span className="font-medium text-sm" style={{ color: '#1a1a1a' }}>
                       {userName || 'User'}
                     </span>
                     <span className="text-[11px]" style={{ color: '#9ca3af' }}>
@@ -208,89 +187,25 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
                   </div>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
+              <DropdownMenuSeparator style={{ background: '#f0f0f0' }} />
               <DropdownMenuItem
                 onClick={() => setCurrentPage('profile')}
-                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
+                className="cursor-pointer text-sm py-2.5 text-[#4a4a4a] focus:text-[#1a1a1a] focus:bg-[#f5f5f5]"
               >
                 <User className="size-4 mr-2.5 text-[#9ca3af]" />
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setCurrentPage('reports')}
-                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
+                className="cursor-pointer text-sm py-2.5 text-[#4a4a4a] focus:text-[#1a1a1a] focus:bg-[#f5f5f5]"
               >
                 <FileBarChart className="size-4 mr-2.5 text-[#9ca3af]" />
                 Reports
               </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
+              <DropdownMenuSeparator style={{ background: '#f0f0f0' }} />
               <DropdownMenuItem
                 onClick={onLogout}
-                className="cursor-pointer text-sm py-2 text-[#eb5b3c] focus:text-[#eb5b3c] focus:bg-[rgba(235,91,60,0.06)]"
-              >
-                <LogOut className="size-4 mr-2.5" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Mobile: Avatar only dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="md:hidden outline-none shrink-0">
-                <Avatar className="size-7" style={{ border: '1.5px solid #e5e7eb' }}>
-                  <AvatarFallback
-                    className="text-[10px] font-bold"
-                    style={{
-                      background: 'rgba(83, 103, 255, 0.08)',
-                      color: '#5367ff',
-                    }}
-                  >
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-52"
-              style={{
-                background: '#ffffff',
-                border: '1px solid #e5e7eb',
-                color: '#1f2937',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
-                borderRadius: '12px',
-              }}
-            >
-              <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm" style={{ color: '#1f2937' }}>
-                    {userName || 'User'}
-                  </span>
-                  <span className="text-[11px]" style={{ color: '#9ca3af' }}>
-                    Paper Trading
-                  </span>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
-              <DropdownMenuItem
-                onClick={() => setCurrentPage('profile')}
-                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
-              >
-                <User className="size-4 mr-2.5 text-[#9ca3af]" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setCurrentPage('reports')}
-                className="cursor-pointer text-sm py-2 text-[#4b5563] focus:text-[#1f2937] focus:bg-[#f0f2f5]"
-              >
-                <FileBarChart className="size-4 mr-2.5 text-[#9ca3af]" />
-                Reports
-              </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ background: '#f0f2f5' }} />
-              <DropdownMenuItem
-                onClick={onLogout}
-                className="cursor-pointer text-sm py-2 text-[#eb5b3c] focus:text-[#eb5b3c] focus:bg-[rgba(235,91,60,0.06)]"
+                className="cursor-pointer text-sm py-2.5 text-[#eb5b3c] focus:text-[#eb5b3c] focus:bg-[rgba(235,91,60,0.06)]"
               >
                 <LogOut className="size-4 mr-2.5" />
                 Sign Out

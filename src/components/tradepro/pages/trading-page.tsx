@@ -136,14 +136,14 @@ function formatVolume(vol: number): string {
 
 function getSectorColor(sector: string): string {
   const colors: Record<string, string> = {
-    'Banking': 'bg-[#5367ff]/8 text-[#5367ff]',
+    'Banking': 'bg-[#00D09C]/8 text-[#00D09C]',
     'IT': 'bg-[#00d09c]/8 text-[#00d09c]',
     'Pharma': 'bg-purple-500/8 text-purple-600',
     'Auto': 'bg-orange-500/8 text-orange-600',
     'FMCG': 'bg-pink-500/8 text-pink-600',
     'Energy': 'bg-yellow-500/8 text-yellow-700',
     'Metals': 'bg-gray-500/8 text-gray-600',
-    'Financial Services': 'bg-[#5367ff]/8 text-[#5367ff]',
+    'Financial Services': 'bg-[#00D09C]/8 text-[#00D09C]',
     'Telecom': 'bg-teal-500/8 text-teal-600',
     'Cement': 'bg-amber-500/8 text-amber-700',
     'Infrastructure': 'bg-sky-500/8 text-sky-600',
@@ -187,7 +187,7 @@ function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => vo
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-[#1a1a2e] truncate">{stock.symbol}</span>
+            <span className="font-bold text-sm text-[#1a1a1a] truncate">{stock.symbol}</span>
             {stock.isFnoBan && (
               <span className="text-[8px] font-bold bg-[#eb5b3c]/10 text-[#eb5b3c] px-1.5 py-0.5 rounded uppercase tracking-wider">
                 F&O Ban
@@ -204,7 +204,7 @@ function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => vo
         </span>
         {/* LTP */}
         <div className="text-right min-w-[90px]">
-          <span className="text-base font-bold font-mono text-[#1a1a2e]">
+          <span className="text-base font-bold font-mono text-[#1a1a1a]">
             {formatINR(stock.currentPrice)}
           </span>
         </div>
@@ -349,7 +349,7 @@ function OrderPanel({
             <div className="size-12 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-3">
               <TrendingUp className="size-6 text-[#6b7280]/40" />
             </div>
-            <p className="text-[#1a1a2e] font-semibold text-sm">No Stock Selected</p>
+            <p className="text-[#1a1a1a] font-semibold text-sm">No Stock Selected</p>
             <p className="text-[#6b7280] text-xs mt-1">
               Click on a stock to start trading
             </p>
@@ -368,7 +368,7 @@ function OrderPanel({
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-lg text-[#5367ff]">{selectedStock.symbol}</span>
+              <span className="font-bold text-lg text-[#00D09C]">{selectedStock.symbol}</span>
               <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
                 isPositive
                   ? 'bg-[#00d09c]/10 text-[#00d09c]'
@@ -381,7 +381,7 @@ function OrderPanel({
             <p className="text-xs text-[#6b7280] mt-0.5 truncate max-w-[180px]">{selectedStock.name}</p>
           </div>
           <div className="text-right">
-            <span className="text-2xl font-bold font-mono text-[#1a1a2e]">
+            <span className="text-2xl font-bold font-mono text-[#1a1a1a]">
               {formatINR(selectedStock.currentPrice)}
             </span>
             <p className={`text-xs font-medium ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
@@ -396,7 +396,7 @@ function OrderPanel({
             className={`flex-1 h-10 rounded-lg text-sm font-bold transition-all ${
               orderSide === 'buy'
                 ? 'bg-[#00d09c] text-white shadow-sm'
-                : 'text-[#6b7280] hover:text-[#1a1a2e]'
+                : 'text-[#6b7280] hover:text-[#1a1a1a]'
             }`}
             onClick={() => setOrderSide('buy')}
           >
@@ -406,7 +406,7 @@ function OrderPanel({
             className={`flex-1 h-10 rounded-lg text-sm font-bold transition-all ${
               orderSide === 'sell'
                 ? 'bg-[#eb5b3c] text-white shadow-sm'
-                : 'text-[#6b7280] hover:text-[#1a1a2e]'
+                : 'text-[#6b7280] hover:text-[#1a1a1a]'
             }`}
             onClick={() => setOrderSide('sell')}
           >
@@ -423,7 +423,7 @@ function OrderPanel({
             <select
               value={orderType}
               onChange={(e) => setOrderType(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#1a1a2e] px-3 focus:outline-none focus:ring-2 focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+              className="w-full h-9 rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#1a1a1a] px-3 focus:outline-none focus:ring-2 focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
             >
               <option value="MARKET">Market</option>
               <option value="LIMIT">Limit</option>
@@ -436,7 +436,7 @@ function OrderPanel({
             <select
               value={productType}
               onChange={(e) => setProductType(e.target.value)}
-              className="w-full h-9 rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#1a1a2e] px-3 focus:outline-none focus:ring-2 focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+              className="w-full h-9 rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#1a1a1a] px-3 focus:outline-none focus:ring-2 focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
             >
               <option value="INTRADAY">Intraday</option>
               <option value="DELIVERY">Delivery</option>
@@ -451,7 +451,7 @@ function OrderPanel({
           </label>
           <div className="flex items-center gap-2">
             <button
-              className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e] transition-colors"
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a1a] transition-colors"
               onClick={() => setQuantity(Math.max(1, quantity - 10))}
             >
               <Minus className="size-3.5" />
@@ -460,10 +460,10 @@ function OrderPanel({
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              className="h-9 text-center font-mono border-[#e5e7eb] bg-white text-[#1a1a2e] focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+              className="h-9 text-center font-mono border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
             />
             <button
-              className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e] transition-colors"
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a1a] transition-colors"
               onClick={() => setQuantity(quantity + 10)}
             >
               <Plus className="size-3.5" />
@@ -481,7 +481,7 @@ function OrderPanel({
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="h-9 font-mono border-[#e5e7eb] bg-white text-[#1a1a2e] focus:ring-[#5367ff]/20 focus:border-[#5367ff]"
+              className="h-9 font-mono border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
               placeholder="0.00"
             />
           </div>
@@ -491,7 +491,7 @@ function OrderPanel({
         <div className="rounded-xl bg-[#f5f7fa] p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-[#6b7280]">Estimated Total</span>
-            <span className="font-mono text-lg font-bold text-[#1a1a2e]">
+            <span className="font-mono text-lg font-bold text-[#1a1a1a]">
               {formatINR(estimatedTotal)}
             </span>
           </div>
@@ -503,7 +503,7 @@ function OrderPanel({
           </div>
           <div className="flex items-center justify-between pt-1 border-t border-[#e5e7eb]">
             <span className="text-[10px] text-[#6b7280]">Total (incl. brokerage)</span>
-            <span className="font-mono text-xs font-bold text-[#1a1a2e]">
+            <span className="font-mono text-xs font-bold text-[#1a1a1a]">
               {formatINR(estimatedTotal + estimatedBrokerage)}
             </span>
           </div>
@@ -533,13 +533,13 @@ function OrderPanel({
         <div className="space-y-2 pt-3 border-t border-[#e5e7eb]">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-[#6b7280]">Available Balance</span>
-            <span className="font-mono text-xs font-semibold text-[#1a1a2e]">
+            <span className="font-mono text-xs font-semibold text-[#1a1a1a]">
               {formatINR(availableBalance)}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-[#6b7280]">Buying Power</span>
-            <span className="font-mono text-xs font-semibold text-[#1a1a2e]">
+            <span className="font-mono text-xs font-semibold text-[#1a1a1a]">
               {formatINR(Math.max(0, buyingPower))}
             </span>
           </div>
@@ -765,7 +765,7 @@ export function TradingPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
                   Stocks
                 </h1>
                 <p className="text-xs text-[#6b7280] mt-0.5">
@@ -781,14 +781,14 @@ export function TradingPage() {
                   placeholder="Search stocks..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-10 w-full sm:w-72 bg-[#f5f7fa] border-[#e5e7eb] text-sm text-[#1a1a2e] placeholder:text-[#6b7280] focus:ring-[#5367ff]/20 focus:border-[#5367ff] rounded-xl"
+                  className="pl-9 h-10 w-full sm:w-72 bg-[#f5f7fa] border-[#e5e7eb] text-sm text-[#1a1a1a] placeholder:text-[#6b7280] focus:ring-[#00D09C]/20 focus:border-[#00D09C] rounded-xl"
                 />
               </div>
               {/* Refresh button */}
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 w-10 p-0 rounded-xl border-[#e5e7eb] text-[#6b7280] hover:text-[#5367ff] hover:border-[#5367ff]/30"
+                className="h-10 w-10 p-0 rounded-xl border-[#e5e7eb] text-[#6b7280] hover:text-[#00D09C] hover:border-[#00D09C]/30"
                 onClick={() => {
                   fetchStocks()
                   fetchGainers()
@@ -830,8 +830,8 @@ export function TradingPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${
                   activeTab === tab.id
-                    ? 'bg-[#5367ff] text-white shadow-sm shadow-[#5367ff]/20'
-                    : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#e5e7eb] hover:text-[#1a1a2e]'
+                    ? 'bg-[#00D09C] text-white shadow-sm shadow-[#00D09C]/20'
+                    : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#e5e7eb] hover:text-[#1a1a1a]'
                 }`}
               >
                 {tab.label}
@@ -865,13 +865,13 @@ export function TradingPage() {
                 <div className="size-14 rounded-full bg-[#eb5b3c]/10 flex items-center justify-center mb-4">
                   <AlertCircle className="size-7 text-[#eb5b3c]" />
                 </div>
-                <p className="text-[#1a1a2e] font-bold text-base">Markets data unavailable</p>
+                <p className="text-[#1a1a1a] font-bold text-base">Markets data unavailable</p>
                 <p className="text-[#6b7280] text-sm mt-1 max-w-md">
                   We couldn&apos;t connect to the market data service. Please check your connection and try again.
                 </p>
                 <Button
                   size="sm"
-                  className="mt-4 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+                  className="mt-4 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
                   onClick={() => {
                     fetchStocks()
                     fetchGainers()
@@ -940,7 +940,7 @@ export function TradingPage() {
                         <AlertCircle className="size-7 text-[#6b7280]/40" />
                       )}
                     </div>
-                    <p className="text-[#1a1a2e] font-semibold text-sm">
+                    <p className="text-[#1a1a1a] font-semibold text-sm">
                       {searchQuery
                         ? 'No stocks match your search'
                         : activeTab === 'gainers'
@@ -1019,7 +1019,7 @@ export function TradingPage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="sticky top-0 bg-white border-b border-[#e5e7eb] px-4 py-3 flex items-center justify-between rounded-t-2xl z-10">
-                  <span className="font-bold text-[#1a1a2e]">Place Order</span>
+                  <span className="font-bold text-[#1a1a1a]">Place Order</span>
                   <button
                     className="size-8 rounded-full flex items-center justify-center hover:bg-[#f5f7fa] text-[#6b7280]"
                     onClick={() => setShowOrderPanel(false)}
@@ -1055,11 +1055,11 @@ export function TradingPage() {
             <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-[#1a1a2e]">Open Positions</h3>
+                  <h3 className="text-lg font-semibold text-[#1a1a1a]">Open Positions</h3>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-[#5367ff] text-xs font-bold hover:underline px-0"
+                    className="text-[#00D09C] text-xs font-bold hover:underline px-0"
                     onClick={() => setCurrentPage('positions')}
                   >
                     VIEW ALL
@@ -1074,7 +1074,7 @@ export function TradingPage() {
                         className="flex items-center justify-between p-3 rounded-xl bg-[#f5f7fa] border border-[#e5e7eb]"
                       >
                         <div className="min-w-0">
-                          <span className="font-bold text-sm text-[#1a1a2e]">{pos.symbol}</span>
+                          <span className="font-bold text-sm text-[#1a1a1a]">{pos.symbol}</span>
                           <p className="text-[10px] text-[#6b7280] mt-0.5">
                             {pos.tradeDirection === 'BUY' ? 'Long' : 'Short'} • {pos.quantity} qty
                           </p>
@@ -1111,7 +1111,7 @@ export function TradingPage() {
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
           >
             <Button
-              className="flex items-center gap-2 px-5 py-3 bg-[#5367ff] text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all font-bold text-sm"
+              className="flex items-center gap-2 px-5 py-3 bg-[#00D09C] text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all font-bold text-sm"
               onClick={() => setShowOrderPanel(true)}
             >
               Trade {selectedStock.symbol}

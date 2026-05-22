@@ -149,21 +149,21 @@ export function AuthPage() {
         <div
           className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.07]"
           style={{
-            background: 'radial-gradient(circle at top right, #5367ff 0%, transparent 65%)',
+            background: 'radial-gradient(circle at top right, #00D09C 0%, transparent 65%)',
           }}
         />
         {/* Subtle blue gradient accent - bottom left */}
         <div
           className="absolute bottom-0 left-0 w-[500px] h-[500px] opacity-[0.05]"
           style={{
-            background: 'radial-gradient(circle at bottom left, #5367ff 0%, transparent 65%)',
+            background: 'radial-gradient(circle at bottom left, #00D09C 0%, transparent 65%)',
           }}
         />
         {/* Thin decorative line pattern */}
         <svg className="absolute inset-0 w-full h-full opacity-[0.03]" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="auth-grid" width="48" height="48" patternUnits="userSpaceOnUse">
-              <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#5367ff" strokeWidth="0.5" />
+              <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#00D09C" strokeWidth="0.5" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#auth-grid)" />
@@ -177,11 +177,11 @@ export function AuthPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex size-11 items-center justify-center rounded-xl bg-[#5367ff]/10">
-              <TrendingUp className="size-6 text-[#5367ff]" />
+            <div className="flex size-11 items-center justify-center rounded-xl bg-[#00D09C]/10">
+              <TrendingUp className="size-6 text-[#00D09C]" />
             </div>
             <div>
-              <h1 className="text-[22px] font-bold text-[#1a1a2e]">TradePro</h1>
+              <h1 className="text-[22px] font-bold text-[#1a1a1a]">TradePro</h1>
             </div>
           </motion.div>
 
@@ -192,9 +192,9 @@ export function AuthPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.08 }}
           >
-            <h2 className="text-[38px] font-bold leading-[1.2] text-[#1a1a2e] mb-4">
+            <h2 className="text-[38px] font-bold leading-[1.2] text-[#1a1a1a] mb-4">
               Master Indian Markets<br />
-              <span className="text-[#5367ff]">Before You Invest</span>
+              <span className="text-[#00D09C]">Before You Invest</span>
             </h2>
             <p className="text-[#6b7280] text-[17px] leading-relaxed max-w-md">
               Practice trading with real market data. Build strategies, analyze options, and sharpen your skills — all risk-free.
@@ -211,11 +211,11 @@ export function AuthPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.15 + i * 0.08 }}
               >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#5367ff]/10">
-                  <feature.icon className="size-[18px] text-[#5367ff]" />
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#00D09C]/10">
+                  <feature.icon className="size-[18px] text-[#00D09C]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[15px] text-[#1a1a2e] mb-0.5">{feature.title}</h3>
+                  <h3 className="font-semibold text-[15px] text-[#1a1a1a] mb-0.5">{feature.title}</h3>
                   <p className="text-[#6b7280] text-[13px] leading-relaxed">{feature.desc}</p>
                 </div>
               </motion.div>
@@ -234,7 +234,7 @@ export function AuthPage() {
                 key={stat.label}
                 className="flex-1 text-center py-4 px-3 rounded-xl bg-[#f7f8fc] border border-[#e8eaf0]"
               >
-                <div className="text-[22px] font-bold text-[#5367ff]">{stat.value}</div>
+                <div className="text-[22px] font-bold text-[#00D09C]">{stat.value}</div>
                 <div className="text-[#9ca3af] text-[12px] font-medium mt-0.5">{stat.label}</div>
               </div>
             ))}
@@ -252,10 +252,10 @@ export function AuthPage() {
         >
           {/* Mobile Logo */}
           <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-[#5367ff]/10">
-              <TrendingUp className="size-5 text-[#5367ff]" />
+            <div className="flex size-9 items-center justify-center rounded-lg bg-[#00D09C]/10">
+              <TrendingUp className="size-5 text-[#00D09C]" />
             </div>
-            <span className="text-xl font-bold text-[#1a1a2e]">TradePro</span>
+            <span className="text-xl font-bold text-[#1a1a1a]">TradePro</span>
           </div>
 
           <AnimatePresence mode="wait">
@@ -270,7 +270,7 @@ export function AuthPage() {
                 {/* Login Card */}
                 <div className="bg-white rounded-2xl border border-[#e8eaf0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 sm:p-8">
                   <div className="mb-7">
-                    <h2 className="text-[22px] font-bold text-[#1a1a2e]">Welcome back</h2>
+                    <h2 className="text-[22px] font-bold text-[#1a1a1a]">Welcome back</h2>
                     <p className="text-[#6b7280] text-[14px] mt-1">
                       Sign in to continue your trading journey
                     </p>
@@ -290,7 +290,7 @@ export function AuthPage() {
                           placeholder="you@example.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10 h-[46px] text-[#1a1a2e] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#5367ff] focus-visible:ring-[#5367ff]/15 focus-visible:bg-white"
+                          className="pl-10 h-[46px] text-[#1a1a1a] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#00D09C] focus-visible:ring-[#00D09C]/15 focus-visible:bg-white"
                           required
                           autoComplete="email"
                         />
@@ -305,7 +305,7 @@ export function AuthPage() {
                         </Label>
                         <button
                           type="button"
-                          className="text-[12px] text-[#5367ff] hover:text-[#4356e0] font-medium transition-colors"
+                          className="text-[12px] text-[#00D09C] hover:text-[#00b88a] font-medium transition-colors"
                         >
                           Forgot password?
                         </button>
@@ -318,7 +318,7 @@ export function AuthPage() {
                           placeholder="Enter your password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10 pr-10 h-[46px] text-[#1a1a2e] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#5367ff] focus-visible:ring-[#5367ff]/15 focus-visible:bg-white"
+                          className="pl-10 pr-10 h-[46px] text-[#1a1a1a] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#00D09C] focus-visible:ring-[#00D09C]/15 focus-visible:bg-white"
                           required
                           autoComplete="current-password"
                         />
@@ -347,7 +347,7 @@ export function AuthPage() {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full h-[46px] text-[15px] font-semibold rounded-lg bg-[#5367ff] text-white hover:bg-[#4356e0] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_1px_2px_rgba(83,103,255,0.2)]"
+                      className="w-full h-[46px] text-[15px] font-semibold rounded-lg bg-[#00D09C] text-white hover:bg-[#00b88a] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_1px_2px_rgba(0,208,156,0.2)]"
                     >
                       {isLoading ? (
                         <div className="flex items-center gap-2">
@@ -369,7 +369,7 @@ export function AuthPage() {
                       Don&apos;t have an account?{' '}
                       <button
                         onClick={() => switchMode('signup')}
-                        className="text-[#5367ff] font-semibold hover:text-[#4356e0] transition-colors"
+                        className="text-[#00D09C] font-semibold hover:text-[#00b88a] transition-colors"
                       >
                         Create Account
                       </button>
@@ -388,7 +388,7 @@ export function AuthPage() {
                 {/* Signup Card */}
                 <div className="bg-white rounded-2xl border border-[#e8eaf0] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 sm:p-8">
                   <div className="mb-7">
-                    <h2 className="text-[22px] font-bold text-[#1a1a2e]">Create Account</h2>
+                    <h2 className="text-[22px] font-bold text-[#1a1a1a]">Create Account</h2>
                     <p className="text-[#6b7280] text-[14px] mt-1">
                       Start trading with ₹1,00,000 virtual cash
                     </p>
@@ -408,7 +408,7 @@ export function AuthPage() {
                           placeholder="Enter your full name"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          className="pl-10 h-[46px] text-[#1a1a2e] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#5367ff] focus-visible:ring-[#5367ff]/15 focus-visible:bg-white"
+                          className="pl-10 h-[46px] text-[#1a1a1a] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#00D09C] focus-visible:ring-[#00D09C]/15 focus-visible:bg-white"
                           required
                           autoComplete="name"
                         />
@@ -428,7 +428,7 @@ export function AuthPage() {
                           placeholder="you@example.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="pl-10 h-[46px] text-[#1a1a2e] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#5367ff] focus-visible:ring-[#5367ff]/15 focus-visible:bg-white"
+                          className="pl-10 h-[46px] text-[#1a1a1a] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#00D09C] focus-visible:ring-[#00D09C]/15 focus-visible:bg-white"
                           required
                           autoComplete="email"
                         />
@@ -448,7 +448,7 @@ export function AuthPage() {
                           placeholder="+91 98765 43210"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          className="pl-10 h-[46px] text-[#1a1a2e] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#5367ff] focus-visible:ring-[#5367ff]/15 focus-visible:bg-white"
+                          className="pl-10 h-[46px] text-[#1a1a1a] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#00D09C] focus-visible:ring-[#00D09C]/15 focus-visible:bg-white"
                           autoComplete="tel"
                         />
                       </div>
@@ -467,7 +467,7 @@ export function AuthPage() {
                           placeholder="Min 6 characters"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pl-10 pr-10 h-[46px] text-[#1a1a2e] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#5367ff] focus-visible:ring-[#5367ff]/15 focus-visible:bg-white"
+                          className="pl-10 pr-10 h-[46px] text-[#1a1a1a] placeholder:text-[#b0b5c0] bg-[#f0f2f5] border-[#e8eaf0] rounded-lg text-[14px] focus-visible:border-[#00D09C] focus-visible:ring-[#00D09C]/15 focus-visible:bg-white"
                           required
                           autoComplete="new-password"
                         />
@@ -515,10 +515,10 @@ export function AuthPage() {
                           placeholder="Re-enter your password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className={`pl-10 h-[46px] text-[#1a1a2e] placeholder:text-[#b0b5c0] rounded-lg text-[14px] focus-visible:ring-[#5367ff]/15 focus-visible:bg-white ${
+                          className={`pl-10 h-[46px] text-[#1a1a1a] placeholder:text-[#b0b5c0] rounded-lg text-[14px] focus-visible:ring-[#00D09C]/15 focus-visible:bg-white ${
                             confirmPassword && confirmPassword !== password
                               ? 'bg-[#f0f2f5] border-[#eb5b3c] focus-visible:border-[#eb5b3c] focus-visible:ring-[#eb5b3c]/15'
-                              : 'bg-[#f0f2f5] border-[#e8eaf0] focus-visible:border-[#5367ff]'
+                              : 'bg-[#f0f2f5] border-[#e8eaf0] focus-visible:border-[#00D09C]'
                           }`}
                           required
                           autoComplete="new-password"
@@ -538,13 +538,13 @@ export function AuthPage() {
                         type="checkbox"
                         id="terms"
                         required
-                        className="mt-[3px] size-3.5 rounded border-[#d1d5db] accent-[#5367ff] cursor-pointer"
+                        className="mt-[3px] size-3.5 rounded border-[#d1d5db] accent-[#00D09C] cursor-pointer"
                       />
                       <label htmlFor="terms" className="text-[12px] text-[#6b7280] leading-relaxed cursor-pointer">
                         I agree to the{' '}
-                        <span className="text-[#5367ff] hover:underline cursor-pointer font-medium">Terms of Service</span>{' '}
+                        <span className="text-[#00D09C] hover:underline cursor-pointer font-medium">Terms of Service</span>{' '}
                         and{' '}
-                        <span className="text-[#5367ff] hover:underline cursor-pointer font-medium">Privacy Policy</span>
+                        <span className="text-[#00D09C] hover:underline cursor-pointer font-medium">Privacy Policy</span>
                       </label>
                     </div>
 
@@ -574,7 +574,7 @@ export function AuthPage() {
                     <button
                       type="submit"
                       disabled={isLoading || (confirmPassword !== '' && confirmPassword !== password)}
-                      className="w-full h-[46px] text-[15px] font-semibold rounded-lg bg-[#5367ff] text-white hover:bg-[#4356e0] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_1px_2px_rgba(83,103,255,0.2)]"
+                      className="w-full h-[46px] text-[15px] font-semibold rounded-lg bg-[#00D09C] text-white hover:bg-[#00b88a] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_1px_2px_rgba(0,208,156,0.2)]"
                     >
                       {isLoading ? (
                         <div className="flex items-center gap-2">
@@ -596,7 +596,7 @@ export function AuthPage() {
                       Already have an account?{' '}
                       <button
                         onClick={() => switchMode('login')}
-                        className="text-[#5367ff] font-semibold hover:text-[#4356e0] transition-colors"
+                        className="text-[#00D09C] font-semibold hover:text-[#00b88a] transition-colors"
                       >
                         Sign In
                       </button>

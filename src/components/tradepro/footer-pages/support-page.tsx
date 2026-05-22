@@ -20,7 +20,7 @@ export function SupportPage() {
           title="Email Support"
           description="Send us a detailed email and we'll respond within 24 hours"
           action="support@tradepro.app"
-          color="#5367ff"
+          color="#00D09C"
         />
         <SupportCard
           icon={<MessageCircle className="size-5" />}
@@ -129,7 +129,7 @@ function SupportCard({ icon, title, description, action, color, onClick }: {
           {icon}
         </div>
         <div>
-          <h3 className="text-sm font-semibold" style={{ color: '#1a1a2e' }}>{title}</h3>
+          <h3 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>{title}</h3>
           <p className="text-xs mt-1" style={{ color: '#6b7280' }}>{description}</p>
           <div className="flex items-center gap-1 mt-2">
             <span className="text-xs font-medium" style={{ color }}>{action}</span>
@@ -144,7 +144,7 @@ function SupportCard({ icon, title, description, action, color, onClick }: {
 function IssueCard({ question, answer }: { question: string; answer: string }) {
   return (
     <div className="p-4 rounded-lg" style={{ background: '#f9fafb', border: '1px solid #f3f4f6' }}>
-      <h4 className="text-sm font-medium" style={{ color: '#1a1a2e' }}>{question}</h4>
+      <h4 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{question}</h4>
       <p className="text-xs mt-1.5 leading-relaxed" style={{ color: '#6b7280' }}>{answer}</p>
     </div>
   )
@@ -155,14 +155,14 @@ function VideoCard({ title, duration }: { title: string; duration: string }) {
     <div
       className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors"
       style={{ background: '#f9fafb' }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = '#eef0ff' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 208, 156, 0.08)' }}
       onMouseLeave={(e) => { e.currentTarget.style.background = '#f9fafb' }}
     >
-      <div className="flex size-10 items-center justify-center rounded-lg" style={{ background: '#5367ff15', color: '#5367ff' }}>
+      <div className="flex size-10 items-center justify-center rounded-lg" style={{ background: '#00D09C15', color: '#00D09C' }}>
         <Video className="size-4" />
       </div>
       <div>
-        <p className="text-sm font-medium" style={{ color: '#1a1a2e' }}>{title}</p>
+        <p className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{title}</p>
         <p className="text-xs" style={{ color: '#9ca3af' }}>{duration}</p>
       </div>
     </div>
@@ -172,7 +172,7 @@ function VideoCard({ title, duration }: { title: string; duration: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: '#1a1a2e' }}>{title}</h2>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: '#1a1a1a' }}>{title}</h2>
       <div className="text-sm leading-relaxed space-y-2" style={{ color: '#4b5563' }}>
         {children}
       </div>

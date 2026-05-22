@@ -172,7 +172,7 @@ export default function PortfolioPage() {
 
   // Allocation data from real positions
   const allocationData = portfolio ? [
-    { name: 'Equity', value: portfolio.totalCurrentValue, color: '#5367ff' },
+    { name: 'Equity', value: portfolio.totalCurrentValue, color: '#00D09C' },
     { name: 'Cash', value: portfolio.virtualBalance, color: '#c7d2fe' },
   ].filter(d => d.value > 0) : []
 
@@ -197,7 +197,7 @@ export default function PortfolioPage() {
           pnl: portfolio.segments.equity.unrealizedPnl,
           invested: portfolio.segments.equity.invested,
           icon: TrendingUp,
-          color: '#5367ff',
+          color: '#00D09C',
         },
         {
           name: 'Futures',
@@ -225,7 +225,7 @@ export default function PortfolioPage() {
       {/* ── Page Header ───────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1a1a2e]">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1a1a1a]">
             Portfolio
           </h1>
           <p className="mt-1 text-sm text-[#6b7280]">
@@ -233,7 +233,7 @@ export default function PortfolioPage() {
           </p>
         </div>
         <Button
-          className="gap-1.5 rounded-lg bg-[#5367ff] text-white font-semibold shadow-md hover:bg-[#4356e0] active:scale-[0.98]"
+          className="gap-1.5 rounded-lg bg-[#00D09C] text-white font-semibold shadow-md hover:bg-[#00b88a] active:scale-[0.98]"
           onClick={() => setCurrentPage('trading')}
         >
           <TrendingUp className="size-4" />
@@ -293,7 +293,7 @@ export default function PortfolioPage() {
                 </div>
 
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl sm:text-4xl font-bold font-mono-data text-[#1a1a2e]">
+                  <span className="text-3xl sm:text-4xl font-bold font-mono-data text-[#1a1a1a]">
                     {formatINRWhole(totalValue)}
                   </span>
                   <span className="text-lg text-[#6b7280]">
@@ -306,12 +306,12 @@ export default function PortfolioPage() {
                   {/* Available Balance */}
                   <div className="bg-[#f8f9fb] rounded-xl p-4 border border-[#e5e7eb]/50">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <div className="size-7 rounded-lg bg-[#5367ff]/10 flex items-center justify-center">
-                        <Wallet className="size-3.5 text-[#5367ff]" />
+                      <div className="size-7 rounded-lg bg-[#00D09C]/10 flex items-center justify-center">
+                        <Wallet className="size-3.5 text-[#00D09C]" />
                       </div>
                       <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Available Balance</span>
                     </div>
-                    <span className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                    <span className="text-lg font-bold font-mono-data text-[#1a1a1a]">
                       {formatINR(portfolio?.virtualBalance ?? 100000)}
                     </span>
                   </div>
@@ -324,7 +324,7 @@ export default function PortfolioPage() {
                       </div>
                       <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Invested</span>
                     </div>
-                    <span className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                    <span className="text-lg font-bold font-mono-data text-[#1a1a1a]">
                       {formatINR(investedAmount)}
                     </span>
                   </div>
@@ -337,7 +337,7 @@ export default function PortfolioPage() {
                       </div>
                       <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Current Value</span>
                     </div>
-                    <span className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                    <span className="text-lg font-bold font-mono-data text-[#1a1a1a]">
                       {formatINR(currentvalue)}
                     </span>
                   </div>
@@ -418,20 +418,20 @@ export default function PortfolioPage() {
 
             {/* Open Positions */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 border-l-[#5367ff]">
+              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 border-l-[#00D09C]">
                 <CardContent className="p-5">
                   <div className="mb-2 flex items-start justify-between">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">
                       Open Positions
                     </p>
-                    <div className="size-7 rounded-lg bg-[#5367ff]/10 flex items-center justify-center">
-                      <Briefcase className="size-3.5 text-[#5367ff]" />
+                    <div className="size-7 rounded-lg bg-[#00D09C]/10 flex items-center justify-center">
+                      <Briefcase className="size-3.5 text-[#00D09C]" />
                     </div>
                   </div>
-                  <h3 className="font-mono-data text-2xl font-bold text-[#1a1a2e]">
+                  <h3 className="font-mono-data text-2xl font-bold text-[#1a1a1a]">
                     {portfolio?.openPositionsCount ?? 0}
                   </h3>
-                  <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#5367ff]">
+                  <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#00D09C]">
                     {portfolio?.totalTrades ?? 0} total trades
                   </div>
                 </CardContent>
@@ -447,10 +447,10 @@ export default function PortfolioPage() {
           >
             <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
               <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-4">
-                <h4 className="text-lg font-semibold text-[#1a1a2e]">
+                <h4 className="text-lg font-semibold text-[#1a1a1a]">
                   Holdings
                 </h4>
-                <Badge variant="secondary" className="bg-[#5367ff]/10 text-[#5367ff] border-0 text-xs font-semibold">
+                <Badge variant="secondary" className="bg-[#00D09C]/10 text-[#00D09C] border-0 text-xs font-semibold">
                   {positions.length} Active
                 </Badge>
               </div>
@@ -460,13 +460,13 @@ export default function PortfolioPage() {
                   <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
                     <Briefcase className="size-7 text-[#6b7280]/40" />
                   </div>
-                  <p className="text-[#1a1a2e] font-semibold text-sm">Your portfolio is empty</p>
+                  <p className="text-[#1a1a1a] font-semibold text-sm">Your portfolio is empty</p>
                   <p className="text-[#6b7280] text-xs mt-1">
                     Start trading to see your holdings here
                   </p>
                   <Button
                     size="sm"
-                    className="mt-4 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+                    className="mt-4 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
                     onClick={() => setCurrentPage('trading')}
                   >
                     <TrendingUp className="size-3.5" />
@@ -521,7 +521,7 @@ export default function PortfolioPage() {
                           >
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className="text-sm font-bold text-[#5367ff]">{pos.symbol}</span>
+                                <span className="text-sm font-bold text-[#00D09C]">{pos.symbol}</span>
                                 {pos.segment === 'OPTIONS' && pos.strikePrice && (
                                   <span className="text-[10px] uppercase text-[#6b7280]">
                                     {pos.strikePrice} {pos.optionType}
@@ -541,11 +541,11 @@ export default function PortfolioPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs text-[#6b7280]">{pos.segment}</TableCell>
-                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a2e]">{pos.quantity}</TableCell>
+                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a1a]">{pos.quantity}</TableCell>
                             <TableCell className="text-right font-mono-data text-sm text-[#6b7280]">
                               {formatINR(pos.entryPrice)}
                             </TableCell>
-                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a2e]">
+                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a1a]">
                               {formatINR(pos.currentPrice)}
                             </TableCell>
                             <TableCell className="text-right">
@@ -558,7 +558,7 @@ export default function PortfolioPage() {
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right font-mono-data text-sm font-medium text-[#1a1a2e]">
+                            <TableCell className="text-right font-mono-data text-sm font-medium text-[#1a1a1a]">
                               {formatINR(pos.currentValue)}
                             </TableCell>
                             <TableCell className="text-center">
@@ -594,7 +594,7 @@ export default function PortfolioPage() {
               transition={{ delay: 0.4, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-[#1a1a2e]">Segment Breakdown</h4>
+                <h4 className="text-lg font-semibold text-[#1a1a1a]">Segment Breakdown</h4>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {segmentBreakdown.map((segment) => {
@@ -606,7 +606,7 @@ export default function PortfolioPage() {
                   return (
                     <Card
                       key={segment.name}
-                      className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm hover:shadow-md hover:border-[#5367ff]/20 transition-all duration-300"
+                      className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm hover:shadow-md hover:border-[#00D09C]/20 transition-all duration-300"
                     >
                       <CardContent className="p-5">
                         <div className="flex items-center justify-between mb-4">
@@ -618,7 +618,7 @@ export default function PortfolioPage() {
                               <Icon className="size-4" style={{ color: segment.color }} />
                             </div>
                             <div>
-                              <span className="text-sm font-semibold text-[#1a1a2e]">{segment.name}</span>
+                              <span className="text-sm font-semibold text-[#1a1a1a]">{segment.name}</span>
                               <span className="ml-1.5 text-[10px] text-[#6b7280]">
                                 {segment.count} pos{segment.count !== 1 ? 's' : ''}
                               </span>
@@ -639,7 +639,7 @@ export default function PortfolioPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-[#6b7280]">Current Value</span>
-                            <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                            <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">
                               {formatINRWhole(segment.value)}
                             </span>
                           </div>
@@ -677,8 +677,8 @@ export default function PortfolioPage() {
               <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm h-full">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-6">
-                    <PieChartIcon className="size-5 text-[#5367ff]" />
-                    <h4 className="text-lg font-semibold text-[#1a1a2e]">
+                    <PieChartIcon className="size-5 text-[#00D09C]" />
+                    <h4 className="text-lg font-semibold text-[#1a1a1a]">
                       Asset Allocation
                     </h4>
                   </div>
@@ -709,17 +709,17 @@ export default function PortfolioPage() {
                                 border: '1px solid #e5e7eb',
                                 borderRadius: '10px',
                                 fontSize: '12px',
-                                color: '#1a1a2e',
+                                color: '#1a1a1a',
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                               }}
-                              itemStyle={{ color: '#1a1a2e' }}
+                              itemStyle={{ color: '#1a1a1a' }}
                               labelStyle={{ color: '#6b7280' }}
                             />
                           </PieChart>
                         </ResponsiveContainer>
                         {/* Center Label */}
                         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-xl font-bold leading-none text-[#1a1a2e]">
+                          <span className="text-xl font-bold leading-none text-[#1a1a1a]">
                             {investedAmount > 0 && totalValue > 0 ? Math.round((investedAmount / totalValue) * 100) : 0}%
                           </span>
                           <span className="text-[10px] uppercase text-[#6b7280]">Invested</span>
@@ -734,10 +734,10 @@ export default function PortfolioPage() {
                             <div key={item.name} className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <span className="size-3 rounded-full" style={{ backgroundColor: item.color }} />
-                                <span className="text-xs font-semibold text-[#1a1a2e]">{item.name}</span>
+                                <span className="text-xs font-semibold text-[#1a1a1a]">{item.name}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono-data text-sm text-[#1a1a2e]">
+                                <span className="font-mono-data text-sm text-[#1a1a1a]">
                                   ₹{item.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                                 </span>
                                 <Badge variant="outline" className="border-[#e5e7eb] text-[10px] text-[#6b7280]">
@@ -784,7 +784,7 @@ export default function PortfolioPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
             >
-              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm h-full border-l-4 border-l-[#5367ff]">
+              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm h-full border-l-4 border-l-[#00D09C]">
                 <CardContent className="p-6">
                   <h4 className="mb-5 text-[11px] font-semibold uppercase tracking-widest text-[#6b7280]">
                     Account Details
@@ -792,31 +792,31 @@ export default function PortfolioPage() {
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Available Balance</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">
                         {formatINR(portfolio?.virtualBalance ?? 100000)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Margin Used</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">
                         {formatINR(portfolio?.marginUsed ?? 0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Available Margin</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">
                         {formatINR(portfolio?.availableMargin ?? 100000)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Total Trades</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">
                         {portfolio?.totalTrades ?? 0}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Open Positions</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a2e]">
+                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">
                         {portfolio?.openPositionsCount ?? 0}
                       </span>
                     </div>

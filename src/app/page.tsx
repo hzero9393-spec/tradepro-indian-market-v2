@@ -99,14 +99,14 @@ function LoadingScreen() {
         <div
           className="flex size-14 items-center justify-center rounded-2xl animate-pulse"
           style={{
-            background: '#5367ff',
+            background: '#00D09C',
             color: '#ffffff',
           }}
         >
           <TrendingUp className="size-7" />
         </div>
         <div className="text-center">
-          <h2 className="text-lg font-bold" style={{ color: '#1a1a2e' }}>TradePro</h2>
+          <h2 className="text-lg font-bold" style={{ color: '#1a1a1a' }}>TradePro</h2>
           <p className="text-sm mt-1" style={{ color: '#6b7280' }}>
             Loading your trading desk...
           </p>
@@ -114,15 +114,15 @@ function LoadingScreen() {
         <div className="flex gap-1.5 mt-2">
           <div
             className="size-2 rounded-full animate-bounce"
-            style={{ background: '#5367ff', animationDelay: '0ms' }}
+            style={{ background: '#00D09C', animationDelay: '0ms' }}
           />
           <div
             className="size-2 rounded-full animate-bounce"
-            style={{ background: '#5367ff', animationDelay: '150ms' }}
+            style={{ background: '#00D09C', animationDelay: '150ms' }}
           />
           <div
             className="size-2 rounded-full animate-bounce"
-            style={{ background: '#5367ff', animationDelay: '300ms' }}
+            style={{ background: '#00D09C', animationDelay: '300ms' }}
           />
         </div>
       </div>
@@ -174,7 +174,7 @@ export default function Home() {
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="w-[240px] p-0"
+            className="w-[220px] p-0"
             style={{ background: '#ffffff', borderRight: '1px solid #e5e7eb' }}
           >
             <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} />
@@ -188,7 +188,7 @@ export default function Home() {
         {!isFooterPage && <IndexTicker />}
 
         {/* Main Content */}
-        <main className="flex-1 md:ml-[240px] pt-16 pb-16 md:pb-0">
+        <main className="flex-1 md:ml-[220px] mt-14 pb-16 md:pb-0">
           <PageContent page={currentPage} />
 
           {/* Footer */}

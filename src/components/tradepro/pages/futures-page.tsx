@@ -318,11 +318,11 @@ export function FuturesPage() {
     <div className="p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto bg-[#f5f7fa] min-h-screen">
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-[#5367ff]/10">
-          <CandlestickChart className="size-5 text-[#5367ff]" />
+        <div className="flex size-10 items-center justify-center rounded-xl bg-[#00D09C]/10">
+          <CandlestickChart className="size-5 text-[#00D09C]" />
         </div>
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-[#1a1a2e]">Futures Trading</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-[#1a1a1a]">Futures Trading</h1>
           <p className="text-xs text-[#6b7280]">Trade index & stock futures with real positions</p>
         </div>
       </div>
@@ -337,8 +337,8 @@ export function FuturesPage() {
               className={cn(
                 'px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200',
                 instrument === inst
-                  ? 'bg-[#5367ff] text-white shadow-md'
-                  : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#5367ff]/10 hover:text-[#5367ff]'
+                  ? 'bg-[#00D09C] text-white shadow-md'
+                  : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#00D09C]/10 hover:text-[#00D09C]'
               )}
             >
               {inst}
@@ -351,7 +351,7 @@ export function FuturesPage() {
       <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
         {contractsLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-[#5367ff]" />
+            <Loader2 className="size-6 animate-spin text-[#00D09C]" />
             <span className="ml-2 text-sm text-[#6b7280]">Loading contracts...</span>
           </div>
         ) : contracts.length === 0 ? (
@@ -372,11 +372,11 @@ export function FuturesPage() {
                 <div className="flex flex-wrap items-center gap-4 md:gap-8">
                   <div>
                     <div className="text-xs text-[#6b7280]">Contract</div>
-                    <div className="font-bold text-[#1a1a2e] text-sm">{contract.name}</div>
+                    <div className="font-bold text-[#1a1a1a] text-sm">{contract.name}</div>
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">LTP</div>
-                    <div className="font-mono font-bold text-[#1a1a2e]">₹{contract.ltp.toLocaleString()}</div>
+                    <div className="font-mono font-bold text-[#1a1a1a]">₹{contract.ltp.toLocaleString()}</div>
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">Change</div>
@@ -390,11 +390,11 @@ export function FuturesPage() {
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">OI</div>
-                    <div className="font-mono text-sm text-[#1a1a2e]">{contract.oi}L</div>
+                    <div className="font-mono text-sm text-[#1a1a1a]">{contract.oi}L</div>
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">Volume</div>
-                    <div className="font-mono text-sm text-[#1a1a2e]">{(contract.volume / 1000).toFixed(1)}K</div>
+                    <div className="font-mono text-sm text-[#1a1a1a]">{(contract.volume / 1000).toFixed(1)}K</div>
                   </div>
                 </div>
               </TabsContent>
@@ -410,8 +410,8 @@ export function FuturesPage() {
           {/* Price Chart */}
           <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-[#1a1a2e] flex items-center gap-2">
-                <BarChart3 className="size-4 text-[#5367ff]" />
+              <h3 className="text-sm font-bold text-[#1a1a1a] flex items-center gap-2">
+                <BarChart3 className="size-4 text-[#00D09C]" />
                 {selectedContract?.name || instrument} — Price Movement
               </h3>
               <Badge variant="outline" className="text-xs font-mono border-[#e5e7eb] text-[#6b7280]">
@@ -424,8 +424,8 @@ export function FuturesPage() {
                   <AreaChart data={priceData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                     <defs>
                       <linearGradient id="futuresGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#5367ff" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#5367ff" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#00D09C" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#00D09C" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
@@ -450,14 +450,14 @@ export function FuturesPage() {
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         fontSize: '12px',
-                        color: '#1a1a2e',
+                        color: '#1a1a1a',
                       }}
                       formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Price']}
                     />
                     <Area
                       type="monotone"
                       dataKey="price"
-                      stroke="#5367ff"
+                      stroke="#00D09C"
                       strokeWidth={2}
                       fill="url(#futuresGradient)"
                     />
@@ -476,7 +476,7 @@ export function FuturesPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">LTP</div>
-                <div className="font-mono font-bold text-[#1a1a2e] text-lg">₹{selectedContract.ltp.toLocaleString()}</div>
+                <div className="font-mono font-bold text-[#1a1a1a] text-lg">₹{selectedContract.ltp.toLocaleString()}</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Change</div>
@@ -489,19 +489,19 @@ export function FuturesPage() {
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Open Interest</div>
-                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{selectedContract.oi}L</div>
+                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{selectedContract.oi}L</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Volume</div>
-                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{(selectedContract.volume / 1000).toFixed(1)}K</div>
+                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{(selectedContract.volume / 1000).toFixed(1)}K</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Lot Size</div>
-                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{selectedContract.lotSize}</div>
+                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{selectedContract.lotSize}</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Margin %</div>
-                <div className="font-mono font-bold text-[#1a1a2e] text-lg">{selectedContract.marginPercent}%</div>
+                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{selectedContract.marginPercent}%</div>
               </div>
             </div>
           )}
@@ -510,8 +510,8 @@ export function FuturesPage() {
         {/* Right: Order Panel */}
         <div className="lg:col-span-2">
           <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl space-y-4 sticky top-20">
-            <h3 className="text-sm font-bold text-[#1a1a2e] flex items-center gap-2">
-              <Wallet className="size-4 text-[#5367ff]" />
+            <h3 className="text-sm font-bold text-[#1a1a1a] flex items-center gap-2">
+              <Wallet className="size-4 text-[#00D09C]" />
               Place Order
             </h3>
 
@@ -562,8 +562,8 @@ export function FuturesPage() {
                         className={cn(
                           'flex-1 py-2 rounded-lg text-xs font-bold transition-all',
                           orderType === type
-                            ? 'bg-[#5367ff]/10 text-[#5367ff] border border-[#5367ff]/30'
-                            : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#5367ff]/5'
+                            ? 'bg-[#00D09C]/10 text-[#00D09C] border border-[#00D09C]/30'
+                            : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#00D09C]/5'
                         )}
                       >
                         {type}
@@ -623,22 +623,22 @@ export function FuturesPage() {
                 <div className="bg-[#f5f7fa] border border-[#e5e7eb] p-3 rounded-xl space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Lot Size</span>
-                    <span className="font-mono font-medium text-[#1a1a2e]">{lotSize}</span>
+                    <span className="font-mono font-medium text-[#1a1a1a]">{lotSize}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Total Qty</span>
-                    <span className="font-mono font-medium text-[#1a1a2e]">{totalQty}</span>
+                    <span className="font-mono font-medium text-[#1a1a1a]">{totalQty}</span>
                   </div>
                   <div className="flex justify-between border-t border-[#e5e7eb] pt-2">
                     <span className="text-[#6b7280] font-semibold">Margin Required</span>
-                    <span className="font-mono font-bold text-[#5367ff] text-base">₹{Number(marginRequired).toLocaleString()}</span>
+                    <span className="font-mono font-bold text-[#00D09C] text-base">₹{Number(marginRequired).toLocaleString()}</span>
                   </div>
                 </div>
 
                 {/* Available Margin */}
                 <div className="flex items-center justify-between p-3 rounded-lg bg-[#f5f7fa]">
                   <div className="flex items-center gap-2">
-                    <Wallet className="size-4 text-[#5367ff]" />
+                    <Wallet className="size-4 text-[#00D09C]" />
                     <span className="text-xs font-medium text-[#6b7280]">Available Margin</span>
                   </div>
                   <span className={cn(
@@ -682,8 +682,8 @@ export function FuturesPage() {
       {/* ── Open Futures Positions ─────────────────────────────── */}
       <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-[#1a1a2e] flex items-center gap-2">
-            <CandlestickChart className="size-4 text-[#5367ff]" />
+          <h3 className="text-sm font-bold text-[#1a1a1a] flex items-center gap-2">
+            <CandlestickChart className="size-4 text-[#00D09C]" />
             Open Futures Positions
           </h3>
           {positions.length > 0 && (
@@ -701,14 +701,14 @@ export function FuturesPage() {
 
         {positionsLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-[#5367ff]" />
+            <Loader2 className="size-6 animate-spin text-[#00D09C]" />
           </div>
         ) : positions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="size-12 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-3">
               <Briefcase className="size-6 text-[#6b7280]" />
             </div>
-            <p className="text-[#1a1a2e] font-medium text-sm">No open futures positions</p>
+            <p className="text-[#1a1a1a] font-medium text-sm">No open futures positions</p>
             <p className="text-[#6b7280] text-xs mt-1">
               Place a futures order above to see your positions here
             </p>
@@ -734,8 +734,8 @@ export function FuturesPage() {
                   {positions.map((pos) => {
                     const isPositive = pos.unrealizedPnl >= 0
                     return (
-                      <tr key={pos.id} className="border-b border-[#e5e7eb] hover:bg-[#5367ff]/5 transition-colors">
-                        <td className="px-3 py-2.5 font-semibold text-[#1a1a2e]">
+                      <tr key={pos.id} className="border-b border-[#e5e7eb] hover:bg-[#00D09C]/5 transition-colors">
+                        <td className="px-3 py-2.5 font-semibold text-[#1a1a1a]">
                           {pos.symbol}
                           <span className="text-xs text-[#6b7280] ml-1">FUT</span>
                         </td>
@@ -750,9 +750,9 @@ export function FuturesPage() {
                             {pos.tradeDirection}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a2e]">{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a2e]">₹{pos.entryPrice.toLocaleString()}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a2e]">₹{pos.currentPrice.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a1a]">{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a1a]">₹{pos.entryPrice.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a1a]">₹{pos.currentPrice.toLocaleString()}</td>
                         <td className={cn(
                           'px-3 py-2.5 text-right font-mono font-bold',
                           isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
@@ -792,7 +792,7 @@ export function FuturesPage() {
                   <div key={pos.id} className="p-3 rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#1a1a2e]">{pos.symbol} FUT</span>
+                        <span className="font-bold text-[#1a1a1a]">{pos.symbol} FUT</span>
                         <Badge className={cn(
                           'text-[10px] font-bold',
                           pos.tradeDirection === 'BUY'

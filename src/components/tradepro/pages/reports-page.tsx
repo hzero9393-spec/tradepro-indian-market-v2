@@ -146,10 +146,10 @@ export function ReportsPage() {
       label: 'Total Trades',
       value: String(trades.length),
       icon: Crosshair,
-      borderColor: 'border-l-[#5367ff]',
-      textColor: 'text-[#5367ff]',
-      bgColor: 'bg-[#5367ff]/10',
-      valueColor: 'text-[#1a1a2e]',
+      borderColor: 'border-l-[#00D09C]',
+      textColor: 'text-[#00D09C]',
+      bgColor: 'bg-[#00D09C]/10',
+      valueColor: 'text-[#1a1a1a]',
     },
     {
       label: 'Win Rate',
@@ -208,7 +208,7 @@ export function ReportsPage() {
     <div className="min-h-screen bg-[#f5f7fa] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* ── Page Header ─────────────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
           Reports
         </h1>
         <p className="text-[#6b7280] mt-1 text-sm">
@@ -255,13 +255,13 @@ export function ReportsPage() {
               <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
                 <BarChart3 className="size-7 text-[#6b7280]/40" />
               </div>
-              <p className="text-[#1a1a2e] font-semibold text-sm">No trades yet</p>
+              <p className="text-[#1a1a1a] font-semibold text-sm">No trades yet</p>
               <p className="text-[#6b7280] text-xs mt-1">
                 Place your first trade to start tracking performance
               </p>
               <Button
                 size="sm"
-                className="mt-4 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+                className="mt-4 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
                 onClick={() => setCurrentPage('trading')}
               >
                 <TrendingUp className="size-3.5" />
@@ -282,9 +282,9 @@ export function ReportsPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <LineChart className="size-5 text-[#5367ff]" />
+                    <LineChart className="size-5 text-[#00D09C]" />
                     <div>
-                      <CardTitle className="text-base font-semibold text-[#1a1a2e]">
+                      <CardTitle className="text-base font-semibold text-[#1a1a1a]">
                         P&amp;L Trend
                       </CardTitle>
                       <p className="text-xs text-[#6b7280] mt-0.5">
@@ -307,10 +307,10 @@ export function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col items-center justify-center py-16 text-center bg-[#f8f9fb] rounded-xl border border-[#e5e7eb]/50">
-                  <div className="size-16 rounded-full bg-[#5367ff]/8 flex items-center justify-center mb-4">
-                    <Activity className="size-8 text-[#5367ff]/40" />
+                  <div className="size-16 rounded-full bg-[#00D09C]/8 flex items-center justify-center mb-4">
+                    <Activity className="size-8 text-[#00D09C]/40" />
                   </div>
-                  <p className="text-[#1a1a2e] font-semibold text-sm">Analytics coming soon</p>
+                  <p className="text-[#1a1a1a] font-semibold text-sm">Analytics coming soon</p>
                   <p className="text-[#6b7280] text-xs mt-1 max-w-xs">
                     Advanced P&L charts, trend analysis, and performance visualizations are being built. Stay tuned!
                   </p>
@@ -330,9 +330,9 @@ export function ReportsPage() {
               <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm h-full">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
-                    <Target className="size-5 text-[#5367ff]" />
+                    <Target className="size-5 text-[#00D09C]" />
                     <div>
-                      <CardTitle className="text-base font-semibold text-[#1a1a2e]">
+                      <CardTitle className="text-base font-semibold text-[#1a1a1a]">
                         Win / Loss Summary
                       </CardTitle>
                       <p className="text-xs text-[#6b7280] mt-0.5">
@@ -387,7 +387,7 @@ export function ReportsPage() {
                             <div className="size-8 rounded-lg bg-[#00d09c]/10 flex items-center justify-center">
                               <TrendingUp className="size-4 text-[#00d09c]" />
                             </div>
-                            <span className="text-sm font-semibold text-[#1a1a2e]">Winning Trades</span>
+                            <span className="text-sm font-semibold text-[#1a1a1a]">Winning Trades</span>
                           </div>
                           <div className="text-right">
                             <p className="font-mono-data text-sm font-semibold text-[#00d09c]">
@@ -422,7 +422,7 @@ export function ReportsPage() {
                             <div className="size-8 rounded-lg bg-[#eb5b3c]/10 flex items-center justify-center">
                               <TrendingDown className="size-4 text-[#eb5b3c]" />
                             </div>
-                            <span className="text-sm font-semibold text-[#1a1a2e]">Losing Trades</span>
+                            <span className="text-sm font-semibold text-[#1a1a1a]">Losing Trades</span>
                           </div>
                           <div className="text-right">
                             <p className="font-mono-data text-sm font-semibold text-[#eb5b3c]">
@@ -472,9 +472,9 @@ export function ReportsPage() {
               <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm h-full">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="size-5 text-[#5367ff]" />
+                    <BarChart3 className="size-5 text-[#00D09C]" />
                     <div>
-                      <CardTitle className="text-base font-semibold text-[#1a1a2e]">
+                      <CardTitle className="text-base font-semibold text-[#1a1a1a]">
                         Segment Breakdown
                       </CardTitle>
                       <p className="text-xs text-[#6b7280] mt-0.5">
@@ -486,7 +486,7 @@ export function ReportsPage() {
                 <CardContent>
                   {(() => {
                     const segmentData = [
-                      { name: 'Equity', icon: Briefcase, color: '#5367ff', trades: trades.filter(t => t.segment === 'EQUITY' || t.segment === 'CASH') },
+                      { name: 'Equity', icon: Briefcase, color: '#00D09C', trades: trades.filter(t => t.segment === 'EQUITY' || t.segment === 'CASH') },
                       { name: 'Futures', icon: TrendingUp, color: '#00d09c', trades: trades.filter(t => t.segment === 'FUTURES') },
                       { name: 'Options', icon: Award, color: '#eb5b3c', trades: trades.filter(t => t.segment === 'OPTIONS') },
                     ].filter(s => s.trades.length > 0)
@@ -526,7 +526,7 @@ export function ReportsPage() {
                                     <Icon className="size-4" style={{ color: segment.color }} />
                                   </div>
                                   <div>
-                                    <span className="text-sm font-semibold text-[#1a1a2e]">{segment.name}</span>
+                                    <span className="text-sm font-semibold text-[#1a1a1a]">{segment.name}</span>
                                     <span className="ml-2 text-[10px] text-[#6b7280]">
                                       {segment.trades.length} trade{segment.trades.length !== 1 ? 's' : ''}
                                     </span>
@@ -551,7 +551,7 @@ export function ReportsPage() {
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                                     Total Trades
                                   </p>
-                                  <p className="font-mono-data text-sm font-semibold text-[#1a1a2e] mt-0.5">
+                                  <p className="font-mono-data text-sm font-semibold text-[#1a1a1a] mt-0.5">
                                     {segment.trades.length}
                                   </p>
                                 </div>
@@ -585,9 +585,9 @@ export function ReportsPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Crosshair className="size-5 text-[#5367ff]" />
+                    <Crosshair className="size-5 text-[#00D09C]" />
                     <div>
-                      <CardTitle className="text-base font-semibold text-[#1a1a2e]">
+                      <CardTitle className="text-base font-semibold text-[#1a1a1a]">
                         Recent Trades
                       </CardTitle>
                       <p className="text-xs text-[#6b7280] mt-0.5">
@@ -595,7 +595,7 @@ export function ReportsPage() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-[#5367ff]/10 text-[#5367ff] border-0 text-xs font-semibold">
+                  <Badge variant="secondary" className="bg-[#00D09C]/10 text-[#00D09C] border-0 text-xs font-semibold">
                     {trades.length} Trade{trades.length !== 1 ? 's' : ''}
                   </Badge>
                 </div>
@@ -627,7 +627,7 @@ export function ReportsPage() {
                           >
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className="font-bold text-sm text-[#5367ff]">{trade.symbol}</span>
+                                <span className="font-bold text-sm text-[#00D09C]">{trade.symbol}</span>
                                 {trade.segment === 'OPTIONS' && trade.strikePrice && (
                                   <span className="text-[10px] uppercase text-[#6b7280]">
                                     {trade.strikePrice} {trade.optionType}
@@ -650,11 +650,11 @@ export function ReportsPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs text-[#6b7280]">{trade.segment}</TableCell>
-                            <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e]">{trade.quantity}</TableCell>
+                            <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a]">{trade.quantity}</TableCell>
                             <TableCell className="font-mono-data text-sm text-right text-[#6b7280]">
                               {formatINR(trade.fillPrice)}
                             </TableCell>
-                            <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e]">
+                            <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a]">
                               {formatINRWhole(trade.totalValue)}
                             </TableCell>
                             <TableCell className={`font-mono-data text-sm font-semibold text-right ${
@@ -682,7 +682,7 @@ export function ReportsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
             >
-              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 border-l-[#5367ff]">
+              <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm border-l-4 border-l-[#00D09C]">
                 <CardContent className="p-5">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280] mb-3">
                     Performance Summary
@@ -708,7 +708,7 @@ export function ReportsPage() {
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                         Total Brokerage
                       </p>
-                      <p className="font-mono-data text-sm font-bold text-[#1a1a2e] mt-0.5">
+                      <p className="font-mono-data text-sm font-bold text-[#1a1a1a] mt-0.5">
                         {formatINR(trades.reduce((s, t) => s + t.brokerage, 0))}
                       </p>
                     </div>

@@ -17,7 +17,7 @@ export function ContactUsPage() {
           title="Email Us"
           detail="support@tradepro.app"
           subDetail="We respond within 24 hours"
-          color="#5367ff"
+          color="#00D09C"
         />
         <ContactMethod
           icon={<Phone className="size-5" />}
@@ -46,8 +46,8 @@ export function ContactUsPage() {
                   type="text"
                   placeholder="Your full name"
                   className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
-                  style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a2e' }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#5367ff' }}
+                  style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a1a' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#00D09C' }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = '#d1d5db' }}
                 />
               </div>
@@ -57,8 +57,8 @@ export function ContactUsPage() {
                   type="email"
                   placeholder="you@example.com"
                   className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
-                  style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a2e' }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#5367ff' }}
+                  style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a1a' }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#00D09C' }}
                   onBlur={(e) => { e.currentTarget.style.borderColor = '#d1d5db' }}
                 />
               </div>
@@ -67,7 +67,7 @@ export function ContactUsPage() {
               <label className="text-xs font-medium mb-1.5 block" style={{ color: '#374151' }}>Subject *</label>
               <select
                 className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors"
-                style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a2e' }}
+                style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a1a' }}
               >
                 <option value="">Select a subject</option>
                 <option value="general">General Inquiry</option>
@@ -85,17 +85,17 @@ export function ContactUsPage() {
                 rows={5}
                 placeholder="Describe your issue or question in detail..."
                 className="w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors resize-none"
-                style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a2e' }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#5367ff' }}
+                style={{ background: '#ffffff', border: '1px solid #d1d5db', color: '#1a1a1a' }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#00D09C' }}
                 onBlur={(e) => { e.currentTarget.style.borderColor = '#d1d5db' }}
               />
             </div>
             <button
               type="submit"
               className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
-              style={{ background: '#5367ff', color: '#ffffff' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#4356e0' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#5367ff' }}
+              style={{ background: '#00D09C', color: '#ffffff' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#00b88a' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#00D09C' }}
             >
               <Send className="size-4" />
               Send Message
@@ -137,7 +137,7 @@ function ContactMethod({ icon, title, detail, subDetail, color }: {
       <div className="flex size-12 items-center justify-center rounded-xl mx-auto mb-3" style={{ background: `${color}15`, color }}>
         {icon}
       </div>
-      <h3 className="text-sm font-semibold" style={{ color: '#1a1a2e' }}>{title}</h3>
+      <h3 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>{title}</h3>
       <p className="text-sm font-medium mt-1" style={{ color }}>{detail}</p>
       <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>{subDetail}</p>
     </div>
@@ -147,11 +147,11 @@ function ContactMethod({ icon, title, detail, subDetail, color }: {
 function SocialLink({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: '#f9fafb', border: '1px solid #f3f4f6' }}>
-      <div className="flex size-10 items-center justify-center rounded-lg shrink-0" style={{ background: '#5367ff15', color: '#5367ff' }}>
+      <div className="flex size-10 items-center justify-center rounded-lg shrink-0" style={{ background: '#00D09C15', color: '#00D09C' }}>
         {icon}
       </div>
       <div>
-        <p className="text-sm font-medium" style={{ color: '#1a1a2e' }}>{title}</p>
+        <p className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{title}</p>
         <p className="text-xs" style={{ color: '#6b7280' }}>{detail}</p>
       </div>
     </div>
@@ -161,7 +161,7 @@ function SocialLink({ icon, title, detail }: { icon: React.ReactNode; title: str
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: '#1a1a2e' }}>{title}</h2>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: '#1a1a1a' }}>{title}</h2>
       <div className="text-sm leading-relaxed space-y-2" style={{ color: '#4b5563' }}>
         {children}
       </div>

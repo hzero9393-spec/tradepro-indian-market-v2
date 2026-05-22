@@ -41,7 +41,7 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center p-4">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#5367ff]/5 rounded-full blur-3xl" />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00D09C]/5 rounded-full blur-3xl" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#00d09c]/5 rounded-full blur-3xl" />
         </div>
 
@@ -52,13 +52,13 @@ export default function AdminPage() {
           className="relative w-full max-w-md"
         >
           <div className="bg-white border border-[#e5e7eb] rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-[#5367ff]/5 to-[#00d09c]/5 border-b border-[#e5e7eb] px-8 py-6">
+            <div className="bg-gradient-to-r from-[#00D09C]/5 to-[#00d09c]/5 border-b border-[#e5e7eb] px-8 py-6">
               <div className="flex items-center gap-4">
-                <div className="flex size-12 items-center justify-center rounded-xl bg-[#5367ff]/10">
-                  <Shield className="size-6 text-[#5367ff]" />
+                <div className="flex size-12 items-center justify-center rounded-xl bg-[#00D09C]/10">
+                  <Shield className="size-6 text-[#00D09C]" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-[#1a1a2e]">Admin Access</h1>
+                  <h1 className="text-xl font-bold text-[#1a1a1a]">Admin Access</h1>
                   <p className="text-sm text-[#6b7280] mt-0.5">TradePro Administration Panel</p>
                 </div>
               </div>
@@ -66,7 +66,7 @@ export default function AdminPage() {
 
             <form onSubmit={handleLogin} className="p-8 space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[#1a1a2e]">Admin Password</label>
+                <label className="text-sm font-medium text-[#1a1a1a]">Admin Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-[#9ca3af]" />
                   <Input
@@ -74,7 +74,7 @@ export default function AdminPage() {
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError('') }}
                     placeholder="Enter admin password"
-                    className="pl-10 pr-10 h-12 bg-[#f0f2f5] border-[#e5e7eb] text-[#1a1a2e] placeholder:text-[#9ca3af] focus:border-[#5367ff] focus:ring-[#5367ff]/20"
+                    className="pl-10 pr-10 h-12 bg-[#f0f2f5] border-[#e5e7eb] text-[#1a1a1a] placeholder:text-[#9ca3af] focus:border-[#00D09C] focus:ring-[#00D09C]/20"
                     autoFocus
                   />
                   <button
@@ -104,7 +104,7 @@ export default function AdminPage() {
               <Button
                 type="submit"
                 disabled={isLoading || !password}
-                className="w-full h-12 bg-[#5367ff] hover:bg-[#4456e6] text-white font-semibold text-base disabled:opacity-50"
+                className="w-full h-12 bg-[#00D09C] hover:bg-[#4456e6] text-white font-semibold text-base disabled:opacity-50"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
@@ -168,11 +168,11 @@ import {
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 
 const statsCards = [
-  { label: 'Total Users', value: '1,248', sub: '+12 this week', icon: Users, color: 'bg-[#5367ff]/10 text-[#5367ff]' },
+  { label: 'Total Users', value: '1,248', sub: '+12 this week', icon: Users, color: 'bg-[#00D09C]/10 text-[#00D09C]' },
   { label: 'Active Traders', value: '856', sub: '68.6% of total', icon: Activity, color: 'bg-[#00d09c]/10 text-[#00d09c]' },
-  { label: 'Total Trades Today', value: '5,432', sub: '+18% vs yesterday', icon: BarChart3, color: 'bg-[#5367ff]/10 text-[#5367ff]' },
+  { label: 'Total Trades Today', value: '5,432', sub: '+18% vs yesterday', icon: BarChart3, color: 'bg-[#00D09C]/10 text-[#00D09C]' },
   { label: 'Platform Volume', value: '₹45.2 Cr', sub: 'F&O + Equity', icon: IndianRupee, color: 'bg-[#00d09c]/10 text-[#00d09c]' },
-  { label: 'Premium Users', value: '234', sub: '₹23,166/mo revenue', icon: Crown, color: 'bg-[#5367ff]/10 text-[#5367ff]' },
+  { label: 'Premium Users', value: '234', sub: '₹23,166/mo revenue', icon: Crown, color: 'bg-[#00D09C]/10 text-[#00D09C]' },
   { label: 'Avg Session', value: '18 min', sub: '+3 min this week', icon: Clock, color: 'bg-[#00d09c]/10 text-[#00d09c]' },
 ]
 
@@ -208,7 +208,7 @@ const userGrowthData = [
   { month: 'Oct', users: 1200 }, { month: 'Nov', users: 1230 }, { month: 'Dec', users: 1248 },
 ]
 
-const lineChartConfig: ChartConfig = { users: { label: 'Users', color: '#5367ff' } }
+const lineChartConfig: ChartConfig = { users: { label: 'Users', color: '#00D09C' } }
 
 function AdminPanel() {
   const [indices, setIndices] = useState(indexSettings)
@@ -238,21 +238,21 @@ function AdminPanel() {
       <header className="bg-white border-b border-[#e5e7eb] px-6 py-4 sticky top-0 z-50">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-[#5367ff]/10">
-              <TrendingUp className="size-5 text-[#5367ff]" />
+            <div className="flex size-10 items-center justify-center rounded-xl bg-[#00D09C]/10">
+              <TrendingUp className="size-5 text-[#00D09C]" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-[#1a1a2e]">TradePro Admin</h1>
+              <h1 className="text-lg font-bold text-[#1a1a1a]">TradePro Admin</h1>
               <p className="text-xs text-[#6b7280]">Administration Panel</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className="bg-[#5367ff]/10 text-[#5367ff] border-[#5367ff]/20 text-xs">ADMIN</Badge>
+            <Badge className="bg-[#00D09C]/10 text-[#00D09C] border-[#00D09C]/20 text-xs">ADMIN</Badge>
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="border-[#e5e7eb] text-[#6b7280] hover:text-[#1a1a2e] hover:border-[#d1d5db]"
+              className="border-[#e5e7eb] text-[#6b7280] hover:text-[#1a1a1a] hover:border-[#d1d5db]"
             >
               Logout
             </Button>
@@ -263,10 +263,10 @@ function AdminPanel() {
       <main className="max-w-7xl mx-auto p-6">
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList className="bg-white border border-[#e5e7eb]">
-            <TabsTrigger value="dashboard" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Dashboard</TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Users</TabsTrigger>
-            <TabsTrigger value="market" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Market Control</TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-[#5367ff]/10 data-[state=active]:text-[#5367ff]">Analytics</TabsTrigger>
+            <TabsTrigger value="dashboard" className="data-[state=active]:bg-[#00D09C]/10 data-[state=active]:text-[#00D09C]">Dashboard</TabsTrigger>
+            <TabsTrigger value="users" className="data-[state=active]:bg-[#00D09C]/10 data-[state=active]:text-[#00D09C]">Users</TabsTrigger>
+            <TabsTrigger value="market" className="data-[state=active]:bg-[#00D09C]/10 data-[state=active]:text-[#00D09C]">Market Control</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-[#00D09C]/10 data-[state=active]:text-[#00D09C]">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -280,7 +280,7 @@ function AdminPanel() {
                         <Icon className="size-4" />
                       </div>
                       <p className="mt-3 text-xs font-medium text-[#6b7280]">{stat.label}</p>
-                      <p className="font-mono text-lg font-bold text-[#1a1a2e]">{stat.value}</p>
+                      <p className="font-mono text-lg font-bold text-[#1a1a1a]">{stat.value}</p>
                       <p className="text-[11px] text-[#9ca3af]">{stat.sub}</p>
                     </CardContent>
                   </Card>
@@ -290,7 +290,7 @@ function AdminPanel() {
 
             <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-[#1a1a2e]">Recent Activity</CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1a1a1a]">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -305,15 +305,15 @@ function AdminPanel() {
                   <TableBody>
                     {recentActivity.map((item, i) => (
                       <TableRow key={i} className="border-[#f0f2f5]">
-                        <TableCell className="font-medium text-[#1a1a2e]">{item.user}</TableCell>
+                        <TableCell className="font-medium text-[#1a1a1a]">{item.user}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`text-[11px] font-semibold ${
                             item.action === 'Bought' ? 'border-[#00d09c]/30 bg-[#00d09c]/10 text-[#00a87d]'
                             : item.action === 'Sold' ? 'border-[#eb5b3c]/30 bg-[#eb5b3c]/10 text-[#d44a2d]'
-                            : 'border-[#5367ff]/30 bg-[#5367ff]/10 text-[#5367ff]'
+                            : 'border-[#00D09C]/30 bg-[#00D09C]/10 text-[#00D09C]'
                           }`}>{item.action}</Badge>
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-[#1a1a2e]">{item.symbol}</TableCell>
+                        <TableCell className="font-mono text-sm text-[#1a1a1a]">{item.symbol}</TableCell>
                         <TableCell className="text-right text-xs text-[#9ca3af]">{item.time}</TableCell>
                       </TableRow>
                     ))}
@@ -329,7 +329,7 @@ function AdminPanel() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#9ca3af]" />
-                    <Input placeholder="Search users..." className="rounded-lg border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] pl-10" />
+                    <Input placeholder="Search users..." className="rounded-lg border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a1a] pl-10" />
                   </div>
                   <div className="inline-flex items-center gap-1 rounded-full bg-[#f0f2f5] p-1 border border-[#e5e7eb]">
                     {['All', 'Free', 'Premium', 'Active', 'Inactive'].map((f) => (
@@ -337,7 +337,7 @@ function AdminPanel() {
                         key={f}
                         onClick={() => setUserFilter(f)}
                         className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                          userFilter === f ? 'bg-[#5367ff] text-white' : 'text-[#6b7280] hover:text-[#1a1a2e]'
+                          userFilter === f ? 'bg-[#00D09C] text-white' : 'text-[#6b7280] hover:text-[#1a1a1a]'
                         }`}
                       >
                         {f}
@@ -350,7 +350,7 @@ function AdminPanel() {
 
             <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-[#1a1a2e]">Users ({filteredUsers.length})</CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1a1a1a]">Users ({filteredUsers.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -367,12 +367,12 @@ function AdminPanel() {
                   <TableBody>
                     {filteredUsers.map((user, i) => (
                       <TableRow key={i} className="border-[#f0f2f5]">
-                        <TableCell className="font-medium text-[#1a1a2e]">{user.name}</TableCell>
+                        <TableCell className="font-medium text-[#1a1a1a]">{user.name}</TableCell>
                         <TableCell className="hidden sm:table-cell text-xs text-[#6b7280]">{user.email}</TableCell>
-                        <TableCell className="text-right font-mono text-sm text-[#1a1a2e]">{user.balance}</TableCell>
+                        <TableCell className="text-right font-mono text-sm text-[#1a1a1a]">{user.balance}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`text-[11px] font-semibold ${
-                            user.subscription === 'Premium' ? 'border-[#5367ff]/30 bg-[#5367ff]/10 text-[#5367ff]' : 'border-[#e5e7eb] bg-[#f0f2f5] text-[#6b7280]'
+                            user.subscription === 'Premium' ? 'border-[#00D09C]/30 bg-[#00D09C]/10 text-[#00D09C]' : 'border-[#e5e7eb] bg-[#f0f2f5] text-[#6b7280]'
                           }`}>{user.subscription}</Badge>
                         </TableCell>
                         <TableCell>
@@ -382,7 +382,7 @@ function AdminPanel() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="size-7 text-[#6b7280] hover:text-[#5367ff]"><Edit className="size-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="size-7 text-[#6b7280] hover:text-[#00D09C]"><Edit className="size-3.5" /></Button>
                             <Button variant="ghost" size="icon" className="size-7 text-[#6b7280] hover:text-[#eb5b3c]"><Ban className="size-3.5" /></Button>
                           </div>
                         </TableCell>
@@ -397,32 +397,32 @@ function AdminPanel() {
           <TabsContent value="market" className="space-y-6">
             <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1a1a2e]">
-                  <Settings2 className="size-4 text-[#5367ff]" /> Indices Settings
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1a1a1a]">
+                  <Settings2 className="size-4 text-[#00D09C]" /> Indices Settings
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {indices.map((idx, i) => (
                     <div key={idx.name} className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:gap-4 ${
-                      idx.enabled ? 'border-[#5367ff]/20 bg-[#5367ff]/5' : 'border-[#e5e7eb] bg-[#f0f2f5]/50'
+                      idx.enabled ? 'border-[#00D09C]/20 bg-[#00D09C]/5' : 'border-[#e5e7eb] bg-[#f0f2f5]/50'
                     }`}>
                       <div className="flex items-center gap-3 min-w-[140px]">
                         <Switch checked={idx.enabled} onCheckedChange={() => toggleIndex(i)} />
-                        <span className={`font-mono font-bold ${idx.enabled ? 'text-[#1a1a2e]' : 'text-[#9ca3af]'}`}>{idx.name}</span>
+                        <span className={`font-mono font-bold ${idx.enabled ? 'text-[#1a1a1a]' : 'text-[#9ca3af]'}`}>{idx.name}</span>
                       </div>
                       <div className="flex flex-1 flex-wrap items-center gap-3">
                         <div className="flex items-center gap-2">
                           <Label className="text-xs text-[#6b7280]">Lot Size</Label>
-                          <Input defaultValue={idx.lotSize} className="h-8 w-20 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] font-mono text-sm" disabled={!idx.enabled} />
+                          <Input defaultValue={idx.lotSize} className="h-8 w-20 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a1a] font-mono text-sm" disabled={!idx.enabled} />
                         </div>
                         <div className="flex items-center gap-2">
                           <Label className="text-xs text-[#6b7280]">Expiry</Label>
-                          <Input defaultValue={idx.expiryDay} className="h-8 w-28 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] text-sm" disabled={!idx.enabled} />
+                          <Input defaultValue={idx.expiryDay} className="h-8 w-28 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a1a] text-sm" disabled={!idx.enabled} />
                         </div>
                         <div className="flex items-center gap-2">
                           <Label className="text-xs text-[#6b7280]">Strike Interval</Label>
-                          <Input defaultValue={idx.strikeInterval} className="h-8 w-20 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a2e] font-mono text-sm" disabled={!idx.enabled} />
+                          <Input defaultValue={idx.strikeInterval} className="h-8 w-20 border-[#e5e7eb] bg-[#f0f2f5] text-[#1a1a1a] font-mono text-sm" disabled={!idx.enabled} />
                         </div>
                       </div>
                     </div>
@@ -435,8 +435,8 @@ function AdminPanel() {
           <TabsContent value="analytics" className="space-y-6">
             <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1a1a2e]">
-                  <TrendingUp className="size-4 text-[#5367ff]" /> User Growth (2025)
+                <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1a1a1a]">
+                  <TrendingUp className="size-4 text-[#00D09C]" /> User Growth (2025)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -446,7 +446,7 @@ function AdminPanel() {
                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6b7280' }} dy={8} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} width={45} />
                     <RechartsTooltip contentStyle={{ background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }} />
-                    <Line type="monotone" dataKey="users" stroke="#5367ff" strokeWidth={2.5} dot={{ r: 4, fill: '#5367ff', stroke: '#ffffff', strokeWidth: 2 }} />
+                    <Line type="monotone" dataKey="users" stroke="#00D09C" strokeWidth={2.5} dot={{ r: 4, fill: '#00D09C', stroke: '#ffffff', strokeWidth: 2 }} />
                   </LineChart>
                 </ChartContainer>
               </CardContent>
@@ -454,7 +454,7 @@ function AdminPanel() {
 
             <Card className="bg-white border-[#e5e7eb] rounded-xl">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold text-[#1a1a2e]">Top Traders</CardTitle>
+                <CardTitle className="text-base font-semibold text-[#1a1a1a]">Top Traders</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -476,12 +476,12 @@ function AdminPanel() {
                       <TableRow key={i} className="border-[#f0f2f5]">
                         <TableCell>
                           <div className={`flex size-7 items-center justify-center rounded-full font-mono text-xs font-bold ${
-                            i === 0 ? 'bg-[#5367ff]/10 text-[#5367ff]' : i === 1 ? 'bg-[#9ca3af]/10 text-[#6b7280]' : 'bg-[#f59e0b]/10 text-[#d97706]'
+                            i === 0 ? 'bg-[#00D09C]/10 text-[#00D09C]' : i === 1 ? 'bg-[#9ca3af]/10 text-[#6b7280]' : 'bg-[#f59e0b]/10 text-[#d97706]'
                           }`}>{i + 1}</div>
                         </TableCell>
-                        <TableCell className="font-medium text-[#1a1a2e]">{trader.name}</TableCell>
+                        <TableCell className="font-medium text-[#1a1a1a]">{trader.name}</TableCell>
                         <TableCell className="text-right font-mono text-[#00a87d]">{trader.roi}</TableCell>
-                        <TableCell className="text-right font-mono text-[#1a1a2e]">{trader.winRate}</TableCell>
+                        <TableCell className="text-right font-mono text-[#1a1a1a]">{trader.winRate}</TableCell>
                         <TableCell className="text-right font-mono text-[#6b7280]">{trader.totalTrades}</TableCell>
                       </TableRow>
                     ))}

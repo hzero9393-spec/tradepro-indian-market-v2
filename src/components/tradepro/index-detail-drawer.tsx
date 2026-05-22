@@ -186,7 +186,7 @@ function CustomTooltip({ active, payload, label, range }: { active?: boolean; pa
 
   return (
     <div className="bg-[#ffffff] border border-[#e5e7eb] rounded-lg p-3 shadow-xl border border-[#e5e7eb]/20 text-xs">
-      <div className="font-semibold text-[#1a1a2e] mb-1.5">{formatDate(d.date, range)}</div>
+      <div className="font-semibold text-[#1a1a1a] mb-1.5">{formatDate(d.date, range)}</div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
         <span className="text-[#6b7280]">Open</span>
         <span className="font-mono text-right">{d.open.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
@@ -445,9 +445,9 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                     )}
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-[#1a1a2e]">{detail?.name || symbol}</h2>
+                    <h2 className="text-xl font-bold text-[#1a1a1a]">{detail?.name || symbol}</h2>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-2xl font-bold font-mono-data text-[#1a1a2e]">
+                      <span className="text-2xl font-bold font-mono-data text-[#1a1a1a]">
                         {detail?.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                       </span>
                       <span className={cn(
@@ -465,7 +465,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-[#5367ff] border-[#5367ff]/30 hover:bg-[#5367ff]/10 hover:text-[#5367ff] font-semibold shrink-0"
+              className="gap-1.5 text-[#00D09C] border-[#00D09C]/30 hover:bg-[#00D09C]/10 hover:text-[#00D09C] font-semibold shrink-0"
               onClick={() => setActiveTab('optionChain')}
             >
               <GitBranch className="size-4" />
@@ -474,7 +474,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
             <Button
               variant="ghost"
               size="icon"
-              className="text-[#6b7280] hover:text-[#1a1a2e] shrink-0"
+              className="text-[#6b7280] hover:text-[#1a1a1a] shrink-0"
               onClick={() => onOpenChange(false)}
             >
               <X className="size-5" />
@@ -488,21 +488,21 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
             <TabsList className="bg-[#ffffff] rounded-xl p-1 h-auto">
               <TabsTrigger
                 value="chart"
-                className="rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-[#5367ff] data-[state=active]:text-white transition-all"
+                className="rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-[#00D09C] data-[state=active]:text-white transition-all"
               >
                 <BarChart3 className="size-4 mr-1.5" />
                 Chart
               </TabsTrigger>
               <TabsTrigger
                 value="optionChain"
-                className="rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-[#5367ff] data-[state=active]:text-white transition-all"
+                className="rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-[#00D09C] data-[state=active]:text-white transition-all"
               >
                 <GitBranch className="size-4 mr-1.5" />
                 Option Chain
               </TabsTrigger>
               <TabsTrigger
                 value="stats"
-                className="rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-[#5367ff] data-[state=active]:text-white transition-all"
+                className="rounded-lg px-4 py-2 text-sm font-semibold data-[state=active]:bg-[#00D09C] data-[state=active]:text-white transition-all"
               >
                 <Activity className="size-4 mr-1.5" />
                 Statistics
@@ -521,8 +521,8 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                       className={cn(
                         'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
                         range === r
-                          ? 'bg-[#5367ff] text-white shadow-sm'
-                          : 'text-[#6b7280] hover:bg-[#ffffff] hover:text-[#1a1a2e]'
+                          ? 'bg-[#00D09C] text-white shadow-sm'
+                          : 'text-[#6b7280] hover:bg-[#ffffff] hover:text-[#1a1a1a]'
                       )}
                     >
                       {r}
@@ -534,7 +534,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                     onClick={() => setChartType('area')}
                     className={cn(
                       'p-2 rounded-lg transition-all',
-                      chartType === 'area' ? 'bg-[#f5f7fa] text-[#5367ff]' : 'text-[#6b7280] hover:text-[#1a1a2e]'
+                      chartType === 'area' ? 'bg-[#f5f7fa] text-[#00D09C]' : 'text-[#6b7280] hover:text-[#1a1a1a]'
                     )}
                   >
                     <BarChart3 className="size-4" />
@@ -543,7 +543,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                     onClick={() => setChartType('candle')}
                     className={cn(
                       'p-2 rounded-lg transition-all',
-                      chartType === 'candle' ? 'bg-[#f5f7fa] text-[#5367ff]' : 'text-[#6b7280] hover:text-[#1a1a2e]'
+                      chartType === 'candle' ? 'bg-[#f5f7fa] text-[#00D09C]' : 'text-[#6b7280] hover:text-[#1a1a1a]'
                     )}
                   >
                     <GitBranch className="size-4" />
@@ -557,9 +557,9 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                   <div className="h-[350px] flex items-center justify-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="flex gap-1.5">
-                        <div className="size-2 rounded-full bg-[#5367ff] animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="size-2 rounded-full bg-[#5367ff] animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="size-2 rounded-full bg-[#5367ff] animate-bounce" style={{ animationDelay: '300ms' }} />
+                        <div className="size-2 rounded-full bg-[#00D09C] animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="size-2 rounded-full bg-[#00D09C] animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="size-2 rounded-full bg-[#00D09C] animate-bounce" style={{ animationDelay: '300ms' }} />
                       </div>
                       <span className="text-xs text-[#6b7280]">Loading chart data...</span>
                     </div>
@@ -665,14 +665,14 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
               <div className="flex items-center gap-4 text-xs bg-white border border-[#e5e7eb] rounded-lg p-2.5">
                 <div className="flex items-center gap-1">
                   <span className="text-[#6b7280]">Spot</span>
-                  <span className="font-mono font-bold text-[#1a1a2e]">{detail?.currentPrice.toLocaleString('en-IN') || '--'}</span>
+                  <span className="font-mono font-bold text-[#1a1a1a]">{detail?.currentPrice.toLocaleString('en-IN') || '--'}</span>
                 </div>
                 <div className="h-3 w-px bg-[#e5e7eb]" />
                 <div className="flex items-center gap-1">
                   <span className="text-[#6b7280]">PCR</span>
                   <span className={cn(
                     'font-mono font-bold',
-                    optionStats.pcr > 1 ? 'text-[#00d09c]' : optionStats.pcr < 0.7 ? 'text-[#eb5b3c]' : 'text-[#1a1a2e]'
+                    optionStats.pcr > 1 ? 'text-[#00d09c]' : optionStats.pcr < 0.7 ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
                   )}>
                     {optionStats.pcr.toFixed(2)}
                   </span>
@@ -680,7 +680,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="h-3 w-px bg-[#e5e7eb]" />
                 <div className="flex items-center gap-1">
                   <span className="text-[#6b7280]">Max Pain</span>
-                  <span className="font-mono font-bold text-[#1a1a2e]">{optionStats.maxPain.toLocaleString()}</span>
+                  <span className="font-mono font-bold text-[#1a1a1a]">{optionStats.maxPain.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -689,9 +689,9 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="flex items-center justify-center py-8">
                   <div className="flex flex-col items-center gap-3">
                     <div className="flex gap-1.5">
-                      <div className="size-2 rounded-full bg-[#1a1a2e] animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="size-2 rounded-full bg-[#1a1a2e] animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="size-2 rounded-full bg-[#1a1a2e] animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="size-2 rounded-full bg-[#1a1a1a] animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="size-2 rounded-full bg-[#1a1a1a] animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="size-2 rounded-full bg-[#1a1a1a] animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                     <span className="text-xs text-[#6b7280]">Loading option chain...</span>
                   </div>
@@ -703,7 +703,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="overflow-x-auto custom-scrollbar max-h-[420px] overflow-y-auto">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 z-10">
-                      <tr className="bg-[#1a1a2e] text-white">
+                      <tr className="bg-[#1a1a1a] text-white">
                         <th colSpan={4} className="text-center py-2 font-semibold text-xs tracking-wider">
                           CALLS
                         </th>
@@ -719,7 +719,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                         <th className="px-1.5 py-1.5 text-right font-medium">Vol</th>
                         <th className="px-1.5 py-1.5 text-right font-medium">LTP</th>
                         <th className="px-1.5 py-1.5 text-right font-medium">Chg%</th>
-                        <th className="px-1.5 py-1.5 text-center font-bold bg-[#f3f4f6] border-x border-[#e5e7eb] text-[#1a1a2e]">₹</th>
+                        <th className="px-1.5 py-1.5 text-center font-bold bg-[#f3f4f6] border-x border-[#e5e7eb] text-[#1a1a1a]">₹</th>
                         <th className="px-1.5 py-1.5 text-left font-medium">Chg%</th>
                         <th className="px-1.5 py-1.5 text-left font-medium">LTP</th>
                         <th className="px-1.5 py-1.5 text-left font-medium">Vol</th>
@@ -737,7 +737,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             key={row.strike}
                             className={cn(
                               'border-b border-[#f3f4f6] transition-colors',
-                              isATM && 'bg-[#1a1a2e]/5'
+                              isATM && 'bg-[#1a1a1a]/5'
                             )}
                           >
                             {/* CE Side */}
@@ -749,7 +749,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             </td>
                             <td
                               className={cn(
-                                'px-1.5 py-1 text-right font-mono font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#00d09c] hover:underline',
+                                'px-1.5 py-1 text-right font-mono font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#00d09c] hover:underline',
                                 ceITM && 'bg-[#00d09c]/6'
                               )}
                               onClick={() => handleOptionClick(row, 'CE')}
@@ -767,7 +767,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             {/* Strike */}
                             <td className={cn(
                               'px-2 py-1 text-center font-mono font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
-                              isATM ? 'text-[#1a1a2e] bg-[#1a1a2e]/10' : 'text-[#1a1a2e]'
+                              isATM ? 'text-[#1a1a1a] bg-[#1a1a1a]/10' : 'text-[#1a1a1a]'
                             )}>
                               {row.strike.toLocaleString()}
                             </td>
@@ -782,7 +782,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             </td>
                             <td
                               className={cn(
-                                'px-1.5 py-1 text-left font-mono font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#eb5b3c] hover:underline',
+                                'px-1.5 py-1 text-left font-mono font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#eb5b3c] hover:underline',
                                 peITM && 'bg-[#eb5b3c]/6'
                               )}
                               onClick={() => handleOptionClick(row, 'PE')}
@@ -821,7 +821,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
               {/* Day Range Bar */}
               {detail && detail.low > 0 && detail.high > 0 && (
                 <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl space-y-3">
-                  <h4 className="text-sm font-semibold text-[#1a1a2e]">Day Range</h4>
+                  <h4 className="text-sm font-semibold text-[#1a1a1a]">Day Range</h4>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-mono">
                       <span className="text-[#eb5b3c] font-semibold">{detail.low.toLocaleString('en-IN')}</span>
@@ -852,7 +852,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
               {/* 52 Week Range Bar */}
               {detail && detail.week52Low > 0 && detail.week52High > 0 && (
                 <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl space-y-3">
-                  <h4 className="text-sm font-semibold text-[#1a1a2e]">52 Week Range</h4>
+                  <h4 className="text-sm font-semibold text-[#1a1a1a]">52 Week Range</h4>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-mono">
                       <span className="text-[#eb5b3c] font-semibold">{detail.week52Low.toLocaleString('en-IN')}</span>
@@ -865,7 +865,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                         return (
                           <>
                             <div
-                              className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] via-[#5367ff] to-[#00d09c] opacity-30"
+                              className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] via-[#00D09C] to-[#00d09c] opacity-30"
                               style={{ width: '100%' }}
                             />
                             <div
@@ -882,7 +882,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
 
               {/* Performance Metrics */}
               <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl">
-                <h4 className="text-sm font-semibold text-[#1a1a2e] mb-3">Performance</h4>
+                <h4 className="text-sm font-semibold text-[#1a1a1a] mb-3">Performance</h4>
                 <div className="space-y-3">
                   {detail && (
                     <>
@@ -897,26 +897,26 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
 
               {/* Info Box */}
               <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl">
-                <h4 className="text-sm font-semibold text-[#1a1a2e] mb-2 flex items-center gap-2">
-                  <Info className="size-4 text-[#5367ff]" />
+                <h4 className="text-sm font-semibold text-[#1a1a1a] mb-2 flex items-center gap-2">
+                  <Info className="size-4 text-[#00D09C]" />
                   Index Info
                 </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Exchange</span>
-                    <span className="font-semibold text-[#1a1a2e]">NSE</span>
+                    <span className="font-semibold text-[#1a1a1a]">NSE</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Currency</span>
-                    <span className="font-semibold text-[#1a1a2e]">INR (₹)</span>
+                    <span className="font-semibold text-[#1a1a1a]">INR (₹)</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Strike Interval</span>
-                    <span className="font-semibold text-[#1a1a2e]">₹{detail?.strikeInterval || '--'}</span>
+                    <span className="font-semibold text-[#1a1a1a]">₹{detail?.strikeInterval || '--'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Lot Size</span>
-                    <span className="font-semibold text-[#1a1a2e]">{detail?.lotSize || '--'}</span>
+                    <span className="font-semibold text-[#1a1a1a]">{detail?.lotSize || '--'}</span>
                   </div>
                   {detail?.isRealData && (
                     <div className="flex justify-between">
@@ -1045,7 +1045,7 @@ function OptionTradeModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="text-[#5367ff] font-bold">
+            <span className="text-[#00D09C] font-bold">
               {side === 'CE' ? 'CALL' : 'PUT'} Option
             </span>
             <Badge variant="outline" className="font-mono">
@@ -1131,7 +1131,7 @@ function OptionTradeModal({
             </div>
             <div className="flex justify-between border-t border-[#e5e7eb]/20 pt-2">
               <span className="text-[#6b7280] font-semibold">{direction === 'BUY' ? 'Total Cost' : 'Margin Required'}</span>
-              <span className="font-mono font-bold text-[#5367ff] text-base">₹{marginRequired.toLocaleString()}</span>
+              <span className="font-mono font-bold text-[#00D09C] text-base">₹{marginRequired.toLocaleString()}</span>
             </div>
           </div>
 
@@ -1170,7 +1170,7 @@ function StatBox({ label, value, highlight, danger }: { label: string; value: st
       <p className="text-[10px] font-semibold text-[#6b7280] tracking-wider uppercase mb-1">{label}</p>
       <p className={cn(
         'font-mono font-semibold text-sm',
-        highlight ? 'text-[#00d09c]' : danger ? 'text-[#eb5b3c]' : 'text-[#1a1a2e]'
+        highlight ? 'text-[#00d09c]' : danger ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
       )}>
         {value}
       </p>
@@ -1184,7 +1184,7 @@ function StatCard({ label, value, highlight, danger }: { label: string; value: s
       <p className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase mb-1.5">{label}</p>
       <p className={cn(
         'font-mono font-bold text-lg',
-        highlight ? 'text-[#00d09c]' : danger ? 'text-[#eb5b3c]' : 'text-[#1a1a2e]'
+        highlight ? 'text-[#00d09c]' : danger ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
       )}>
         {value}
       </p>

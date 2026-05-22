@@ -359,7 +359,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="min-h-screen bg-[#fafafa] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* ═══ Market Pulse Section ════════════════════════════════════════════ */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
@@ -367,7 +367,7 @@ export function DashboardPage() {
         transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
             Market Pulse
           </h2>
           <div className="flex items-center gap-2">
@@ -387,9 +387,9 @@ export function DashboardPage() {
             Array.from({ length: 3 }).map((_, i) => (
               <Card key={i} className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
                 <CardContent className="p-5">
-                  <Skeleton className="h-4 w-24 mb-3 bg-[#f0f0f5]" />
-                  <Skeleton className="h-8 w-32 mb-2 bg-[#f0f0f5]" />
-                  <Skeleton className="h-4 w-28 bg-[#f0f0f5]" />
+                  <Skeleton className="h-4 w-24 mb-3 bg-[#f5f5f5]" />
+                  <Skeleton className="h-8 w-32 mb-2 bg-[#f5f5f5]" />
+                  <Skeleton className="h-4 w-28 bg-[#f5f5f5]" />
                 </CardContent>
               </Card>
             ))
@@ -405,7 +405,7 @@ export function DashboardPage() {
                 >
                   <Card
                     onClick={() => handleIndexClick(index.symbol)}
-                    className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm hover:shadow-md hover:border-[#5367ff]/30 transition-all cursor-pointer group"
+                    className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm hover:shadow-md hover:border-[#00D09C]/30 transition-all cursor-pointer group"
                   >
                     <CardContent className="p-5">
                       <div className="flex justify-between items-start mb-3">
@@ -413,7 +413,7 @@ export function DashboardPage() {
                           <span className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
                             {index.name || index.symbol}
                           </span>
-                          <span className="text-[9px] font-bold text-[#5367ff] opacity-0 group-hover:opacity-100 transition-opacity bg-[#5367ff]/8 px-1.5 py-0.5 rounded">
+                          <span className="text-[9px] font-bold text-[#00D09C] opacity-0 group-hover:opacity-100 transition-opacity bg-[#00D09C]/8 px-1.5 py-0.5 rounded">
                             VIEW DETAILS →
                           </span>
                         </div>
@@ -424,7 +424,7 @@ export function DashboardPage() {
                         )}
                       </div>
                       <div>
-                        <div className="text-2xl font-bold font-mono-data text-[#1a1a2e] mb-1">
+                        <div className="text-2xl font-bold font-mono-data text-[#1a1a1a] mb-1">
                           {index.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
@@ -456,16 +456,16 @@ export function DashboardPage() {
       >
         {/* Stat 1 - Total Balance */}
         <motion.div variants={staggerItem}>
-          <Card className="bg-white border border-[#e5e7eb] rounded-xl border-l-4 border-l-[#5367ff] shadow-sm">
+          <Card className="bg-white border border-[#e5e7eb] rounded-xl border-l-4 border-l-[#00D09C] shadow-sm">
             <CardContent className="p-5">
               <p className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase mb-2">
                 Total Balance
               </p>
               {portfolioLoading ? (
-                <Skeleton className="h-8 w-40 mb-2 bg-[#f0f0f5]" />
+                <Skeleton className="h-8 w-40 mb-2 bg-[#f5f5f5]" />
               ) : (
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold font-mono-data text-[#1a1a2e]">
+                  <span className="text-2xl font-bold font-mono-data text-[#1a1a1a]">
                     {formatINRWhole(totalBalance)}
                   </span>
                   <span className="text-xs text-[#6b7280]">
@@ -474,7 +474,7 @@ export function DashboardPage() {
                 </div>
               )}
               {portfolioLoading ? (
-                <Skeleton className="h-4 w-32 mt-2 bg-[#f0f0f5]" />
+                <Skeleton className="h-4 w-32 mt-2 bg-[#f5f5f5]" />
               ) : (
                 <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#00d09c]">
                   <ChevronsUp className="size-3.5" />
@@ -493,7 +493,7 @@ export function DashboardPage() {
                 Today&apos;s P&amp;L
               </p>
               {portfolioLoading ? (
-                <Skeleton className="h-8 w-36 mb-2 bg-[#f0f0f5]" />
+                <Skeleton className="h-8 w-36 mb-2 bg-[#f5f5f5]" />
               ) : (
                 <div className="flex items-baseline gap-1">
                   <span className={`text-2xl font-bold font-mono-data ${dayPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
@@ -502,9 +502,9 @@ export function DashboardPage() {
                 </div>
               )}
               {portfolioLoading ? (
-                <Skeleton className="h-2 w-full mt-3 bg-[#f0f0f5]" />
+                <Skeleton className="h-2 w-full mt-3 bg-[#f5f5f5]" />
               ) : (
-                <div className="mt-3 h-1.5 w-full bg-[#f0f0f5] rounded-full overflow-hidden">
+                <div className="mt-3 h-1.5 w-full bg-[#f5f5f5] rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-1000 ${dayPnl >= 0 ? 'bg-[#00d09c]' : 'bg-[#eb5b3c]'}`}
                     style={{ width: `${Math.min(100, Math.max(5, Math.abs(dayPnl / (totalBalance || 1)) * 100 * 10))}%` }}
@@ -517,20 +517,20 @@ export function DashboardPage() {
 
         {/* Stat 3 - Win Rate */}
         <motion.div variants={staggerItem}>
-          <Card className="bg-white border border-[#e5e7eb] rounded-xl border-l-4 border-l-[#5367ff] shadow-sm">
+          <Card className="bg-white border border-[#e5e7eb] rounded-xl border-l-4 border-l-[#00D09C] shadow-sm">
             <CardContent className="p-5">
               <p className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase mb-2">
                 Win Rate
               </p>
               {portfolioLoading ? (
-                <Skeleton className="h-8 w-20 mb-2 bg-[#f0f0f5]" />
+                <Skeleton className="h-8 w-20 mb-2 bg-[#f5f5f5]" />
               ) : (
-                <div className="text-2xl font-bold font-mono-data text-[#1a1a2e]">
+                <div className="text-2xl font-bold font-mono-data text-[#1a1a1a]">
                   {winRate.toFixed(0)}%
                 </div>
               )}
               {portfolioLoading ? (
-                <Skeleton className="h-4 w-32 mt-2 bg-[#f0f0f5]" />
+                <Skeleton className="h-4 w-32 mt-2 bg-[#f5f5f5]" />
               ) : (
                 <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#6b7280]">
                   <Clock className="size-3.5" />
@@ -549,16 +549,16 @@ export function DashboardPage() {
                 Total Trades
               </p>
               {portfolioLoading ? (
-                <Skeleton className="h-8 w-16 mb-2 bg-[#f0f0f5]" />
+                <Skeleton className="h-8 w-16 mb-2 bg-[#f5f5f5]" />
               ) : (
-                <div className="text-2xl font-bold font-mono-data text-[#1a1a2e]">
+                <div className="text-2xl font-bold font-mono-data text-[#1a1a1a]">
                   {totalTrades}
                 </div>
               )}
               {portfolioLoading ? (
-                <Skeleton className="h-4 w-24 mt-2 bg-[#f0f0f5]" />
+                <Skeleton className="h-4 w-24 mt-2 bg-[#f5f5f5]" />
               ) : (
-                <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#5367ff]">
+                <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-[#00D09C]">
                   <Zap className="size-3.5" />
                   <span>{displayPositions.length} open positions</span>
                 </div>
@@ -580,11 +580,11 @@ export function DashboardPage() {
           <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-xl font-semibold text-[#1a1a2e]">Active Positions</h3>
+                <h3 className="text-xl font-semibold text-[#1a1a1a]">Active Positions</h3>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-[#5367ff] text-xs font-semibold hover:underline px-0"
+                  className="text-[#00D09C] text-xs font-semibold hover:underline px-0"
                   onClick={() => setCurrentPage('portfolio')}
                 >
                   VIEW PORTFOLIO
@@ -595,26 +595,26 @@ export function DashboardPage() {
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
-                      <Skeleton className="h-6 w-24 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-16 bg-[#f0f0f5]" />
+                      <Skeleton className="h-4 w-24 bg-[#f5f5f5]" />
+                      <Skeleton className="h-4 w-20 bg-[#f5f5f5]" />
+                      <Skeleton className="h-4 w-20 bg-[#f5f5f5]" />
+                      <Skeleton className="h-6 w-24 bg-[#f5f5f5]" />
+                      <Skeleton className="h-4 w-16 bg-[#f5f5f5]" />
                     </div>
                   ))}
                 </div>
               ) : displayPositions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
+                  <div className="size-14 rounded-full bg-[#fafafa] flex items-center justify-center mb-4">
                     <Briefcase className="size-7 text-[#6b7280]/40" />
                   </div>
-                  <p className="text-[#1a1a2e] font-semibold text-sm">No open positions</p>
+                  <p className="text-[#1a1a1a] font-semibold text-sm">No open positions</p>
                   <p className="text-[#6b7280] text-xs mt-1">
                     Start trading to see your positions here
                   </p>
                   <Button
                     size="sm"
-                    className="mt-4 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+                    className="mt-4 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
                     onClick={() => setCurrentPage('trading')}
                   >
                     <Plus className="size-3.5" />
@@ -626,19 +626,19 @@ export function DashboardPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
-                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#f8f9fb]">
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#fafafa]">
                           Instrument
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#f8f9fb]">
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#fafafa]">
                           LTP
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#f8f9fb]">
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#fafafa]">
                           Avg. Cost
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#f8f9fb]">
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#fafafa]">
                           P&amp;L
                         </TableHead>
-                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#f8f9fb]">
+                        <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase pb-4 bg-[#fafafa]">
                           Chg %
                         </TableHead>
                       </TableRow>
@@ -659,15 +659,15 @@ export function DashboardPage() {
                         return (
                           <TableRow
                             key={pos.id}
-                            className="hover:bg-[#f8f9fb] transition-colors cursor-pointer"
+                            className="hover:bg-[#fafafa] transition-colors cursor-pointer"
                           >
                             <TableCell className="py-4">
                               <div className="flex flex-col">
-                                <span className="font-bold text-sm text-[#1a1a2e]">{instrumentLabel}</span>
+                                <span className="font-bold text-sm text-[#1a1a1a]">{instrumentLabel}</span>
                                 <span className="text-xs text-[#6b7280]">{subLabel}</span>
                               </div>
                             </TableCell>
-                            <TableCell className="py-4 font-mono-data text-sm text-[#1a1a2e]">
+                            <TableCell className="py-4 font-mono-data text-sm text-[#1a1a1a]">
                               {pos.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </TableCell>
                             <TableCell className="py-4 font-mono-data text-sm text-[#6b7280]">
@@ -705,8 +705,8 @@ export function DashboardPage() {
           <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-xl font-semibold text-[#1a1a2e]">Trade Feed</h3>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6b7280] hover:text-[#1a1a2e]">
+                <h3 className="text-xl font-semibold text-[#1a1a1a]">Trade Feed</h3>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[#6b7280] hover:text-[#1a1a1a]">
                   <MoreVertical className="size-4" />
                 </Button>
               </div>
@@ -715,20 +715,20 @@ export function DashboardPage() {
                 <div className="space-y-6">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className="flex gap-3">
-                      <Skeleton className="size-8 rounded-full shrink-0 bg-[#f0f0f5]" />
+                      <Skeleton className="size-8 rounded-full shrink-0 bg-[#f5f5f5]" />
                       <div className="space-y-1.5 flex-1">
-                        <Skeleton className="h-4 w-32 bg-[#f0f0f5]" />
-                        <Skeleton className="h-3 w-48 bg-[#f0f0f5]" />
+                        <Skeleton className="h-4 w-32 bg-[#f5f5f5]" />
+                        <Skeleton className="h-3 w-48 bg-[#f5f5f5]" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : displayTrades.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
+                  <div className="size-14 rounded-full bg-[#fafafa] flex items-center justify-center mb-4">
                     <Clock className="size-7 text-[#6b7280]/40" />
                   </div>
-                  <p className="text-[#1a1a2e] font-semibold text-sm">No activity yet</p>
+                  <p className="text-[#1a1a1a] font-semibold text-sm">No activity yet</p>
                   <p className="text-[#6b7280] text-xs mt-1">
                     Your trade history will appear here
                   </p>
@@ -807,7 +807,7 @@ export function DashboardPage() {
 
                   <Button
                     variant="outline"
-                    className="w-full mt-6 py-2.5 rounded-lg border-[#e5e7eb] text-[#6b7280] text-xs font-semibold hover:bg-[#f8f9fb] hover:text-[#1a1a2e] transition-all"
+                    className="w-full mt-6 py-2.5 rounded-lg border-[#e5e7eb] text-[#6b7280] text-xs font-semibold hover:bg-[#fafafa] hover:text-[#1a1a1a] transition-all"
                     onClick={() => setCurrentPage('orders')}
                   >
                     VIEW ALL ACTIVITY
@@ -827,19 +827,19 @@ export function DashboardPage() {
         className="grid grid-cols-1 sm:grid-cols-3 gap-4"
       >
         {/* Smart Analytics */}
-        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm group hover:shadow-md hover:border-[#5367ff]/30 transition-all duration-300">
+        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm group hover:shadow-md hover:border-[#00D09C]/30 transition-all duration-300">
           <CardContent className="p-6">
-            <div className="size-10 rounded-xl bg-[#5367ff]/10 flex items-center justify-center mb-4 group-hover:bg-[#5367ff]/15 transition-colors">
-              <BarChart3 className="size-5 text-[#5367ff]" />
+            <div className="size-10 rounded-xl bg-[#00D09C]/10 flex items-center justify-center mb-4 group-hover:bg-[#00D09C]/15 transition-colors">
+              <BarChart3 className="size-5 text-[#00D09C]" />
             </div>
-            <h3 className="font-semibold text-[#1a1a2e] text-base">Smart Analytics</h3>
+            <h3 className="font-semibold text-[#1a1a1a] text-base">Smart Analytics</h3>
             <p className="text-sm text-[#6b7280] mt-1.5 leading-relaxed">
               Get real-time AI-powered analysis of market trends and opportunities.
             </p>
             <Button
               variant="outline"
               size="sm"
-              className="mt-4 gap-1.5 text-[#5367ff] border-[#5367ff]/30 hover:bg-[#5367ff]/8 hover:text-[#5367ff] rounded-lg"
+              className="mt-4 gap-1.5 text-[#00D09C] border-[#00D09C]/30 hover:bg-[#00D09C]/8 hover:text-[#00D09C] rounded-lg"
               onClick={() => setCurrentPage('reports')}
             >
               Explore
@@ -854,7 +854,7 @@ export function DashboardPage() {
             <div className="size-10 rounded-xl bg-[#eb5b3c]/10 flex items-center justify-center mb-4 group-hover:bg-[#eb5b3c]/15 transition-colors">
               <Shield className="size-5 text-[#eb5b3c]" />
             </div>
-            <h3 className="font-semibold text-[#1a1a2e] text-base">Risk Monitor</h3>
+            <h3 className="font-semibold text-[#1a1a1a] text-base">Risk Monitor</h3>
             <p className="text-sm text-[#6b7280] mt-1.5 leading-relaxed">
               Monitor your portfolio risk exposure with advanced analytics and alerts.
             </p>
@@ -876,7 +876,7 @@ export function DashboardPage() {
             <div className="size-10 rounded-xl bg-[#00d09c]/10 flex items-center justify-center mb-4 group-hover:bg-[#00d09c]/15 transition-colors">
               <Zap className="size-5 text-[#00d09c]" />
             </div>
-            <h3 className="font-semibold text-[#1a1a2e] text-base">Strategy Lab</h3>
+            <h3 className="font-semibold text-[#1a1a1a] text-base">Strategy Lab</h3>
             <p className="text-sm text-[#6b7280] mt-1.5 leading-relaxed">
               Create and backtest custom trading strategies with intuitive tools.
             </p>
@@ -909,7 +909,7 @@ export function DashboardPage() {
             transition={{ delay: 0.8, type: 'spring', stiffness: 260, damping: 20 }}
           >
             <Button
-              className="flex items-center gap-3 px-6 py-3 bg-[#5367ff] text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all group font-semibold"
+              className="flex items-center gap-3 px-6 py-3 bg-[#00D09C] text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all group font-semibold"
               onClick={() => setCurrentPage('trading')}
             >
               <Plus className="size-5 group-hover:rotate-90 transition-transform duration-300" />

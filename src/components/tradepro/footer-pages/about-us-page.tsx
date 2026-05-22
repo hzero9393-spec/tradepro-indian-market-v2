@@ -11,7 +11,7 @@ export function AboutUsPage() {
       lastUpdated="March 1, 2025"
     >
       {/* Hero */}
-      <div className="p-6 rounded-xl mb-6" style={{ background: 'linear-gradient(135deg, #5367ff, #7c3aed)' }}>
+      <div className="p-6 rounded-xl mb-6" style={{ background: 'linear-gradient(135deg, #00D09C, #7c3aed)' }}>
         <h2 className="text-xl font-bold text-white mb-2">Making Market Education Accessible to Every Indian</h2>
         <p className="text-sm text-white/80 leading-relaxed">
           TradePro was born from a simple idea — everyone should have the opportunity to learn about stock markets without risking their hard-earned money.
@@ -116,10 +116,10 @@ export function AboutUsPage() {
 function MissionCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div className="p-4 rounded-xl" style={{ background: '#ffffff', border: '1px solid #e5e7eb' }}>
-      <div className="flex size-10 items-center justify-center rounded-lg mb-3" style={{ background: '#5367ff15', color: '#5367ff' }}>
+      <div className="flex size-10 items-center justify-center rounded-lg mb-3" style={{ background: '#00D09C15', color: '#00D09C' }}>
         {icon}
       </div>
-      <h3 className="text-sm font-semibold mb-1" style={{ color: '#1a1a2e' }}>{title}</h3>
+      <h3 className="text-sm font-semibold mb-1" style={{ color: '#1a1a1a' }}>{title}</h3>
       <p className="text-xs leading-relaxed" style={{ color: '#6b7280' }}>{description}</p>
     </div>
   )
@@ -128,7 +128,7 @@ function MissionCard({ icon, title, description }: { icon: React.ReactNode; titl
 function StatCard({ number, label }: { number: string; label: string }) {
   return (
     <div className="p-4 rounded-xl text-center" style={{ background: '#ffffff', border: '1px solid #e5e7eb' }}>
-      <p className="text-xl font-bold" style={{ color: '#5367ff' }}>{number}</p>
+      <p className="text-xl font-bold" style={{ color: '#00D09C' }}>{number}</p>
       <p className="text-xs mt-1" style={{ color: '#6b7280' }}>{label}</p>
     </div>
   )
@@ -137,11 +137,11 @@ function StatCard({ number, label }: { number: string; label: string }) {
 function ValueItem({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div className="flex items-start gap-3 p-4 rounded-lg" style={{ background: '#f9fafb' }}>
-      <div className="flex size-10 items-center justify-center rounded-lg shrink-0" style={{ background: '#5367ff15', color: '#5367ff' }}>
+      <div className="flex size-10 items-center justify-center rounded-lg shrink-0" style={{ background: '#00D09C15', color: '#00D09C' }}>
         {icon}
       </div>
       <div>
-        <h3 className="text-sm font-semibold" style={{ color: '#1a1a2e' }}>{title}</h3>
+        <h3 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>{title}</h3>
         <p className="text-xs mt-1 leading-relaxed" style={{ color: '#6b7280' }}>{description}</p>
       </div>
     </div>
@@ -151,7 +151,7 @@ function ValueItem({ icon, title, description }: { icon: React.ReactNode; title:
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: '#1a1a2e' }}>{title}</h2>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: '#1a1a1a' }}>{title}</h2>
       <div className="text-sm leading-relaxed space-y-2" style={{ color: '#4b5563' }}>
         {children}
       </div>

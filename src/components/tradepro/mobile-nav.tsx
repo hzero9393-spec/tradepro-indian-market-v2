@@ -1,14 +1,13 @@
 'use client'
 
 import {
-  LayoutDashboard,
+  Home,
   CandlestickChart,
   Crosshair,
   FileText,
   Wallet,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
-import { cn } from '@/lib/utils'
 
 interface MobileNavItem {
   id: PageId
@@ -17,7 +16,7 @@ interface MobileNavItem {
 }
 
 const mobileNavItems: MobileNavItem[] = [
-  { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Home', icon: Home },
   { id: 'trading', label: 'Stocks', icon: CandlestickChart },
   { id: 'positions', label: 'Positions', icon: Crosshair },
   { id: 'orders', label: 'Orders', icon: FileText },
@@ -34,10 +33,10 @@ export function MobileNav() {
       aria-label="Mobile navigation"
     >
       <div
-        className="flex h-14 w-full items-center justify-around px-1"
+        className="flex h-14 w-full items-center justify-around px-2"
         style={{
           background: '#ffffff',
-          borderTop: '1px solid #e5e7eb',
+          borderTop: '1px solid #f0f0f0',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
@@ -48,31 +47,23 @@ export function MobileNav() {
             <button
               key={item.id}
               onClick={() => setCurrentPage(item.id)}
-              className={cn(
-                'flex flex-1 flex-col items-center justify-center gap-0.5 py-1 outline-none rounded-lg',
-                'transition-colors duration-150',
-                'focus-visible:ring-2 focus-visible:ring-[#5367ff]/20',
-              )}
+              className="flex flex-col items-center justify-center gap-0.5 py-1 px-2 outline-none rounded-lg transition-colors"
+              style={{
+                background: isActive ? 'rgba(0, 208, 156, 0.08)' : 'transparent',
+              }}
               aria-current={isActive ? 'page' : undefined}
               aria-label={item.label}
             >
               <Icon
-                className="size-5 transition-colors duration-150"
-                style={{ color: isActive ? '#5367ff' : '#9ca3af' }}
+                className="size-5 transition-colors"
+                style={{ color: isActive ? '#00D09C' : '#9ca3af' }}
               />
-              {/* Active dot indicator */}
-              {isActive && (
-                <div
-                  className="h-1 w-1 rounded-full"
-                  style={{ background: '#5367ff' }}
-                />
-              )}
               <span
-                className={cn(
-                  'text-[10px] leading-tight transition-colors duration-150',
-                  isActive ? 'font-semibold' : 'font-medium',
-                )}
-                style={{ color: isActive ? '#5367ff' : '#9ca3af' }}
+                className="text-[10px] leading-tight transition-colors"
+                style={{
+                  color: isActive ? '#00D09C' : '#9ca3af',
+                  fontWeight: isActive ? 600 : 500,
+                }}
               >
                 {item.label}
               </span>

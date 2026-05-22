@@ -176,10 +176,10 @@ export function PositionsPage() {
   const isProfit = totalPnl >= 0
 
   const stats = [
-    { label: 'Open Positions', value: String(openPositions.length), icon: Crosshair, borderColor: 'border-l-[#5367ff]', iconBg: 'bg-[#5367ff]/10', iconColor: 'text-[#5367ff]' },
+    { label: 'Open Positions', value: String(openPositions.length), icon: Crosshair, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
     { label: 'Total Invested', value: formatINRWhole(totalInvested), icon: IndianRupee, borderColor: 'border-l-[#6b7280]', iconBg: 'bg-[#6b7280]/10', iconColor: 'text-[#6b7280]' },
     { label: 'Unrealized P&L', value: `${isProfit ? '+' : '-'}${formatINR(Math.abs(totalPnl))}`, icon: isProfit ? TrendingUp : AlertTriangle, borderColor: isProfit ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]', iconBg: isProfit ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10', iconColor: isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]' },
-    { label: 'Margin Used', value: formatINRWhole(totalMargin), icon: IndianRupee, borderColor: 'border-l-[#5367ff]', iconBg: 'bg-[#5367ff]/10', iconColor: 'text-[#5367ff]' },
+    { label: 'Margin Used', value: formatINRWhole(totalMargin), icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
   ]
 
   // ─── Open Position Table ─────────────────────────────────
@@ -190,13 +190,13 @@ export function PositionsPage() {
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
             <Crosshair className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-[#1a1a2e] font-semibold text-sm">No open positions</p>
+          <p className="text-[#1a1a1a] font-semibold text-sm">No open positions</p>
           <p className="text-[#6b7280] text-xs mt-1.5">
             Place a trade to see your positions here
           </p>
           <Button
             size="sm"
-            className="mt-5 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+            className="mt-5 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
             onClick={() => setCurrentPage('trading')}
           >
             <TrendingUp className="size-3.5" />
@@ -237,7 +237,7 @@ export function PositionsPage() {
                   >
                     <TableCell className="py-4">
                       <div className="flex flex-col">
-                        <span className="font-bold text-sm text-[#1a1a2e]">{pos.symbol}</span>
+                        <span className="font-bold text-sm text-[#1a1a1a]">{pos.symbol}</span>
                         {pos.segment === 'OPTIONS' && pos.strikePrice && (
                           <span className="text-[10px] uppercase text-[#6b7280]">
                             {pos.strikePrice} {pos.optionType}
@@ -261,11 +261,11 @@ export function PositionsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-[#6b7280] py-4">{pos.segment}</TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">{pos.quantity}</TableCell>
+                    <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">{pos.quantity}</TableCell>
                     <TableCell className="font-mono-data text-sm text-right text-[#6b7280] py-4">
                       {formatINR(pos.entryPrice)}
                     </TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                    <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
                       {formatINR(pos.currentPrice)}
                     </TableCell>
                     <TableCell className="py-4 text-right">
@@ -284,7 +284,7 @@ export function PositionsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-lg border-[#5367ff]/40 px-3 py-1.5 text-[11px] font-semibold text-[#5367ff] bg-transparent hover:bg-[#5367ff] hover:text-white hover:border-[#5367ff] active:scale-95 transition-all"
+                        className="rounded-lg border-[#00D09C]/40 px-3 py-1.5 text-[11px] font-semibold text-[#00D09C] bg-transparent hover:bg-[#00D09C] hover:text-white hover:border-[#00D09C] active:scale-95 transition-all"
                         disabled={squaringOff === pos.id}
                         onClick={() => handleSquareOff(pos.id, pos.symbol)}
                       >
@@ -313,7 +313,7 @@ export function PositionsPage() {
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
             <Clock className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-[#1a1a2e] font-semibold text-sm">No closed positions</p>
+          <p className="text-[#1a1a1a] font-semibold text-sm">No closed positions</p>
           <p className="text-[#6b7280] text-xs mt-1.5">
             Your closed trades will appear here
           </p>
@@ -347,7 +347,7 @@ export function PositionsPage() {
                 >
                   <TableCell className="py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm text-[#1a1a2e]">{pos.symbol}</span>
+                      <span className="font-bold text-sm text-[#1a1a1a]">{pos.symbol}</span>
                       {pos.segment === 'OPTIONS' && pos.strikePrice && (
                         <span className="text-[10px] uppercase text-[#6b7280]">
                           {pos.strikePrice} {pos.optionType}
@@ -370,7 +370,7 @@ export function PositionsPage() {
                   <TableCell className="font-mono-data text-sm text-right text-[#6b7280] py-4">
                     {formatINR(pos.entryPrice)}
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
                     {pos.exitPrice ? formatINR(pos.exitPrice) : '—'}
                   </TableCell>
                   <TableCell className="py-4 text-right">
@@ -405,7 +405,7 @@ export function PositionsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
       >
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
           Positions
         </h1>
         <p className="text-[#6b7280] mt-1 text-sm">
@@ -433,7 +433,7 @@ export function PositionsPage() {
                     <Icon className={`size-3.5 ${stat.iconColor}`} />
                   </div>
                 </div>
-                <p className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                <p className="text-lg font-bold font-mono-data text-[#1a1a1a]">
                   {stat.value}
                 </p>
               </CardContent>
@@ -455,14 +455,14 @@ export function PositionsPage() {
                 <TabsList className="bg-[#f5f7fa] border border-[#e5e7eb] p-1 rounded-lg">
                   <TabsTrigger
                     value="open"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#5367ff] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
                     Open Positions
                     <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{openPositions.length}</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="closed"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#5367ff] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
                     Closed Positions
                     <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{closedPositions.length}</span>

@@ -137,7 +137,7 @@ export function FAQPage() {
             onClick={() => setSelectedCategory(cat)}
             className="px-4 py-2 rounded-full text-xs font-medium transition-colors"
             style={{
-              background: selectedCategory === cat ? '#5367ff' : '#f3f4f6',
+              background: selectedCategory === cat ? '#00D09C' : '#f3f4f6',
               color: selectedCategory === cat ? '#ffffff' : '#6b7280',
             }}
           >
@@ -168,16 +168,16 @@ export function FAQPage() {
                 <div className="flex items-start gap-3 flex-1">
                   <span
                     className="shrink-0 px-2 py-0.5 rounded text-[10px] font-medium"
-                    style={{ background: '#5367ff15', color: '#5367ff' }}
+                    style={{ background: '#00D09C15', color: '#00D09C' }}
                   >
                     {faq.category}
                   </span>
-                  <span className="text-sm font-medium" style={{ color: '#1a1a2e' }}>
+                  <span className="text-sm font-medium" style={{ color: '#1a1a1a' }}>
                     {faq.question}
                   </span>
                 </div>
                 {isOpen ? (
-                  <ChevronUp className="size-4 shrink-0 ml-2" style={{ color: '#5367ff' }} />
+                  <ChevronUp className="size-4 shrink-0 ml-2" style={{ color: '#00D09C' }} />
                 ) : (
                   <ChevronDown className="size-4 shrink-0 ml-2" style={{ color: '#9ca3af' }} />
                 )}
@@ -197,15 +197,15 @@ export function FAQPage() {
       </div>
 
       {/* Still have questions */}
-      <div className="mt-8 p-6 rounded-xl text-center" style={{ background: '#eef0ff' }}>
-        <h3 className="text-lg font-semibold mb-2" style={{ color: '#1a1a2e' }}>Still have questions?</h3>
+      <div className="mt-8 p-6 rounded-xl text-center" style={{ background: 'rgba(0, 208, 156, 0.08)' }}>
+        <h3 className="text-lg font-semibold mb-2" style={{ color: '#1a1a1a' }}>Still have questions?</h3>
         <p className="text-sm mb-4" style={{ color: '#6b7280' }}>
           Can&apos;t find what you&apos;re looking for? Our support team is here to help.
         </p>
         <a
           href="mailto:support@tradepro.app"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
-          style={{ background: '#5367ff', color: '#ffffff' }}
+          style={{ background: '#00D09C', color: '#ffffff' }}
         >
           Contact Support
         </a>

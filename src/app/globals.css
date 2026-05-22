@@ -52,19 +52,19 @@
   --color-tp-surface-container-high: #ffffff;
   --color-tp-surface-container-highest: #ffffff;
   --color-tp-surface-container-lowest: #fafbfc;
-  --color-tp-on-surface: #1a1a2e;
+  --color-tp-on-surface: #1a1a1a;
   --color-tp-on-surface-variant: #6b7280;
-  --color-tp-on-background: #1a1a2e;
+  --color-tp-on-background: #1a1a1a;
   --color-tp-outline: #e5e7eb;
   --color-tp-outline-variant: #f0f0f0;
-  --color-tp-primary: #5367ff;
+  --color-tp-primary: #00D09C;
   --color-tp-on-primary: #ffffff;
-  --color-tp-primary-container: #eef0ff;
+  --color-tp-primary-container: rgba(0, 208, 156, 0.08);
   --color-tp-on-primary-container: #3a4fd4;
-  --color-tp-primary-fixed: #5367ff;
-  --color-tp-primary-fixed-dim: #4456e6;
+  --color-tp-primary-fixed: #00D09C;
+  --color-tp-primary-fixed-dim: #00b88a;
   --color-tp-on-primary-fixed: #ffffff;
-  --color-tp-on-primary-fixed-variant: #eef0ff;
+  --color-tp-on-primary-fixed-variant: rgba(0, 208, 156, 0.08);
   --color-tp-secondary: #00d09c;
   --color-tp-on-secondary: #ffffff;
   --color-tp-secondary-container: #e6faf3;
@@ -85,10 +85,10 @@
   --color-tp-on-error: #ffffff;
   --color-tp-error-container: #fde8e3;
   --color-tp-on-error-container: #c4422a;
-  --color-tp-inverse-surface: #1a1a2e;
+  --color-tp-inverse-surface: #1a1a1a;
   --color-tp-inverse-on-surface: #f5f7fa;
   --color-tp-inverse-primary: #95a3ff;
-  --color-tp-surface-tint: #5367ff;
+  --color-tp-surface-tint: #00D09C;
 
   /* Trading-specific semantic colors */
   --color-tp-profit: #00d09c;
@@ -103,70 +103,70 @@
   --radius: 0.75rem;
   /* Groww-inspired Light Theme */
   --background: #f5f7fa;
-  --foreground: #1a1a2e;
+  --foreground: #1a1a1a;
   --card: #ffffff;
-  --card-foreground: #1a1a2e;
+  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #1a1a2e;
-  --primary: #5367ff;
+  --popover-foreground: #1a1a1a;
+  --primary: #00D09C;
   --primary-foreground: #ffffff;
   --secondary: #00d09c;
   --secondary-foreground: #ffffff;
   --muted: #f0f2f5;
   --muted-foreground: #6b7280;
   --accent: #f0f2f5;
-  --accent-foreground: #1a1a2e;
+  --accent-foreground: #1a1a1a;
   --destructive: #eb5b3c;
   --border: #e5e7eb;
   --input: #e5e7eb;
-  --ring: #5367ff;
-  --chart-1: #5367ff;
+  --ring: #00D09C;
+  --chart-1: #00D09C;
   --chart-2: #00d09c;
   --chart-3: #eb5b3c;
   --chart-4: #f59e0b;
   --chart-5: #8b5cf6;
   --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-primary: #5367ff;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #00D09C;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f0f2f5;
-  --sidebar-accent-foreground: #1a1a2e;
+  --sidebar-accent-foreground: #1a1a1a;
   --sidebar-border: #e5e7eb;
-  --sidebar-ring: #5367ff;
+  --sidebar-ring: #00D09C;
 }
 
 .dark {
   --background: #f5f7fa;
-  --foreground: #1a1a2e;
+  --foreground: #1a1a1a;
   --card: #ffffff;
-  --card-foreground: #1a1a2e;
+  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #1a1a2e;
-  --primary: #5367ff;
+  --popover-foreground: #1a1a1a;
+  --primary: #00D09C;
   --primary-foreground: #ffffff;
   --secondary: #00d09c;
   --secondary-foreground: #ffffff;
   --muted: #f0f2f5;
   --muted-foreground: #6b7280;
   --accent: #f0f2f5;
-  --accent-foreground: #1a1a2e;
+  --accent-foreground: #1a1a1a;
   --destructive: #eb5b3c;
   --border: #e5e7eb;
   --input: #e5e7eb;
-  --ring: #5367ff;
-  --chart-1: #5367ff;
+  --ring: #00D09C;
+  --chart-1: #00D09C;
   --chart-2: #00d09c;
   --chart-3: #eb5b3c;
   --chart-4: #f59e0b;
   --chart-5: #8b5cf6;
   --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-primary: #5367ff;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #00D09C;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f0f2f5;
-  --sidebar-accent-foreground: #1a1a2e;
+  --sidebar-accent-foreground: #1a1a1a;
   --sidebar-border: #e5e7eb;
-  --sidebar-ring: #5367ff;
+  --sidebar-ring: #00D09C;
 }
 
 @layer base {
@@ -251,7 +251,7 @@
 }
 .groww-btn-hover:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(83, 103, 255, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 208, 156, 0.25);
 }
 .groww-btn-hover:active {
   transform: translateY(0);
@@ -291,8 +291,8 @@
 }
 .groww-search:focus-within {
   background: #ffffff;
-  border-color: #5367ff;
-  box-shadow: 0 0 0 3px rgba(83, 103, 255, 0.1);
+  border-color: #00D09C;
+  box-shadow: 0 0 0 3px rgba(0, 208, 156, 0.1);
 }
 
 /* Profit/Loss pill */

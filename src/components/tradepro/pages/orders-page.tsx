@@ -98,7 +98,7 @@ function formatShortDateTime(isoDate: string): string {
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     PENDING: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20',
-    PARTIALLY_FILLED: 'bg-[#5367ff]/10 text-[#5367ff] border-[#5367ff]/20',
+    PARTIALLY_FILLED: 'bg-[#00D09C]/10 text-[#00D09C] border-[#00D09C]/20',
     FILLED: 'bg-[#00d09c]/10 text-[#00d09c] border-[#00d09c]/20',
     CANCELLED: 'bg-[#eb5b3c]/10 text-[#eb5b3c] border-[#eb5b3c]/20',
     REJECTED: 'bg-[#eb5b3c]/10 text-[#eb5b3c] border-[#eb5b3c]/20',
@@ -180,13 +180,13 @@ export function OrdersPage() {
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
             <FileText className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-[#1a1a2e] font-semibold text-sm">No orders yet</p>
+          <p className="text-[#1a1a1a] font-semibold text-sm">No orders yet</p>
           <p className="text-[#6b7280] text-xs mt-1.5">
             Your pending orders will appear here
           </p>
           <Button
             size="sm"
-            className="mt-5 gap-1.5 bg-[#5367ff] hover:bg-[#4356e0] text-white font-semibold rounded-lg"
+            className="mt-5 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
             onClick={() => setCurrentPage('trading')}
           >
             <TrendingUp className="size-3.5" />
@@ -219,7 +219,7 @@ export function OrdersPage() {
                 >
                   <TableCell className="py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm text-[#1a1a2e]">{order.symbol}</span>
+                      <span className="font-bold text-sm text-[#1a1a1a]">{order.symbol}</span>
                       {order.optionType && order.strikePrice && (
                         <span className="text-[10px] text-[#6b7280]">
                           {order.strikePrice} {order.optionType}
@@ -239,10 +239,10 @@ export function OrdersPage() {
                       {order.tradeDirection}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
                     {formatINR(order.price)}
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
                     {order.quantity}
                   </TableCell>
                   <TableCell className="py-4">
@@ -271,7 +271,7 @@ export function OrdersPage() {
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
             <FileText className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-[#1a1a2e] font-semibold text-sm">No trade history</p>
+          <p className="text-[#1a1a1a] font-semibold text-sm">No trade history</p>
           <p className="text-[#6b7280] text-xs mt-1.5">
             Your executed trades will appear here
           </p>
@@ -299,7 +299,7 @@ export function OrdersPage() {
                 <TableRow key={trade.id} className="hover:bg-[#f8f9fb] transition-colors">
                   <TableCell className="py-4">
                     <div className="flex flex-col">
-                      <span className="font-bold text-sm text-[#1a1a2e]">{trade.symbol}</span>
+                      <span className="font-bold text-sm text-[#1a1a1a]">{trade.symbol}</span>
                       {trade.optionType && trade.strikePrice && (
                         <span className="text-[10px] text-[#6b7280]">
                           {trade.strikePrice} {trade.optionType}
@@ -319,10 +319,10 @@ export function OrdersPage() {
                       {trade.tradeDirection}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
                     {formatINR(trade.fillPrice)}
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a2e] py-4">
+                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
                     {trade.quantity}
                   </TableCell>
                   <TableCell className="py-4 text-right">
@@ -361,7 +361,7 @@ export function OrdersPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
       >
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
           Orders
         </h1>
         <p className="text-[#6b7280] mt-1 text-sm">
@@ -377,10 +377,10 @@ export function OrdersPage() {
         className="grid grid-cols-2 lg:grid-cols-4 gap-4"
       >
         {[
-          { label: 'Total Orders', value: String(orders.length), icon: ClipboardList, borderColor: 'border-l-[#5367ff]', iconBg: 'bg-[#5367ff]/10', iconColor: 'text-[#5367ff]' },
+          { label: 'Total Orders', value: String(orders.length), icon: ClipboardList, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
           { label: 'Filled', value: String(filledCount), icon: CheckCircle2, borderColor: 'border-l-[#00d09c]', iconBg: 'bg-[#00d09c]/10', iconColor: 'text-[#00d09c]' },
           { label: 'Cancelled', value: String(orders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#eb5b3c]/10', iconColor: 'text-[#eb5b3c]' },
-          { label: 'Total Volume', value: totalVolume >= 100000 ? `₹${(totalVolume / 100000).toFixed(1)}L` : `₹${totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, icon: IndianRupee, borderColor: 'border-l-[#5367ff]', iconBg: 'bg-[#5367ff]/10', iconColor: 'text-[#5367ff]' },
+          { label: 'Total Volume', value: totalVolume >= 100000 ? `₹${(totalVolume / 100000).toFixed(1)}L` : `₹${totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
         ].map((stat) => {
           const Icon = stat.icon
           return (
@@ -394,7 +394,7 @@ export function OrdersPage() {
                     <Icon className={`size-3.5 ${stat.iconColor}`} />
                   </div>
                 </div>
-                <p className="text-lg font-bold font-mono-data text-[#1a1a2e]">
+                <p className="text-lg font-bold font-mono-data text-[#1a1a1a]">
                   {stat.value}
                 </p>
               </CardContent>
@@ -416,14 +416,14 @@ export function OrdersPage() {
                 <TabsList className="bg-[#f5f7fa] border border-[#e5e7eb] p-1 rounded-lg">
                   <TabsTrigger
                     value="open"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#5367ff] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
                     Open Orders
                     <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{openOrders.length}</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="history"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#5367ff] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
                     Trade History
                     <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{trades.length}</span>

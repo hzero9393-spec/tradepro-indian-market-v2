@@ -162,7 +162,7 @@ export function ProfilePage() {
     <div className="min-h-screen bg-[#f5f7fa] p-4 sm:p-6 lg:p-8 space-y-5">
       {/* ── Page Header ─────────────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
           My Account
         </h1>
         <p className="text-[#6b7280] mt-1 text-sm">
@@ -182,25 +182,25 @@ export function ProfilePage() {
             <CardContent className="p-6">
               {/* Avatar + Name */}
               <div className="flex flex-col items-center text-center mb-6">
-                <div className="size-20 rounded-full bg-[#5367ff]/10 flex items-center justify-center mb-3 ring-2 ring-[#5367ff]/20">
-                  <span className="text-2xl font-bold text-[#5367ff]">
+                <div className="size-20 rounded-full bg-[#00D09C]/10 flex items-center justify-center mb-3 ring-2 ring-[#00D09C]/20">
+                  <span className="text-2xl font-bold text-[#00D09C]">
                     {user?.name
                       ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                       : '??'}
                   </span>
                 </div>
-                <h2 className="text-lg font-bold text-[#1a1a2e]">{user?.name ?? 'User'}</h2>
+                <h2 className="text-lg font-bold text-[#1a1a1a]">{user?.name ?? 'User'}</h2>
                 <p className="text-sm text-[#6b7280] mt-0.5">{user?.email ?? '—'}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge className={`border-0 text-[10px] font-semibold ${
                     user?.subscription === 'PREMIUM'
-                      ? 'bg-[#5367ff]/10 text-[#5367ff]'
+                      ? 'bg-[#00D09C]/10 text-[#00D09C]'
                       : 'bg-[#6b7280]/10 text-[#6b7280]'
                   }`}>
                     <Crown className="size-3 mr-0.5" />
                     {user?.subscription ?? 'FREE'}
                   </Badge>
-                  <Badge className="border-0 text-[10px] font-semibold bg-[#5367ff]/10 text-[#5367ff]">
+                  <Badge className="border-0 text-[10px] font-semibold bg-[#00D09C]/10 text-[#00D09C]">
                     {user?.role ?? 'USER'}
                   </Badge>
                 </div>
@@ -217,7 +217,7 @@ export function ProfilePage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Email</p>
                     <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-medium text-[#1a1a2e] truncate">{user?.email ?? '—'}</p>
+                      <p className="text-sm font-medium text-[#1a1a1a] truncate">{user?.email ?? '—'}</p>
                       {user?.isEmailVerified && <CheckCircle2 className="size-3.5 text-[#00d09c] shrink-0" />}
                     </div>
                   </div>
@@ -229,7 +229,7 @@ export function ProfilePage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Phone</p>
                     <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-medium text-[#1a1a2e] truncate">{user?.phone ?? 'Not set'}</p>
+                      <p className="text-sm font-medium text-[#1a1a1a] truncate">{user?.phone ?? 'Not set'}</p>
                       {user?.isPhoneVerified ? (
                         <CheckCircle2 className="size-3.5 text-[#00d09c] shrink-0" />
                       ) : user?.phone ? (
@@ -245,7 +245,7 @@ export function ProfilePage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">PAN Number</p>
                     <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-medium text-[#1a1a2e] truncate">{user?.panNumber ?? 'Not set'}</p>
+                      <p className="text-sm font-medium text-[#1a1a1a] truncate">{user?.panNumber ?? 'Not set'}</p>
                       {user?.panNumber && <CheckCircle2 className="size-3.5 text-[#00d09c] shrink-0" />}
                     </div>
                   </div>
@@ -257,7 +257,7 @@ export function ProfilePage() {
               {/* Last Login */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#6b7280]">Last Login</span>
-                <span className="text-xs font-medium text-[#1a1a2e]">
+                <span className="text-xs font-medium text-[#1a1a1a]">
                   {user?.lastLoginAt
                     ? new Date(user.lastLoginAt).toLocaleString('en-IN', {
                         day: '2-digit',
@@ -275,14 +275,14 @@ export function ProfilePage() {
               {/* Settings: Theme Toggle */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {themeDark ? <Moon className="size-4 text-[#5367ff]" /> : <Sun className="size-4 text-[#5367ff]" />}
-                  <span className="text-sm text-[#1a1a2e]">Dark Mode</span>
+                  {themeDark ? <Moon className="size-4 text-[#00D09C]" /> : <Sun className="size-4 text-[#00D09C]" />}
+                  <span className="text-sm text-[#1a1a1a]">Dark Mode</span>
                 </div>
                 <button
                   onClick={handleThemeToggle}
                   className={cn(
                     'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                    themeDark ? 'bg-[#5367ff]' : 'bg-[#e5e7eb]'
+                    themeDark ? 'bg-[#00D09C]' : 'bg-[#e5e7eb]'
                   )}
                 >
                   <span
@@ -316,14 +316,14 @@ export function ProfilePage() {
           transition={{ delay: 0.1 }}
           className="lg:col-span-2"
         >
-          <Card className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm border-l-4 border-l-[#5367ff]">
+          <Card className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm border-l-4 border-l-[#00D09C]">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-[#6b7280]">
                     Virtual Balance
                   </p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1a1a2e] mt-1">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] mt-1">
                     {formatINRWhole(currentPortfolioValue)}
                     <span className="text-lg opacity-50">.{Math.abs(currentPortfolioValue % 1).toFixed(2).substring(2)}</span>
                   </h3>
@@ -333,7 +333,7 @@ export function ProfilePage() {
                   </div>
                 </div>
                 <Button
-                  className="gap-1.5 bg-[#5367ff] text-white font-semibold shadow-md hover:bg-[#4458e0] active:scale-[0.98]"
+                  className="gap-1.5 bg-[#00D09C] text-white font-semibold shadow-md hover:bg-[#00b88a] active:scale-[0.98]"
                   onClick={() => setCurrentPage('trading')}
                 >
                   <TrendingUp className="size-4" />
@@ -354,7 +354,7 @@ export function ProfilePage() {
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                     Current Value
                   </p>
-                  <p className="text-base font-bold text-[#1a1a2e] mt-1">
+                  <p className="text-base font-bold text-[#1a1a1a] mt-1">
                     {formatINRWhole(currentPortfolioValue)}
                   </p>
                 </div>
@@ -385,10 +385,10 @@ export function ProfilePage() {
           <Card className="rounded-xl border border-[#e5e7eb] bg-white shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold text-[#1a1a2e]">
+                <CardTitle className="text-base font-semibold text-[#1a1a1a]">
                   Trading Stats
                 </CardTitle>
-                <Badge variant="secondary" className="bg-[#5367ff]/10 text-[#5367ff] border-0 text-xs font-semibold">
+                <Badge variant="secondary" className="bg-[#00D09C]/10 text-[#00D09C] border-0 text-xs font-semibold">
                   {portfolio?.openPositionsCount ?? 0} Open Position{(portfolio?.openPositionsCount ?? 0) !== 1 ? 's' : ''}
                 </Badge>
               </div>
@@ -400,15 +400,15 @@ export function ProfilePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] p-3 border-l-4 border-l-[#5367ff]"
+                  className="rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] p-3 border-l-4 border-l-[#00D09C]"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Total Trades</p>
-                    <div className="size-6 rounded-md bg-[#5367ff]/10 flex items-center justify-center">
-                      <BarChart3 className="size-3 text-[#5367ff]" />
+                    <div className="size-6 rounded-md bg-[#00D09C]/10 flex items-center justify-center">
+                      <BarChart3 className="size-3 text-[#00D09C]" />
                     </div>
                   </div>
-                  <p className="font-mono text-sm font-bold text-[#5367ff]">{totalTrades}</p>
+                  <p className="font-mono text-sm font-bold text-[#00D09C]">{totalTrades}</p>
                 </motion.div>
 
                 {/* Win Rate */}
@@ -460,7 +460,7 @@ export function ProfilePage() {
                       <Landmark className="size-3 text-[#6b7280]" />
                     </div>
                   </div>
-                  <p className="font-mono text-sm font-bold text-[#1a1a2e]">
+                  <p className="font-mono text-sm font-bold text-[#1a1a1a]">
                     {formatINR(portfolio?.marginUsed ?? user?.marginUsed ?? 0)}
                   </p>
                 </motion.div>
@@ -470,15 +470,15 @@ export function ProfilePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] p-3 border-l-4 border-l-[#5367ff]"
+                  className="rounded-xl border border-[#e5e7eb] bg-[#f5f7fa] p-3 border-l-4 border-l-[#00D09C]"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-[#6b7280]">Available</p>
-                    <div className="size-6 rounded-md bg-[#5367ff]/10 flex items-center justify-center">
-                      <Wallet className="size-3 text-[#5367ff]" />
+                    <div className="size-6 rounded-md bg-[#00D09C]/10 flex items-center justify-center">
+                      <Wallet className="size-3 text-[#00D09C]" />
                     </div>
                   </div>
-                  <p className="font-mono text-sm font-bold text-[#5367ff]">
+                  <p className="font-mono text-sm font-bold text-[#00D09C]">
                     {formatINR(portfolio?.availableMargin ?? (user?.virtualBalance ?? initialCapital))}
                   </p>
                 </motion.div>
@@ -508,7 +508,7 @@ export function ProfilePage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="outline"
-                  className="gap-2 border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e]"
+                  className="gap-2 border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a1a]"
                   onClick={() => setCurrentPage('reports')}
                 >
                   <BarChart3 className="size-4" />
@@ -516,7 +516,7 @@ export function ProfilePage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="gap-2 border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a2e]"
+                  className="gap-2 border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a1a]"
                   onClick={() => setCurrentPage('portfolio')}
                 >
                   <Wallet className="size-4" />

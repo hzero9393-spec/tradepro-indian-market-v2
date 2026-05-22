@@ -22,7 +22,7 @@ export function FooterPageLayout({ title, icon, lastUpdated, children }: FooterP
         size="sm"
         onClick={() => setCurrentPage('dashboard')}
         className="mb-4 gap-1.5"
-        style={{ color: '#5367ff' }}
+        style={{ color: '#00D09C' }}
       >
         <ArrowLeft className="size-4" />
         Back to Home
@@ -33,11 +33,11 @@ export function FooterPageLayout({ title, icon, lastUpdated, children }: FooterP
         <div className="flex items-center gap-3 mb-2">
           <div
             className="flex size-10 items-center justify-center rounded-xl"
-            style={{ background: '#eef0ff', color: '#5367ff' }}
+            style={{ background: 'rgba(0, 208, 156, 0.08)', color: '#00D09C' }}
           >
             {icon}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: '#1a1a2e' }}>{title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: '#1a1a1a' }}>{title}</h1>
         </div>
         <p className="text-xs mt-2" style={{ color: '#9ca3af' }}>Last updated: {lastUpdated}</p>
       </div>
