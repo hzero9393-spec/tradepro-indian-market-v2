@@ -30,8 +30,6 @@ import {
   BarChart3,
   GitBranch,
   Activity,
-  Target,
-  Shield,
   Info,
   Clock,
   ChevronLeft,
@@ -177,14 +175,7 @@ function generateOptionChain(spotPrice: number, strikeInterval: number): OptionR
   })
 }
 
-function getOIColorClass(pct: number): string {
-  if (pct > 10) return 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
-  if (pct > 5) return 'bg-orange-400/10 text-orange-600'
-  if (pct > 2) return 'bg-yellow-400/10 text-yellow-700'
-  if (pct > -2) return ''
-  if (pct > -5) return 'bg-[#5367ff]/10 text-[#5367ff]'
-  return 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
-}
+// getOIColorClass removed - simplified option chain
 
 // ─── Chart Tooltip ──────────────────────────────────────────────────────────
 
@@ -669,19 +660,16 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
             </TabsContent>
 
             {/* ═══ Option Chain Tab ═════════════════════════════════════════ */}
-            <TabsContent value="optionChain" className="mt-4 space-y-4">
-              {/* Option Chain Stats */}
-              <div className="bg-[#ffffff] border border-[#e5e7eb] p-3 rounded-xl flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-                <div className="flex items-center gap-1.5">
-                  <Target className="size-3.5 text-[#5367ff]" />
-                  <span className="text-[#6b7280]">Spot:</span>
-                  <span className="font-mono font-bold text-[#1a1a2e]">
-                    {detail?.currentPrice.toLocaleString('en-IN') || '--'}
-                  </span>
+            <TabsContent value="optionChain" className="mt-4 space-y-3">
+              {/* Quick Stats */}
+              <div className="flex items-center gap-4 text-xs bg-white border border-[#e5e7eb] rounded-lg p-2.5">
+                <div className="flex items-center gap-1">
+                  <span className="text-[#6b7280]">Spot</span>
+                  <span className="font-mono font-bold text-[#1a1a2e]">{detail?.currentPrice.toLocaleString('en-IN') || '--'}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Activity className="size-3.5 text-[#00d09c]" />
-                  <span className="text-[#6b7280]">PCR:</span>
+                <div className="h-3 w-px bg-[#e5e7eb]" />
+                <div className="flex items-center gap-1">
+                  <span className="text-[#6b7280]">PCR</span>
                   <span className={cn(
                     'font-mono font-bold',
                     optionStats.pcr > 1 ? 'text-[#00d09c]' : optionStats.pcr < 0.7 ? 'text-[#eb5b3c]' : 'text-[#1a1a2e]'
@@ -689,33 +677,11 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                     {optionStats.pcr.toFixed(2)}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Shield className="size-3.5 text-[#eb5b3c]" />
-                  <span className="text-[#6b7280]">Max Pain:</span>
-                  <span className="font-mono font-bold text-[#1a1a2e]">
-                    {optionStats.maxPain.toLocaleString()}
-                  </span>
+                <div className="h-3 w-px bg-[#e5e7eb]" />
+                <div className="flex items-center gap-1">
+                  <span className="text-[#6b7280]">Max Pain</span>
+                  <span className="font-mono font-bold text-[#1a1a2e]">{optionStats.maxPain.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Info className="size-3.5 text-blue-500" />
-                  <span className="text-[#6b7280]">Lot Size:</span>
-                  <span className="font-mono font-bold text-[#1a1a2e]">{detail?.lotSize || 50}</span>
-                </div>
-              </div>
-
-              {/* PCR Interpretation */}
-              <div className={cn(
-                'px-4 py-2.5 rounded-xl text-sm font-medium',
-                optionStats.pcr > 1 ? 'bg-[#00d09c]/10 text-[#00d09c]' :
-                optionStats.pcr < 0.7 ? 'bg-[#eb5b3c]/10 text-[#eb5b3c]' :
-                'bg-[#5367ff]/10 text-[#5367ff]'
-              )}>
-                {optionStats.pcr > 1
-                  ? '📈 Bullish Sentiment — Put writing exceeds Call writing'
-                  : optionStats.pcr < 0.7
-                    ? '📉 Bearish Sentiment — Call writing exceeds Put writing'
-                    : '⚖️ Neutral Sentiment — Balanced option writing'
-                }
               </div>
 
               {/* Loading State */}
@@ -723,47 +689,41 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="flex items-center justify-center py-8">
                   <div className="flex flex-col items-center gap-3">
                     <div className="flex gap-1.5">
-                      <div className="size-2 rounded-full bg-[#5367ff] animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="size-2 rounded-full bg-[#5367ff] animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="size-2 rounded-full bg-[#5367ff] animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div className="size-2 rounded-full bg-[#1a1a2e] animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="size-2 rounded-full bg-[#1a1a2e] animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="size-2 rounded-full bg-[#1a1a2e] animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                     <span className="text-xs text-[#6b7280]">Loading option chain...</span>
                   </div>
                 </div>
               )}
 
-              {/* Option Chain Table */}
-              <div className="bg-[#ffffff] border border-[#e5e7eb] rounded-xl overflow-hidden">
-                <div className="overflow-x-auto custom-scrollbar max-h-[500px] overflow-y-auto">
+              {/* Simplified Option Chain Table - Groww Style */}
+              <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+                <div className="overflow-x-auto custom-scrollbar max-h-[420px] overflow-y-auto">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 z-10">
-                      <tr className="bg-[#ffffff] border-b border-[#e5e7eb]/30">
-                        <th colSpan={6} className="text-center py-2 text-[#00d09c] font-bold text-xs uppercase tracking-wider">
-                          CALLS (CE)
+                      <tr className="bg-[#1a1a2e] text-white">
+                        <th colSpan={4} className="text-center py-2 font-semibold text-xs tracking-wider">
+                          CALLS
                         </th>
-                        <th className="text-center py-2 bg-[#e5e7eb] font-bold text-[#1a1a2e] border-x border-[#e5e7eb]/20">
+                        <th className="text-center py-2 bg-[#374151] font-bold text-xs border-x border-[#4b5563]">
                           STRIKE
                         </th>
-                        <th colSpan={6} className="text-center py-2 text-[#eb5b3c] font-bold text-xs uppercase tracking-wider">
-                          PUTS (PE)
+                        <th colSpan={4} className="text-center py-2 font-semibold text-xs tracking-wider">
+                          PUTS
                         </th>
                       </tr>
-                      <tr className="border-b border-[#e5e7eb]/30 text-[#6b7280] bg-[#ffffff]">
-                        <th className="px-1.5 py-1.5 text-right font-semibold">OI(L)</th>
-                        <th className="px-1.5 py-1.5 text-right font-semibold">Chg%</th>
-                        <th className="px-1.5 py-1.5 text-right font-semibold">LTP</th>
-                        <th className="px-1.5 py-1.5 text-right font-semibold">Chg%</th>
-                        <th className="px-1.5 py-1.5 text-right font-semibold">IV</th>
-                        <th className="px-1.5 py-1.5 text-right font-semibold">Vol</th>
-                        <th className="px-1.5 py-1.5 text-center font-bold bg-[#e5e7eb] border-x border-[#e5e7eb]/20 text-[#1a1a2e]">
-                          ₹
-                        </th>
-                        <th className="px-1.5 py-1.5 text-left font-semibold">Vol</th>
-                        <th className="px-1.5 py-1.5 text-left font-semibold">IV</th>
-                        <th className="px-1.5 py-1.5 text-left font-semibold">Chg%</th>
-                        <th className="px-1.5 py-1.5 text-left font-semibold">LTP</th>
-                        <th className="px-1.5 py-1.5 text-left font-semibold">Chg%</th>
-                        <th className="px-1.5 py-1.5 text-left font-semibold">OI(L)</th>
+                      <tr className="bg-[#f9fafb] border-b border-[#e5e7eb] text-[#6b7280]">
+                        <th className="px-1.5 py-1.5 text-right font-medium">OI(L)</th>
+                        <th className="px-1.5 py-1.5 text-right font-medium">Vol</th>
+                        <th className="px-1.5 py-1.5 text-right font-medium">LTP</th>
+                        <th className="px-1.5 py-1.5 text-right font-medium">Chg%</th>
+                        <th className="px-1.5 py-1.5 text-center font-bold bg-[#f3f4f6] border-x border-[#e5e7eb] text-[#1a1a2e]">₹</th>
+                        <th className="px-1.5 py-1.5 text-left font-medium">Chg%</th>
+                        <th className="px-1.5 py-1.5 text-left font-medium">LTP</th>
+                        <th className="px-1.5 py-1.5 text-left font-medium">Vol</th>
+                        <th className="px-1.5 py-1.5 text-left font-medium">OI(L)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -776,65 +736,63 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                           <tr
                             key={row.strike}
                             className={cn(
-                              'border-b border-[#e5e7eb]/10 transition-colors hover:bg-[#5367ff]/5',
-                              isATM && 'bg-[#5367ff]/10'
+                              'border-b border-[#f3f4f6] transition-colors',
+                              isATM && 'bg-[#1a1a2e]/5'
                             )}
                           >
-                            {/* CE Side — Clickable to Trade */}
-                            <td className={cn('px-1.5 py-1 text-right font-mono cursor-pointer hover:text-[#5367ff]', ceITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'CE')}>
+                            {/* CE Side */}
+                            <td className={cn('px-1.5 py-1 text-right font-mono text-[#6b7280]', ceITM && 'bg-[#00d09c]/6')}>
                               {row.ceOI.toFixed(1)}
                             </td>
-                            <td className={cn('px-1.5 py-1 text-right font-mono text-[10px] cursor-pointer hover:text-[#5367ff]', getOIColorClass(row.ceOIChngPct), ceITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'CE')}>
-                              {row.ceOIChngPct > 0 ? '+' : ''}{row.ceOIChngPct.toFixed(1)}%
+                            <td className={cn('px-1.5 py-1 text-right font-mono text-[#9ca3af]', ceITM && 'bg-[#00d09c]/6')}>
+                              {row.ceVolume > 0 ? `${(row.ceVolume / 1000).toFixed(0)}K` : '-'}
                             </td>
-                            <td className={cn('px-1.5 py-1 text-right font-mono font-semibold cursor-pointer hover:text-[#5367ff] hover:underline', ceITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'CE')}>
+                            <td
+                              className={cn(
+                                'px-1.5 py-1 text-right font-mono font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#00d09c] hover:underline',
+                                ceITM && 'bg-[#00d09c]/6'
+                              )}
+                              onClick={() => handleOptionClick(row, 'CE')}
+                            >
                               {row.ceLTP.toFixed(2)}
                             </td>
                             <td className={cn(
-                              'px-1.5 py-1 text-right font-mono text-[10px] cursor-pointer hover:text-[#5367ff]',
-                              row.ceChngPct > 0 ? 'text-[#00d09c]' : row.ceChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#6b7280]',
-                              ceITM && 'bg-[#00d09c]/8'
-                            )} onClick={() => handleOptionClick(row, 'CE')}>
+                              'px-1.5 py-1 text-right font-mono',
+                              row.ceChngPct > 0 ? 'text-[#00d09c]' : row.ceChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#9ca3af]',
+                              ceITM && 'bg-[#00d09c]/6'
+                            )}>
                               {row.ceChngPct > 0 ? '+' : ''}{row.ceChngPct.toFixed(1)}%
-                            </td>
-                            <td className={cn('px-1.5 py-1 text-right font-mono cursor-pointer hover:text-[#5367ff]', ceITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'CE')}>
-                              {row.ceIV.toFixed(1)}
-                            </td>
-                            <td className={cn('px-1.5 py-1 text-right font-mono text-[#6b7280] text-[10px] cursor-pointer hover:text-[#5367ff]', ceITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'CE')}>
-                              {(row.ceVolume / 1000).toFixed(0)}K
                             </td>
 
                             {/* Strike */}
                             <td className={cn(
-                              'px-2 py-1 text-center font-mono font-bold text-xs',
-                              'bg-[#e5e7eb]/50 border-x border-[#e5e7eb]/20',
-                              isATM ? 'bg-[#5367ff]/20 text-[#5367ff]' : 'text-[#1a1a2e]'
+                              'px-2 py-1 text-center font-mono font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
+                              isATM ? 'text-[#1a1a2e] bg-[#1a1a2e]/10' : 'text-[#1a1a2e]'
                             )}>
                               {row.strike.toLocaleString()}
-                              {isATM && <span className="ml-0.5 text-[8px] font-bold text-[#5367ff]">ATM</span>}
                             </td>
 
-                            {/* PE Side — Clickable to Trade */}
-                            <td className={cn('px-1.5 py-1 text-left font-mono text-[#6b7280] text-[10px] cursor-pointer hover:text-[#5367ff]', peITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'PE')}>
-                              {(row.peVolume / 1000).toFixed(0)}K
-                            </td>
-                            <td className={cn('px-1.5 py-1 text-left font-mono cursor-pointer hover:text-[#5367ff]', peITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'PE')}>
-                              {row.peIV.toFixed(1)}
-                            </td>
+                            {/* PE Side */}
                             <td className={cn(
-                              'px-1.5 py-1 text-left font-mono text-[10px] cursor-pointer hover:text-[#5367ff]',
-                              row.peChngPct > 0 ? 'text-[#00d09c]' : row.peChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#6b7280]',
-                              peITM && 'bg-[#00d09c]/8'
-                            )} onClick={() => handleOptionClick(row, 'PE')}>
+                              'px-1.5 py-1 text-left font-mono',
+                              row.peChngPct > 0 ? 'text-[#00d09c]' : row.peChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#9ca3af]',
+                              peITM && 'bg-[#eb5b3c]/6'
+                            )}>
                               {row.peChngPct > 0 ? '+' : ''}{row.peChngPct.toFixed(1)}%
                             </td>
-                            <td className={cn('px-1.5 py-1 text-left font-mono font-semibold cursor-pointer hover:text-[#5367ff] hover:underline', peITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'PE')}>
+                            <td
+                              className={cn(
+                                'px-1.5 py-1 text-left font-mono font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#eb5b3c] hover:underline',
+                                peITM && 'bg-[#eb5b3c]/6'
+                              )}
+                              onClick={() => handleOptionClick(row, 'PE')}
+                            >
                               {row.peLTP.toFixed(2)}
                             </td>
-                            <td className={cn('px-1.5 py-1 text-left font-mono text-[10px] cursor-pointer hover:text-[#5367ff]', getOIColorClass(row.peOIChngPct), peITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'PE')}>
-                              {row.peOIChngPct > 0 ? '+' : ''}{row.peOIChngPct.toFixed(1)}%
+                            <td className={cn('px-1.5 py-1 text-left font-mono text-[#9ca3af]', peITM && 'bg-[#eb5b3c]/6')}>
+                              {row.peVolume > 0 ? `${(row.peVolume / 1000).toFixed(0)}K` : '-'}
                             </td>
-                            <td className={cn('px-1.5 py-1 text-left font-mono cursor-pointer hover:text-[#5367ff]', peITM && 'bg-[#00d09c]/8')} onClick={() => handleOptionClick(row, 'PE')}>
+                            <td className={cn('px-1.5 py-1 text-left font-mono text-[#6b7280]', peITM && 'bg-[#eb5b3c]/6')}>
                               {row.peOI.toFixed(1)}
                             </td>
                           </tr>
@@ -842,33 +800,6 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                       })}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-              {/* Key Levels */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-[#ffffff] border border-[#e5e7eb] p-3 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Shield className="size-3.5 text-[#5367ff]" />
-                    <span className="text-xs font-semibold text-[#6b7280]">Max Pain</span>
-                  </div>
-                  <span className="text-lg font-bold font-mono text-[#5367ff]">{optionStats.maxPain.toLocaleString()}</span>
-                </div>
-                <div className="bg-[#ffffff] border border-[#e5e7eb] p-3 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <TrendingUp className="size-3.5 text-[#eb5b3c]" />
-                    <span className="text-xs font-semibold text-[#6b7280]">CE Resistance</span>
-                  </div>
-                  <span className="text-lg font-bold font-mono text-[#eb5b3c]">{optionStats.highestCEOI?.strike.toLocaleString()}</span>
-                  <span className="text-[10px] text-[#6b7280] ml-1">({optionStats.highestCEOI?.ceOI.toFixed(1)}L)</span>
-                </div>
-                <div className="bg-[#ffffff] border border-[#e5e7eb] p-3 rounded-xl">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <TrendingDown className="size-3.5 text-[#00d09c]" />
-                    <span className="text-xs font-semibold text-[#6b7280]">PE Support</span>
-                  </div>
-                  <span className="text-lg font-bold font-mono text-[#00d09c]">{optionStats.highestPEOI?.strike.toLocaleString()}</span>
-                  <span className="text-[10px] text-[#6b7280] ml-1">({optionStats.highestPEOI?.peOI.toFixed(1)}L)</span>
                 </div>
               </div>
             </TabsContent>
