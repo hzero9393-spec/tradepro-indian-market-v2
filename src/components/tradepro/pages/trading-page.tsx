@@ -553,7 +553,7 @@ function OrderPanel({
 
 export function TradingPage() {
   const { token, user } = useAuthStore()
-  const { setCurrentPage } = useAppStore()
+  const { setCurrentPage, navigateToStock } = useAppStore()
   const { showTradeSuccess } = useTradeSuccess()
 
   // ── State ─────────────────────────────────────────────────────────────
@@ -670,8 +670,8 @@ export function TradingPage() {
   // ── Select Stock Handler ─────────────────────────────────────────────
   const handleSelectStock = (stock: TradeableStock) => {
     setSelectedStock(stock)
-    // On mobile, show the order panel
-    setShowOrderPanel(true)
+    // Navigate to Stock Overview page (like Groww)
+    navigateToStock(stock.symbol)
   }
 
   // ── Effects ──────────────────────────────────────────────────────────

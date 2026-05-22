@@ -87,3 +87,37 @@ Stage Summary:
 - AI analysis in PDF detects: no stop-loss, overtrading, low win rate, net losses
 - All "future" features show "Coming soon" toast
 - Auto-redeployed to https://tradepro-indian-market.vercel.app
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Build Groww-style Stock Overview page - clicking stock should show overview, not directly buy/sell
+
+Work Log:
+- Created `/api/stocks/detail/[symbol]/route.ts` - Full stock detail API with real-time data from Finance API + DB fallback, fundamentals, and similar stocks from same sector
+- Created `/api/stocks/chart/[symbol]/route.ts` - Stock chart API with real-time data + mock fallback for 7 timeframes (1D/1W/1M/3M/6M/1Y/5Y)
+- Updated `src/lib/store.ts` - Added `stockOverview` to PageId, added `selectedStockSymbol`, `setSelectedStockSymbol`, and `navigateToStock` to Zustand store
+- Created `src/components/tradepro/pages/stock-overview-page.tsx` - Complete Groww-style Stock Overview page with:
+  - Sticky header with stock name, price, change %, Buy Now button, F&O badge
+  - Tab navigation: Overview, Technicals, News, F&O
+  - Price chart with timeframe selector (1D/1W/1M/3M/6M/1Y/5Y) using Recharts AreaChart
+  - Performance section with Today's Range and 52-Week Range visual bars (Groww-style triangle marker)
+  - Key Metrics grid (Open Price, Prev Close, Volume)
+  - Collapsible Fundamentals section (Mkt Cap, ROE, P/E, EPS, P/B, Div Yield, Industry P/E, Book Value, Debt to Equity, Face Value)
+  - Collapsible About section (Sector, Industry, Exchange, Lot Size, F&O Available)
+  - Similar Stocks list from same sector with price and change %
+  - Mobile sticky Buy button at bottom
+  - Trade panel overlay (bottom sheet) with Buy/Sell toggle, order type, product type, quantity, limit price, order summary, and place order button
+- Updated `src/app/page.tsx` - Added StockOverviewPage import and 'stockOverview' case in PageContent switch
+- Updated trading-page.tsx - Changed handleSelectStock to navigate to Stock Overview page instead of showing Order Panel directly
+- Updated dashboard-page.tsx - Positions table rows now navigate to Stock Overview on click via navigateToStock()
+- Lint passes with zero errors
+- Vercel deployed to production: https://tradepro-indian-market.vercel.app
+
+Stage Summary:
+- Stock Overview page built matching Groww's mobile UI from user's screenshots
+- Clicking any stock now shows overview first, then user can click "Buy Now" to trade
+- Full chart with 7 timeframes, performance range bars, fundamentals, similar stocks
+- Trade panel appears as bottom sheet overlay when "Buy Now" is clicked
+- API routes support real-time Finance API data with DB/mock fallback
+- All navigation flows updated: Trading Page stocks → Stock Overview, Dashboard positions → Stock Overview

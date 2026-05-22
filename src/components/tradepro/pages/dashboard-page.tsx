@@ -195,7 +195,7 @@ const staggerItem = {
 
 export function DashboardPage() {
   const { token, user } = useAuthStore()
-  const { setCurrentPage } = useAppStore()
+  const { setCurrentPage, navigateToStock } = useAppStore()
 
   // Index detail drawer state
   const [selectedIndexSymbol, setSelectedIndexSymbol] = useState<string | null>(null)
@@ -660,6 +660,7 @@ export function DashboardPage() {
                           <TableRow
                             key={pos.id}
                             className="hover:bg-[#fafafa] transition-colors cursor-pointer"
+                            onClick={() => navigateToStock(pos.symbol)}
                           >
                             <TableCell className="py-4">
                               <div className="flex flex-col">
