@@ -609,3 +609,51 @@ model UserProgress {
   @@unique([userId, moduleId])
   @@map("user_progress")
 }
+
+// ============================================================
+// ADMIN PANEL
+// ============================================================
+
+model Admin {
+  id              String        @id @default(cuid())
+  username        String        @unique
+  passwordHash    String
+  name            String
+  email           String        @unique
+  role            String        @default("ADMIN") // ADMIN, SUPER_ADMIN
+  isActive        Boolean       @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  activityLogs    ActivityLog[]
+
+  @@map("admins")
+}
+
+model ActivityLog {
+  id              String   @id @default(cuid())
+  adminId         String
+  action          String   // LOGIN, USER_BLOCK, USER_UNBLOCK, UPDATE_SETTINGS, etc.
+  targetId        String?  // ID of the target entity (user, setting, etc.)
+  details         String?  // JSON string with additional details
+  ipAddress       String?
+  createdAt       DateTime @default(now())
+
+  admin           Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model PlatformSettings {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String
+  description     String?
+  updatedAt       DateTime @updatedAt
+
+  @@map("platform_settings")
+}
