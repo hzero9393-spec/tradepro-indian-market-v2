@@ -3,44 +3,31 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
-const schemaBackupPath = path.join(__dirname, '..', 'prisma', 'schema.prisma.bak');
+const sqliteSchemaPath = path.join(__dirname, '..', 'prisma', 'schema.sqlite.prisma');
+const pgSchemaPath = path.join(__dirname, '..', 'prisma', 'schema.postgresql.prisma');
 const dbUrl = process.env.DATABASE_URL || '';
 
-// Backup original schema (SQLite version)
-if (!fs.existsSync(schemaBackupPath)) {
-  fs.copyFileSync(schemaPath, schemaBackupPath);
-  console.log('📦 Backed up SQLite schema');
-}
-
-let schema = fs.readFileSync(schemaPath, 'utf8');
-
 if (dbUrl.startsWith('postgresql://')) {
-  console.log('🔧 PostgreSQL detected - switching schema provider...');
+  console.log('🔧 PostgreSQL detected - using PostgreSQL schema with enums...');
   
-  // Replace SQLite provider with PostgreSQL
-  schema = schema.replace(
-    /provider = "sqlite"/,
-    'provider = "postgresql"'
-  );
-  
-  // Replace the url line to use DIRECT_URL for connection pooling
-  if (!schema.includes('directUrl')) {
-    schema = schema.replace(
-      /url\s+= env\("DATABASE_URL"\)/,
-      'url       = env("DIRECT_URL")\n  directUrl = env("DATABASE_URL")'
-    );
+  // Copy the PostgreSQL schema (with proper enums) as the active schema
+  if (fs.existsSync(pgSchemaPath)) {
+    fs.copyFileSync(pgSchemaPath, schemaPath);
+    console.log('✅ Switched to PostgreSQL schema with enums');
+  } else {
+    console.log('⚠️ PostgreSQL schema file not found, keeping current schema');
   }
-  
-  fs.writeFileSync(schemaPath, schema);
-  console.log('✅ Schema switched to PostgreSQL');
 } else {
-  // Restore SQLite schema if needed
-  const backupSchema = fs.readFileSync(schemaBackupPath, 'utf8');
-  if (backupSchema !== schema) {
-    fs.writeFileSync(schemaPath, backupSchema);
-    console.log('✅ Schema restored to SQLite');
+  console.log('🔧 SQLite/local detected - using SQLite schema...');
+  
+  // Copy the SQLite schema (with String types) as the active schema
+  if (fs.existsSync(sqliteSchemaPath)) {
+    fs.copyFileSync(sqliteSchemaPath, schemaPath);
+    console.log('✅ Switched to SQLite schema');
+  } else {
+    // If no separate SQLite file, the current schema.prisma IS the SQLite version
+    console.log('✅ Keeping current SQLite schema');
   }
-  console.log('🔧 SQLite/local detected - keeping SQLite provider');
 }
 
 // Generate Prisma client

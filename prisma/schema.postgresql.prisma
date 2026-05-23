@@ -1,0 +1,648 @@
+// TradePro - Indian Stock Market Paper Trading Platform
+// Prisma Schema for PostgreSQL (Supabase)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DIRECT_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+// ============================================================
+// USER & AUTHENTICATION
+// ============================================================
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  phone           String?   @unique
+  panNumber       String?   @unique
+  passwordHash    String?
+  oauthProvider   String?
+  oauthId         String?
+  avatar          String?
+  role            UserRole  @default(USER)
+  subscription    SubscriptionTier @default(FREE)
+
+  // Virtual Trading Account
+  virtualBalance  Float     @default(100000)
+  marginUsed      Float     @default(0)
+
+  // Stats
+  totalTrades     Int       @default(0)
+  winRate         Float     @default(0)
+  totalPnl        Float     @default(0)
+  rank            Int?
+
+  // Metadata
+  isEmailVerified Boolean   @default(false)
+  isPhoneVerified Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  trades          Trade[]
+  orders          Order[]
+  positions       Position[]
+  portfolios      Portfolio[]
+  sessions        Session[]
+
+  @@index([email])
+  @@unique([oauthProvider, oauthId])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  device       String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+}
+
+// ============================================================
+// MARKET DATA - INDICES
+// ============================================================
+
+model Index {
+  id              String   @id @default(cuid())
+  symbol          String   @unique
+  name            String
+  lotSize         Int
+  expiryDay       String
+  tickSize        Float    @default(0.05)
+  strikeInterval  Int
+
+  currentPrice    Float
+  open            Float?
+  high            Float?
+  low             Float?
+  previousClose   Float?
+  change          Float    @default(0)
+  changePercent   Float    @default(0)
+  volume          Float?
+  
+  isEnabled       Boolean  @default(true)
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  indexHistory    IndexHistory[]
+
+  @@index([symbol])
+  @@map("indices")
+}
+
+model IndexHistory {
+  id              String   @id @default(cuid())
+  indexSymbol     String
+  date            DateTime
+  open            Float
+  high            Float
+  low             Float
+  close           Float
+  volume          Float?
+  createdAt       DateTime @default(now())
+
+  index           Index    @relation(fields: [indexSymbol], references: [symbol], onDelete: Cascade)
+
+  @@unique([indexSymbol, date])
+  @@map("index_history")
+}
+
+// ============================================================
+// MARKET DATA - STOCKS (NSE)
+// ============================================================
+
+model Stock {
+  id                  String   @id @default(cuid())
+  symbol              String   @unique
+  name                String
+  isin                String?
+  sector              String
+  industry            String?
+  exchange            String   @default("NSE")
+  
+  faceValue           Float?
+  marketCap           Float?
+  peRatio             Float?
+  dividendYield       Float?
+
+  lotSize             Int      @default(1)
+  isFuturesAvailable  Boolean  @default(false)
+  isOptionsAvailable  Boolean  @default(false)
+  strikeInterval      Int?
+  circuitLimit        Float    @default(20)
+
+  currentPrice        Float
+  open                Float?
+  high                Float?
+  low                 Float?
+  previousClose       Float?
+  change              Float    @default(0)
+  changePercent       Float    @default(0)
+  volume              Float?
+  
+  week52High          Float?
+  week52Low           Float?
+
+  isFnoBan            Boolean  @default(false)
+  banStartDate        DateTime?
+  banEndDate          DateTime?
+  isActive            Boolean  @default(true)
+  lastUpdated         DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  stockHistory        StockHistory[]
+
+  @@index([symbol])
+  @@index([sector])
+  @@map("stocks")
+}
+
+model StockHistory {
+  id              String   @id @default(cuid())
+  stockSymbol     String
+  date            DateTime
+  open            Float
+  high            Float
+  low             Float
+  close           Float
+  volume          Float?
+  createdAt       DateTime @default(now())
+
+  stock           Stock    @relation(fields: [stockSymbol], references: [symbol], onDelete: Cascade)
+
+  @@unique([stockSymbol, date])
+  @@map("stock_history")
+}
+
+// ============================================================
+// DERIVATIVES
+// ============================================================
+
+model Future {
+  id              String   @id @default(cuid())
+  underlying      String
+  underlyingType  UnderlyingType @default(INDEX)
+  expiryDate      DateTime
+  expiryType      ExpiryType @default(MONTHLY)
+  lotSize         Int
+
+  ltp             Float
+  open            Float?
+  high            Float?
+  low             Float?
+  previousClose   Float?
+  change          Float    @default(0)
+  changePercent   Float    @default(0)
+  
+  openInterest    Float    @default(0)
+  oiChange        Float    @default(0)
+  volume          Float    @default(0)
+  basis           Float    @default(0)
+  
+  marginPercent   Float    @default(10)
+  
+  isActive        Boolean  @default(true)
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([underlying, expiryDate])
+  @@map("futures")
+}
+
+enum UnderlyingType {
+  INDEX
+  STOCK
+}
+
+enum ExpiryType {
+  WEEKLY
+  MONTHLY
+}
+
+model Option {
+  id              String   @id @default(cuid())
+  underlying      String
+  underlyingType  UnderlyingType @default(INDEX)
+  underlyingPrice Float
+  expiryDate      DateTime
+  expiryType      ExpiryType @default(WEEKLY)
+  strikePrice     Float
+  optionType      OptionType
+  
+  ltp             Float
+  previousClose   Float?
+  change          Float    @default(0)
+  changePercent   Float    @default(0)
+  
+  openInterest    Float    @default(0)
+  oiChange        Float    @default(0)
+  oiChangePercent Float    @default(0)
+  volume          Float    @default(0)
+  impliedVolatility Float  @default(0)
+  
+  delta           Float?
+  gamma           Float?
+  theta           Float?
+  vega            Float?
+  
+  inTheMoney      Boolean  @default(false)
+  
+  isActive        Boolean  @default(true)
+  lastUpdated     DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([underlying, expiryDate, strikePrice, optionType])
+  @@map("options")
+}
+
+enum OptionType {
+  CE
+  PE
+}
+
+// ============================================================
+// TRADING - ORDERS
+// ============================================================
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  orderType       OrderType
+  tradeDirection  TradeDirection
+  segment         Segment
+  productType     ProductType
+  
+  symbol          String
+  instrumentId    String?
+  optionType      OptionType?
+  strikePrice     Float?
+  expiryDate      DateTime?
+  lotSize         Int         @default(1)
+  lots            Int         @default(1)
+  
+  quantity        Int
+  price           Float
+  triggerPrice    Float?
+  fillPrice       Float?
+  
+  totalValue      Float       @default(0)
+  brokerage       Float       @default(0)
+  marginRequired  Float       @default(0)
+  
+  status          OrderStatus @default(PENDING)
+  rejectReason    String?
+  
+  placedAt        DateTime    @default(now())
+  filledAt        DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trade           Trade?
+
+  @@index([userId, status])
+  @@index([userId, placedAt])
+  @@map("orders")
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+  SL
+  SL_M
+}
+
+enum TradeDirection {
+  BUY
+  SELL
+}
+
+enum Segment {
+  EQUITY
+  FUTURES
+  OPTIONS
+}
+
+enum ProductType {
+  INTRADAY
+  DELIVERY
+  CARRY_FORWARD
+}
+
+enum OrderStatus {
+  PENDING
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+  EXPIRED
+}
+
+// ============================================================
+// TRADING - TRADES
+// ============================================================
+
+model Trade {
+  id              String      @id @default(cuid())
+  userId          String
+  orderId         String?     @unique
+  segment         Segment
+  productType     ProductType
+  tradeDirection  TradeDirection
+  
+  symbol          String
+  instrumentId    String?
+  optionType      OptionType?
+  strikePrice     Float?
+  expiryDate      DateTime?
+  
+  quantity        Int
+  fillPrice       Float
+  totalValue      Float
+  brokerage       Float       @default(0)
+  
+  pnl             Float?
+  pnlPercent      Float?
+  
+  executedAt      DateTime    @default(now())
+  squaredOffAt    DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order           Order?      @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, executedAt])
+  @@map("trades")
+}
+
+// ============================================================
+// TRADING - POSITIONS
+// ============================================================
+
+model Position {
+  id              String      @id @default(cuid())
+  userId          String
+  segment         Segment
+  productType     ProductType
+  tradeDirection  TradeDirection
+  
+  symbol          String
+  instrumentId    String?
+  optionType      OptionType?
+  strikePrice     Float?
+  expiryDate      DateTime?
+  lotSize         Int         @default(1)
+  lots            Int         @default(1)
+  quantity        Int
+  
+  entryPrice      Float
+  currentPrice    Float       @default(0)
+  totalInvested   Float
+  currentValue    Float       @default(0)
+  
+  unrealizedPnl   Float       @default(0)
+  realizedPnl     Float       @default(0)
+  
+  marginUsed      Float       @default(0)
+  
+  isOpen          Boolean     @default(true)
+  squaredOffAt    DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isOpen])
+  @@index([userId, segment, isOpen])
+  @@index([userId, symbol, isOpen])
+  @@map("positions")
+}
+
+// ============================================================
+// PORTFOLIO
+// ============================================================
+
+model Portfolio {
+  id              String   @id @default(cuid())
+  userId          String
+  date            DateTime @default(now())
+  
+  totalValue      Float    @default(0)
+  equityValue     Float    @default(0)
+  futuresValue    Float    @default(0)
+  optionsValue    Float    @default(0)
+  cashBalance     Float    @default(0)
+  
+  dayPnl          Float    @default(0)
+  totalPnl        Float    @default(0)
+  dayReturn       Float    @default(0)
+  totalReturn     Float    @default(0)
+  
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@unique([userId, date])
+  @@map("portfolios")
+}
+
+// ============================================================
+// MARKET METADATA
+// ============================================================
+
+model Sector {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  indexSymbol     String?
+  todayChange     Float    @default(0)
+  topStockSymbol  String?
+  topStockChange  Float?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("sectors")
+}
+
+model MarketHoliday {
+  id              String   @id @default(cuid())
+  name            String
+  date            DateTime @unique
+  isMuhurat       Boolean  @default(false)
+  muhuratStart    String?
+  muhuratEnd      String?
+  createdAt       DateTime @default(now())
+
+  @@map("market_holidays")
+}
+
+model FnOBanEntry {
+  id              String   @id @default(cuid())
+  stockSymbol     String
+  stockName       String
+  banStartDate    DateTime
+  banEndDate      DateTime?
+  reason          String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("fno_ban_entries")
+}
+
+model MarketBreadth {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now())
+  advances        Int      @default(0)
+  declines        Int      @default(0)
+  unchanged       Int      @default(0)
+  week52Highs     Int      @default(0)
+  week52Lows      Int      @default(0)
+  upperCircuit     Int      @default(0)
+  lowerCircuit     Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("market_breadth")
+}
+
+// ============================================================
+// CHALLENGES & LEADERBOARD
+// ============================================================
+
+model Challenge {
+  id              String         @id @default(cuid())
+  title           String
+  description     String
+  challengeType   ChallengeType
+  targetMetric    String
+  targetValue     Float
+  prize           String
+  prizeValue      Float?
+  startDate       DateTime
+  endDate         DateTime
+  maxParticipants Int?
+  currentParticipants Int        @default(0)
+  status          ChallengeStatus @default(UPCOMING)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  participations  ChallengeParticipation[]
+
+  @@map("challenges")
+}
+
+enum ChallengeType {
+  RETURN_SPRINT
+  RISK_MANAGER
+  VOLUME_MASTER
+  ACCURACY_KING
+}
+
+enum ChallengeStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model ChallengeParticipation {
+  id              String   @id @default(cuid())
+  challengeId     String
+  userId          String
+  progress        Float    @default(0)
+  result          String?
+  reward          String?
+  joinedAt        DateTime @default(now())
+  completedAt     DateTime?
+
+  challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@map("challenge_participations")
+}
+
+// ============================================================
+// LEARNING
+// ============================================================
+
+model LearningPath {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  category        String
+  totalModules    Int
+  estimatedHours  Int
+  difficulty      String   @default("Beginner")
+  accentColor     String   @default("#0058be")
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  modules         LearningModule[]
+
+  @@map("learning_paths")
+}
+
+model LearningModule {
+  id              String   @id @default(cuid())
+  pathId          String
+  title           String
+  description     String
+  content         String?
+  videoUrl        String?
+  duration        Int
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  path            LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@map("learning_modules")
+}
+
+model UserProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  moduleId        String
+  isCompleted     Boolean  @default(false)
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, moduleId])
+  @@map("user_progress")
+}
