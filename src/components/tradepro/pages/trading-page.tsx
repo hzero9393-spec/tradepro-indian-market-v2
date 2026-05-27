@@ -686,12 +686,9 @@ export function TradingPage() {
   // ── Select Stock Handler ─────────────────────────────────────────────
   const handleSelectStock = (stock: TradeableStock) => {
     setSelectedStock(stock)
-    // On desktop, navigate to stock overview. On mobile, open the order panel directly.
-    if (window.innerWidth >= 1024) {
-      navigateToStock(stock.symbol)
-    } else {
-      setShowOrderPanel(true)
-    }
+    // Always navigate to Stock Overview page first (like Groww)
+    // Users can then trade from the overview page
+    navigateToStock(stock.symbol)
   }
 
   // ── Effects ──────────────────────────────────────────────────────────
