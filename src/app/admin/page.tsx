@@ -119,13 +119,13 @@ async function adminApi(endpoint: string, options?: RequestInit) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   })
   if (res.status === 401) {
     localStorage.removeItem('admin_token')
-    window.location.reload()
+    // Don't auto-reload - just throw, let the calling code handle it
     throw new Error('Unauthorized')
   }
   if (!res.ok) throw new Error('API Error')
@@ -2264,8 +2264,15 @@ export default function AdminPage() {
         return
       }
       try {
-        await adminApi('/auth/verify')
-        setIsAuthenticated(true)
+        const res = await fetch('/api/admin/auth/verify', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          setIsAuthenticated(true)
+        } else {
+          localStorage.removeItem('admin_token')
+          setIsAuthenticated(false)
+        }
       } catch {
         localStorage.removeItem('admin_token')
         setIsAuthenticated(false)
