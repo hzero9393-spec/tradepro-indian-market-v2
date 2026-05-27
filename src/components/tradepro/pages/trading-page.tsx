@@ -20,11 +20,13 @@ import {
   Minus,
   Plus,
   Loader2,
+  ShoppingCart,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
+import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatVolume, calculateBrokerage } from '@/lib/format'
 
@@ -232,6 +234,8 @@ function OrderPanel({
   const [quantity, setQuantity] = useState(10)
   const [price, setPrice] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [confirmData, setConfirmData] = useState<TradeConfirmData | null>(null)
 
   useEffect(() => {
     if (selectedStock) {
@@ -266,21 +270,42 @@ function OrderPanel({
       return
     }
 
-    setPlacingOrder(true)
+    // Open confirmation modal instead of directly placing order
+    const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
+    const fillPrice = orderType === 'MARKET' ? selectedStock.currentPrice : parseFloat(price)
+    setConfirmData({
+      symbol: selectedStock.symbol,
+      direction: direction as 'BUY' | 'SELL',
+      segment: 'EQUITY',
+      productType,
+      orderType,
+      quantity,
+      price: fillPrice,
+      totalValue: estimatedTotal,
+      brokerage: estimatedBrokerage,
+      availableBalance,
+    })
+    setConfirmModalOpen(true)
+  }
+
+  const executeTrade = async (): Promise<{ success: boolean; message?: string; error?: string; orderId?: string; balance?: number; totalValue?: number; brokerage?: number }> => {
+    if (!token || !selectedStock) return { success: false, error: 'No stock selected' }
+
+    const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
+    const body: Record<string, unknown> = {
+      symbol: selectedStock.symbol,
+      direction,
+      orderType,
+      segment: 'EQUITY',
+      productType,
+      quantity,
+    }
+
+    if (orderType === 'LIMIT' && price) {
+      body.price = parseFloat(price)
+    }
+
     try {
-      const body: Record<string, unknown> = {
-        symbol: selectedStock.symbol,
-        direction: orderSide === 'buy' ? 'BUY' : 'SELL',
-        orderType: orderType,
-        segment: 'EQUITY',
-        productType: productType,
-        quantity: quantity,
-      }
-
-      if (orderType === 'LIMIT' && price) {
-        body.price = parseFloat(price)
-      }
-
       const res = await fetch('/api/trade/place', {
         method: 'POST',
         headers: {
@@ -293,17 +318,10 @@ function OrderPanel({
       const data = await res.json()
 
       if (res.ok && data.success) {
-        const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
         const fillPrice = orderType === 'MARKET' ? selectedStock.currentPrice : parseFloat(price)
-        toast.success(
-          `${direction} ${quantity} ${selectedStock.symbol} @ ${formatINR(fillPrice)}`,
-          {
-            description: `Order filled successfully • Brokerage: ${formatINR(estimatedBrokerage)}`,
-          }
-        )
         showTradeSuccess({
           symbol: selectedStock.symbol,
-          type: direction,
+          type: direction as 'BUY' | 'SELL',
           qty: quantity,
           price: fillPrice,
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase(),
@@ -313,15 +331,18 @@ function OrderPanel({
           brokerage: data.order?.brokerage,
         })
         await handleTradeSuccess()
+        return {
+          success: true,
+          orderId: data.order?.id?.slice(-8).toUpperCase() || 'N/A',
+          balance: data.balance,
+          totalValue: data.order?.totalValue,
+          brokerage: data.order?.brokerage,
+        }
       } else {
-        toast.error(data.error || 'Failed to place order', {
-          description: 'Please check your balance and try again.',
-        })
+        return { success: false, error: data.error || 'Failed to place order' }
       }
     } catch {
-      toast.error('Network error placing order')
-    } finally {
-      setPlacingOrder(false)
+      return { success: false, error: 'Network error placing order' }
     }
   }
 
@@ -509,7 +530,7 @@ function OrderPanel({
               Placing Order...
             </span>
           ) : (
-            orderSide === 'buy' ? `Buy ${selectedStock.symbol}` : `Sell ${selectedStock.symbol}`
+            orderSide === 'buy' ? `Review Buy Order` : `Review Sell Order`
           )}
         </button>
 
@@ -529,6 +550,14 @@ function OrderPanel({
           </div>
         </div>
       </CardContent>
+
+      {/* Trade Confirmation Modal */}
+      <TradeConfirmModal
+        open={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        tradeData={confirmData}
+        onConfirm={executeTrade}
+      />
     </Card>
   )
 }
@@ -654,8 +683,12 @@ export function TradingPage() {
   // ── Select Stock Handler ─────────────────────────────────────────────
   const handleSelectStock = (stock: TradeableStock) => {
     setSelectedStock(stock)
-    // Navigate to Stock Overview page (like Groww)
-    navigateToStock(stock.symbol)
+    // On desktop, navigate to stock overview. On mobile, open the order panel directly.
+    if (window.innerWidth >= 1024) {
+      navigateToStock(stock.symbol)
+    } else {
+      setShowOrderPanel(true)
+    }
   }
 
   // ── Effects ──────────────────────────────────────────────────────────
@@ -1085,20 +1118,28 @@ export function TradingPage() {
         )}
       </div>
 
-      {/* ═══ Floating Trade Button (Mobile) ══════════════════════════════ */}
+      {/* ═══ Floating Buy/Sell Bar (Mobile) ══════════════════════════════ */}
       {selectedStock && !showOrderPanel && (
-        <div className="fixed bottom-20 right-4 z-40 lg:hidden">
+        <div className="fixed bottom-16 left-0 right-0 z-40 lg:hidden px-4 pb-3">
           <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            initial={{ y: 60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 60, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+            className="flex gap-2"
           >
             <Button
-              className="flex items-center gap-2 px-5 py-3 bg-[#00D09C] text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all font-bold text-sm"
+              className="flex-1 h-12 bg-[#00D09C] hover:bg-[#00b88a] text-white font-bold rounded-xl text-sm gap-1.5 shadow-lg"
               onClick={() => setShowOrderPanel(true)}
             >
-              Trade {selectedStock.symbol}
+              <ShoppingCart className="size-4" />
+              Buy {selectedStock.symbol}
+            </Button>
+            <Button
+              className="flex-1 h-12 bg-[#EB5B3C] hover:bg-[#d44f33] text-white font-bold rounded-xl text-sm gap-1.5 shadow-lg"
+              onClick={() => setShowOrderPanel(true)}
+            >
+              Sell {selectedStock.symbol}
             </Button>
           </motion.div>
         </div>

@@ -35,6 +35,7 @@ import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
+import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole, formatLargeNumber, formatVolume, calculateBrokerage } from '@/lib/format'
 import {
@@ -358,6 +359,8 @@ export function StockOverviewPage() {
   const [price, setPrice] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
   const [tradeSegment, setTradeSegment] = useState<'EQUITY' | 'FUTURES' | 'OPTIONS'>('EQUITY')
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [confirmData, setConfirmData] = useState<TradeConfirmData | null>(null)
 
   // ─── Fetch stock detail ─────────────────────────────────────────
   const fetchDetail = useCallback(async () => {
@@ -526,25 +529,52 @@ export function StockOverviewPage() {
       return
     }
 
-    setPlacingOrder(true)
+    // Open confirmation modal
+    const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
+    const fillPrice = orderType === 'MARKET' ? stockDetail.currentPrice : parseFloat(price)
+    setConfirmData({
+      symbol: stockDetail.symbol,
+      direction: direction as 'BUY' | 'SELL',
+      segment: tradeSegment,
+      productType,
+      orderType,
+      quantity,
+      price: fillPrice,
+      totalValue: estimatedTotal,
+      brokerage: estimatedBrokerage,
+      availableBalance,
+    })
+    setConfirmModalOpen(true)
+  }
+
+  const executeTrade = async (): Promise<{ success: boolean; message?: string; error?: string; orderId?: string; balance?: number; totalValue?: number; brokerage?: number }> => {
+    if (!token || !stockDetail) return { success: false, error: 'No stock selected' }
+
+    const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
+    const body: Record<string, unknown> = {
+      symbol: stockDetail.symbol,
+      direction,
+      orderType,
+      segment: tradeSegment,
+      productType,
+      quantity,
+    }
+
+    if (orderType === 'LIMIT' && price) {
+      body.price = parseFloat(price)
+    }
+
+    if (tradeSegment === 'FUTURES') {
+      body.lotSize = stockDetail.lotSize
+      body.lots = Math.max(1, Math.round(quantity / stockDetail.lotSize))
+    }
+
+    if (tradeSegment === 'OPTIONS') {
+      body.lotSize = stockDetail.lotSize
+      body.lots = Math.max(1, Math.round(quantity / stockDetail.lotSize))
+    }
+
     try {
-      const body: Record<string, unknown> = {
-        symbol: stockDetail.symbol,
-        direction: orderSide === 'buy' ? 'BUY' : 'SELL',
-        orderType: orderType,
-        segment: tradeSegment,
-        productType: productType,
-        quantity: quantity,
-      }
-
-      if (orderType === 'LIMIT' && price) {
-        body.price = parseFloat(price)
-      }
-
-      if (tradeSegment === 'FUTURES') {
-        body.lotSize = stockDetail.lotSize
-      }
-
       const res = await fetch('/api/trade/place', {
         method: 'POST',
         headers: {
@@ -557,17 +587,10 @@ export function StockOverviewPage() {
       const data = await res.json()
 
       if (res.ok && data.success) {
-        const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
         const fillPrice = orderType === 'MARKET' ? stockDetail.currentPrice : parseFloat(price)
-        toast.success(
-          `${direction} ${quantity} ${stockDetail.symbol} @ ${formatINR(fillPrice)}`,
-          {
-            description: `Order filled successfully • Brokerage: ${formatINR(estimatedBrokerage)}`,
-          }
-        )
         showTradeSuccess({
           symbol: stockDetail.symbol,
-          type: direction,
+          type: direction as 'BUY' | 'SELL',
           qty: quantity,
           price: fillPrice,
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }).toUpperCase(),
@@ -577,15 +600,18 @@ export function StockOverviewPage() {
           brokerage: data.order?.brokerage,
         })
         setShowTradePanel(false)
+        return {
+          success: true,
+          orderId: data.order?.id?.slice(-8).toUpperCase() || 'N/A',
+          balance: data.balance,
+          totalValue: data.order?.totalValue,
+          brokerage: data.order?.brokerage,
+        }
       } else {
-        toast.error(data.error || 'Failed to place order', {
-          description: 'Please check your balance and try again.',
-        })
+        return { success: false, error: data.error || 'Failed to place order' }
       }
     } catch {
-      toast.error('Network error placing order')
-    } finally {
-      setPlacingOrder(false)
+      return { success: false, error: 'Network error placing order' }
     }
   }
 
@@ -684,7 +710,14 @@ export function StockOverviewPage() {
                 onClick={() => { setOrderSide('buy'); setTradeSegment('EQUITY'); setShowTradePanel(true) }}
               >
                 <ShoppingCart className="size-4" />
-                <span className="hidden sm:inline">Buy Now</span>
+                <span className="hidden sm:inline">Buy</span>
+              </Button>
+              <Button
+                className="bg-[#EB5B3C] hover:bg-[#d44f33] text-white font-semibold rounded-lg gap-1.5"
+                size="sm"
+                onClick={() => { setOrderSide('sell'); setTradeSegment('EQUITY'); setShowTradePanel(true) }}
+              >
+                <span className="hidden sm:inline">Sell</span>
               </Button>
             </div>
           </div>
@@ -1032,15 +1065,23 @@ export function StockOverviewPage() {
                 </div>
               )}
 
-              {/* ─── Bottom Buy Button (Mobile) ────────────────────────── */}
+              {/* ─── Bottom Buy/Sell Bar (Mobile) ────────────────────────── */}
               <div className="lg:hidden sticky bottom-16 z-20 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-white border-t border-[#e5e7eb]">
-                <Button
-                  className="w-full h-12 bg-[#00D09C] hover:bg-[#00b88a] text-white font-bold rounded-xl text-base gap-2"
-                  onClick={() => { setOrderSide('buy'); setTradeSegment('EQUITY'); setShowTradePanel(true) }}
-                >
-                  <ShoppingCart className="size-5" />
-                  Buy {stockDetail.symbol}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 h-12 bg-[#00D09C] hover:bg-[#00b88a] text-white font-bold rounded-xl text-base gap-2"
+                    onClick={() => { setOrderSide('buy'); setTradeSegment('EQUITY'); setShowTradePanel(true) }}
+                  >
+                    <ShoppingCart className="size-5" />
+                    Buy {stockDetail.symbol}
+                  </Button>
+                  <Button
+                    className="flex-1 h-12 bg-[#EB5B3C] hover:bg-[#d44f33] text-white font-bold rounded-xl text-base gap-2"
+                    onClick={() => { setOrderSide('sell'); setTradeSegment('EQUITY'); setShowTradePanel(true) }}
+                  >
+                    Sell {stockDetail.symbol}
+                  </Button>
+                </div>
               </div>
             </motion.div>
           )}
