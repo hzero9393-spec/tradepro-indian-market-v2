@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { authenticateRequest, calculateBrokerage } from '@/lib/trade-auth'
+import { authenticateRequest, calculateBrokerage, checkMarketStatus, validateOrderQuantity } from '@/lib/trade-auth'
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache'
 import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
+    // ─── Step 1: Authenticate ──────────────────────────────────────
     const auth = await authenticateRequest(request)
     if (auth.error) return auth.error
 
@@ -13,23 +14,42 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { symbol, direction, orderType, segment, productType, quantity, price } = body
 
-    // ─── Validation ─────────────────────────────────────────────
+    // ─── Step 2: Input Validation ──────────────────────────────────
     if (!symbol || !direction || !orderType || !segment || !productType || !quantity) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing required fields. Please provide: symbol, direction, orderType, segment, productType, quantity' }, { status: 400 })
     }
     if (!['BUY', 'SELL'].includes(direction)) {
       return NextResponse.json({ error: 'Direction must be BUY or SELL' }, { status: 400 })
     }
     if (!['MARKET', 'LIMIT', 'SL', 'SL_M'].includes(orderType)) {
-      return NextResponse.json({ error: 'Invalid orderType' }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid orderType. Must be: MARKET, LIMIT, SL, or SL_M' }, { status: 400 })
     }
-    if (quantity <= 0 || !Number.isInteger(quantity)) {
-      return NextResponse.json({ error: 'Quantity must be positive integer' }, { status: 400 })
+    if (!['EQUITY', 'FUTURES', 'OPTIONS'].includes(segment)) {
+      return NextResponse.json({ error: 'Invalid segment. Must be: EQUITY, FUTURES, or OPTIONS' }, { status: 400 })
     }
 
-    // ─── Get user (use cached balance if available) ─────────────
+    // Quantity validation
+    const qtyError = validateOrderQuantity(quantity, segment)
+    if (qtyError) {
+      return NextResponse.json({ error: qtyError }, { status: 400 })
+    }
+
+    // ─── Step 3: Market Status Check ───────────────────────────────
+    const enforceMarketHours = process.env.ENFORCE_MARKET_HOURS === 'true'
+    if (enforceMarketHours) {
+      const marketStatus = await checkMarketStatus()
+      if (!marketStatus.isOpen) {
+        return NextResponse.json({
+          error: `Market is currently ${marketStatus.status}. ${marketStatus.message}`,
+          marketStatus: marketStatus.status,
+        }, { status: 403 })
+      }
+    }
+
+    // ─── Step 4: Get user ──────────────────────────────────────────
     const user = await db.user.findUnique({ where: { id: userId } })
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!user.isActive) return NextResponse.json({ error: 'Account is deactivated. Contact support.' }, { status: 403 })
 
     // ═══════════════════════════════════════════════════════════════
     // EQUITY Segment

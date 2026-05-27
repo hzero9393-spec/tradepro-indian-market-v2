@@ -53,7 +53,6 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
   // ─── Check session exists and is not expired ─────────────────
   const session = await db.session.findUnique({ where: { token } })
   if (!session || session.expiresAt < new Date()) {
-    // Invalidate cache for this token
     cache.delete(CacheKeys.auth(token))
     return {
       userId: '',
@@ -89,10 +88,123 @@ export async function authenticateRequest(request: NextRequest): Promise<AuthRes
 
 /**
  * Calculate brokerage for Indian stock market paper trading.
- * Typical brokerage: 0.05% of total value, min ₹20, max ₹500
+ * Uses environment variables for configuration.
+ * Default: 0.05% of total value, min ₹20, max ₹500
  */
 export function calculateBrokerage(totalValue: number): number {
-  const brokeragePercent = 0.0005 // 0.05%
+  const brokeragePercent = parseFloat(process.env.BROKERAGE_PERCENT || '0.0005')
+  const minBrokerage = parseFloat(process.env.MIN_BROKERAGE || '20')
+  const maxBrokerage = parseFloat(process.env.MAX_BROKERAGE || '500')
   const calculated = totalValue * brokeragePercent
-  return Math.max(20, Math.min(500, Math.round(calculated * 100) / 100))
+  return Math.max(minBrokerage, Math.min(maxBrokerage, Math.round(calculated * 100) / 100))
+}
+
+/**
+ * Check if the Indian stock market is currently open.
+ * Returns market status info or null if check fails.
+ */
+export async function checkMarketStatus(): Promise<{
+  isOpen: boolean
+  status: 'OPEN' | 'CLOSED' | 'PRE-OPEN' | 'POST-CLOSE'
+  message: string
+}> {
+  try {
+    // Get current IST time
+    const now = new Date()
+    const istOffset = 5.5 * 60 * 60 * 1000
+    const istNow = new Date(now.getTime() + istOffset + now.getTimezoneOffset() * 60000)
+
+    const hours = istNow.getHours()
+    const minutes = istNow.getMinutes()
+    const day = istNow.getDay()
+    const timeInMinutes = hours * 60 + minutes
+
+    // Weekend check
+    if (day === 0 || day === 6) {
+      return {
+        isOpen: false,
+        status: 'CLOSED',
+        message: day === 0 ? 'Market closed - Sunday' : 'Market closed - Saturday',
+      }
+    }
+
+    // Check for market holidays
+    const todayStr = istNow.toISOString().split('T')[0]
+    const holiday = await db.marketHoliday.findFirst({
+      where: { date: new Date(todayStr) },
+    })
+
+    if (holiday && !holiday.isMuhurat) {
+      return {
+        isOpen: false,
+        status: 'CLOSED',
+        message: `Market closed - ${holiday.name}`,
+      }
+    }
+
+    // Normal trading hours: 9:15 - 15:30 IST
+    if (timeInMinutes >= 555 && timeInMinutes < 930) {
+      return {
+        isOpen: true,
+        status: 'OPEN',
+        message: 'Market is open (9:15 - 15:30 IST)',
+      }
+    }
+
+    // Pre-open: 9:00 - 9:15 IST
+    if (timeInMinutes >= 540 && timeInMinutes < 555) {
+      return {
+        isOpen: false,
+        status: 'PRE-OPEN',
+        message: 'Pre-open session (9:00 - 9:15 IST). Trading starts at 9:15 IST.',
+      }
+    }
+
+    // After market hours
+    return {
+      isOpen: false,
+      status: 'CLOSED',
+      message: timeInMinutes < 540
+        ? 'Market opens at 9:00 IST (Pre-open session)'
+        : 'Market closed for the day',
+    }
+  } catch (error) {
+    console.error('[Market Status Check] Error:', error)
+    // If check fails, allow trading (fail-open for demo mode)
+    return {
+      isOpen: true,
+      status: 'OPEN',
+      message: 'Market status check unavailable - trading allowed',
+    }
+  }
+}
+
+/**
+ * Validate order quantity against max allowed volume.
+ */
+export function validateOrderQuantity(quantity: number, segment: string): string | null {
+  const maxVolume = parseInt(process.env.MAX_ORDER_VOLUME || '10000')
+
+  if (quantity <= 0 || !Number.isInteger(quantity)) {
+    return 'Quantity must be a positive integer.'
+  }
+
+  if (quantity > maxVolume) {
+    return `Quantity exceeds maximum allowed (${maxVolume}).`
+  }
+
+  return null // valid
+}
+
+/**
+ * Get margin percentage for a segment from env config.
+ */
+export function getMarginPercent(segment: string): number {
+  if (segment === 'FUTURES') {
+    return parseFloat(process.env.DEFAULT_FUTURES_MARGIN_PERCENT || '12')
+  }
+  if (segment === 'OPTIONS') {
+    return parseFloat(process.env.DEFAULT_OPTIONS_SHORT_MARGIN_PERCENT || '150')
+  }
+  return 100 // EQUITY - full amount
 }
