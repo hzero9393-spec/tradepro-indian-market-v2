@@ -10,14 +10,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ChartContainer } from '@/components/ui/chart'
-import {
-  AreaChart, Area, BarChart as RechartsBarChart, Bar, LineChart, Line,
-  CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip
-} from 'recharts'
 import {
   type DashboardData, adminApi, formatINR, formatTimeAgo,
-  mockUserGrowth, mockDailyTrades, mockRevenueTrend, chartConfig,
+  mockUserGrowth, mockDailyTrades, mockRevenueTrend,
   StatCard, getAllMockTrades
 } from '@/components/admin/shared'
 
@@ -32,7 +27,6 @@ function DashboardPage() {
         const d = await res.json()
         setData(d)
       } catch {
-        // Use mock data on error
         const allMockTrades = getAllMockTrades()
         setData({
           totalUsers: 1310,
@@ -66,9 +60,9 @@ function DashboardPage() {
           {Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Skeleton className="h-80 rounded-xl" />
-          <Skeleton className="h-80 rounded-xl" />
-          <Skeleton className="h-80 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
         </div>
       </div>
     )
@@ -77,8 +71,6 @@ function DashboardPage() {
   if (!data) return null
 
   const growthData = data.userGrowth?.length ? data.userGrowth : mockUserGrowth
-  const dailyData = mockDailyTrades
-  const revenueData = mockRevenueTrend
 
   return (
     <div className="space-y-6">
@@ -93,65 +85,65 @@ function DashboardPage() {
         <StatCard icon={ArrowUpDown} label="Total Trades" value={data.totalTrades.toLocaleString('en-IN')} sub="All time" />
       </div>
 
-      {/* Charts Row */}
+      {/* Data Summary Cards (no charts - using simple tables for reliability) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* User Growth */}
+        {/* User Growth Summary */}
         <Card className="bg-white border-[#e5e7eb] rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-[#1a1a1a]">User Growth</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[220px] w-full">
-              <AreaChart data={growthData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00D09C" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00D09C" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} width={40} />
-                <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
-                <Area type="monotone" dataKey="count" stroke="#00D09C" fill="url(#gradCount)" strokeWidth={2} />
-              </AreaChart>
-            </ChartContainer>
+            <div className="space-y-2">
+              {growthData.slice(-6).map((item) => (
+                <div key={item.month} className="flex items-center justify-between py-1.5">
+                  <span className="text-xs text-[#6b7280]">{item.month}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 rounded-full bg-[#00D09C]" style={{ width: `${(item.count / 1400) * 100}px` }} />
+                    <span className="text-xs font-mono font-semibold text-[#1a1a1a]">{item.count.toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Daily Trades */}
+        {/* Daily Trades Summary */}
         <Card className="bg-white border-[#e5e7eb] rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-[#1a1a1a]">Daily Trades</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[220px] w-full">
-              <RechartsBarChart data={dailyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} width={40} />
-                <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
-                <Bar dataKey="trades" fill="#00D09C" radius={[4, 4, 0, 0]} />
-              </RechartsBarChart>
-            </ChartContainer>
+            <div className="space-y-2">
+              {mockDailyTrades.map((item) => (
+                <div key={item.day} className="flex items-center justify-between py-1.5">
+                  <span className="text-xs text-[#6b7280]">{item.day}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 rounded-full bg-[#00D09C]" style={{ width: `${(item.trades / 250) * 100}px` }} />
+                    <span className="text-xs font-mono font-semibold text-[#1a1a1a]">{item.trades}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Revenue Trend */}
+        {/* Revenue Trend Summary */}
         <Card className="bg-white border-[#e5e7eb] rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-[#1a1a1a]">Revenue Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[220px] w-full">
-              <LineChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280' }} width={40} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
-                <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} formatter={(v: number) => formatINR(v)} />
-                <Line type="monotone" dataKey="revenue" stroke="#00D09C" strokeWidth={2.5} dot={{ r: 3, fill: '#00D09C', stroke: '#fff', strokeWidth: 2 }} />
-              </LineChart>
-            </ChartContainer>
+            <div className="space-y-2">
+              {mockRevenueTrend.slice(-6).map((item) => (
+                <div key={item.month} className="flex items-center justify-between py-1.5">
+                  <span className="text-xs text-[#6b7280]">{item.month}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 rounded-full bg-[#00D09C]" style={{ width: `${(item.revenue / 90000) * 100}px` }} />
+                    <span className="text-xs font-mono font-semibold text-[#1a1a1a]">{formatINR(item.revenue)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
