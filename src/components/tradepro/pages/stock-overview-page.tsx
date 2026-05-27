@@ -567,11 +567,23 @@ export function StockOverviewPage() {
     if (tradeSegment === 'FUTURES') {
       body.lotSize = stockDetail.lotSize
       body.lots = Math.max(1, Math.round(quantity / stockDetail.lotSize))
+      // Pass nearest expiry from F&O data if available
+      if (fnoData?.optionChainSummary?.nearestExpiry) {
+        body.expiryDate = fnoData.optionChainSummary.nearestExpiry
+      }
     }
 
     if (tradeSegment === 'OPTIONS') {
       body.lotSize = stockDetail.lotSize
       body.lots = Math.max(1, Math.round(quantity / stockDetail.lotSize))
+      // Options require optionType and strikePrice — use ATM strike + CE as defaults
+      if (atmStrike > 0) {
+        body.strikePrice = atmStrike
+        body.optionType = orderSide === 'buy' ? 'CE' : 'PE'
+      }
+      if (fnoData?.optionChainSummary?.nearestExpiry) {
+        body.expiryDate = fnoData.optionChainSummary.nearestExpiry
+      }
     }
 
     try {

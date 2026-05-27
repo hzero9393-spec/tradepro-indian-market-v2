@@ -57,9 +57,13 @@ export function formatPnL(value: number): string {
   return `${sign}${formatINR(value)}`
 }
 
-/** Calculate brokerage (0.05% or max ₹20 per order) */
+/** Calculate brokerage (0.05% of total value, min ₹20, max ₹500 per order) — matches backend */
 export function calculateBrokerage(totalValue: number): number {
-  return Math.min(totalValue * 0.0005, 20)
+  const brokeragePercent = 0.0005
+  const minBrokerage = 20
+  const maxBrokerage = 500
+  const calculated = totalValue * brokeragePercent
+  return Math.max(minBrokerage, Math.min(maxBrokerage, Math.round(calculated * 100) / 100))
 }
 
 /** Get P&L color class based on value */

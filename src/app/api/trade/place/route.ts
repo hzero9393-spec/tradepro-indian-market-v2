@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
     if (!['EQUITY', 'FUTURES', 'OPTIONS'].includes(segment)) {
       return NextResponse.json({ error: 'Invalid segment. Must be: EQUITY, FUTURES, or OPTIONS' }, { status: 400 })
     }
+    if (!['INTRADAY', 'DELIVERY', 'CARRY_FORWARD'].includes(productType)) {
+      return NextResponse.json({ error: 'Invalid productType. Must be: INTRADAY, DELIVERY, or CARRY_FORWARD' }, { status: 400 })
+    }
 
     // Quantity validation
     const qtyError = validateOrderQuantity(quantity, segment)
@@ -188,6 +191,7 @@ export async function POST(request: NextRequest) {
         const position = await db.position.findFirst({
           where: {
             userId: user.id, symbol: stock.symbol, segment: 'EQUITY',
+            productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
             isOpen: true, tradeDirection: 'BUY',
           }
         })
