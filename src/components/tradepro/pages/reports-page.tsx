@@ -576,9 +576,10 @@ export function ReportsPage() {
                       { name: 'Equity', icon: Briefcase, color: '#00D09C', trades: trades.filter(t => t.segment === 'EQUITY' || t.segment === 'CASH') },
                       { name: 'Futures', icon: TrendingUp, color: '#00d09c', trades: trades.filter(t => t.segment === 'FUTURES') },
                       { name: 'Options', icon: Award, color: '#eb5b3c', trades: trades.filter(t => t.segment === 'OPTIONS') },
-                    ].filter(s => s.trades.length > 0)
+                    ]
+                    // Always show all 3 segments, even with 0 trades
 
-                    if (segmentData.length === 0) {
+                    if (trades.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                           <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">

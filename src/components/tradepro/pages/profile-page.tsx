@@ -271,6 +271,25 @@ export function ProfilePage() {
     } catch { /* silent */ }
   }, [])
 
+  // Fetch Sessions (must be defined BEFORE the useEffect that uses it)
+  const fetchSessions = useCallback(async () => {
+    if (!token) return
+    setSessionsLoading(true)
+    try {
+      const res = await fetch('/api/auth/sessions', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSessions(data.sessions || [])
+      }
+    } catch {
+      // Silent fail for sessions
+    } finally {
+      setSessionsLoading(false)
+    }
+  }, [token])
+
   // Fetch active sessions on mount
   useEffect(() => {
     fetchSessions()
@@ -438,24 +457,6 @@ export function ProfilePage() {
       setLogoutAllSubmitting(false)
     }
   }
-
-  const fetchSessions = useCallback(async () => {
-    if (!token) return
-    setSessionsLoading(true)
-    try {
-      const res = await fetch('/api/auth/sessions', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setSessions(data.sessions || [])
-      }
-    } catch {
-      // Silent fail for sessions
-    } finally {
-      setSessionsLoading(false)
-    }
-  }, [token])
 
   const handleLogoutSession = async (sessionId: string) => {
     if (!token) return
