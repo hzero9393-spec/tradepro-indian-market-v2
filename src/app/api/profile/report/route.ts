@@ -120,9 +120,10 @@ export async function GET(request: NextRequest) {
 
     return await generateReport(userId, reportType)
   } catch (error) {
-    console.error('[GET /api/profile/report] Error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[GET /api/profile/report] Error:', message, error)
     return NextResponse.json(
-      { error: 'Failed to generate report' },
+      { error: `Failed to generate report: ${message}` },
       { status: 500 }
     )
   }
@@ -155,9 +156,10 @@ export async function POST(request: NextRequest) {
 
     return await generateReport(userId, reportType)
   } catch (error) {
-    console.error('[POST /api/profile/report] Error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[POST /api/profile/report] Error:', message, error)
     return NextResponse.json(
-      { error: 'Failed to generate report' },
+      { error: `Failed to generate report: ${message}` },
       { status: 500 }
     )
   }
@@ -166,20 +168,30 @@ export async function POST(request: NextRequest) {
 // ─── Shared Report Generation Logic ─────────────────────────────────
 async function generateReport(userId: string, reportType: string): Promise<NextResponse> {
   // Fetch user data
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      virtualBalance: true,
-      totalTrades: true,
-      winRate: true,
-      totalPnl: true,
-      subscription: true,
-      createdAt: true,
-    },
-  })
+  let user
+  try {
+    user = await db.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        virtualBalance: true,
+        totalTrades: true,
+        winRate: true,
+        totalPnl: true,
+        subscription: true,
+        createdAt: true,
+      },
+    })
+  } catch (dbError) {
+    const message = dbError instanceof Error ? dbError.message : 'Unknown database error'
+    console.error('[generateReport] Failed to fetch user:', message)
+    return NextResponse.json(
+      { error: `Failed to fetch user data: ${message}` },
+      { status: 500 }
+    )
+  }
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -190,10 +202,20 @@ async function generateReport(userId: string, reportType: string): Promise<NextR
   let tradesWhere: Record<string, unknown> = { userId }
 
   if (reportType === 'last') {
-    const lastTrade = await db.trade.findFirst({
-      where: { userId },
-      orderBy: { executedAt: 'desc' },
-    })
+    let lastTrade
+    try {
+      lastTrade = await db.trade.findFirst({
+        where: { userId },
+        orderBy: { executedAt: 'desc' },
+      })
+    } catch (dbError) {
+      const message = dbError instanceof Error ? dbError.message : 'Unknown database error'
+      console.error('[generateReport] Failed to fetch last trade:', message)
+      return NextResponse.json(
+        { error: `Failed to fetch trade data: ${message}` },
+        { status: 500 }
+      )
+    }
     const trades = lastTrade ? [lastTrade] : []
     return await generatePDF(user, trades, reportType)
   }
@@ -203,10 +225,20 @@ async function generateReport(userId: string, reportType: string): Promise<NextR
     tradesWhere = { userId, executedAt: { gte: thirtyDaysAgo } }
   }
 
-  const trades = await db.trade.findMany({
-    where: tradesWhere,
-    orderBy: { executedAt: 'desc' },
-  })
+  let trades
+  try {
+    trades = await db.trade.findMany({
+      where: tradesWhere,
+      orderBy: { executedAt: 'desc' },
+    })
+  } catch (dbError) {
+    const message = dbError instanceof Error ? dbError.message : 'Unknown database error'
+    console.error('[generateReport] Failed to fetch trades:', message)
+    return NextResponse.json(
+      { error: `Failed to fetch trade data: ${message}` },
+      { status: 500 }
+    )
+  }
 
   return await generatePDF(user, trades, reportType)
 }
@@ -245,7 +277,17 @@ async function generatePDF(
   }>,
   reportType: string,
 ): Promise<NextResponse> {
-  const pdfDoc = await PDFDocument.create()
+  let pdfDoc: PDFDocument
+  try {
+    pdfDoc = await PDFDocument.create()
+  } catch (pdfError) {
+    const message = pdfError instanceof Error ? pdfError.message : 'Unknown PDF creation error'
+    console.error('[generatePDF] Failed to create PDF document:', message)
+    return NextResponse.json(
+      { error: `Failed to create PDF document: ${message}` },
+      { status: 500 }
+    )
+  }
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica)
 
@@ -706,7 +748,17 @@ async function generatePDF(
   drawFooter(currentPage, fontRegular, pageWidth, pageHeight)
 
   // ─── Return PDF ──────────────────────────────────────────────────
-  const pdfBytes = await pdfDoc.save()
+  let pdfBytes: Uint8Array
+  try {
+    pdfBytes = await pdfDoc.save()
+  } catch (saveError) {
+    const message = saveError instanceof Error ? saveError.message : 'Unknown PDF save error'
+    console.error('[generatePDF] Failed to save PDF:', message)
+    return NextResponse.json(
+      { error: `Failed to save PDF document: ${message}` },
+      { status: 500 }
+    )
+  }
 
   return new NextResponse(pdfBytes, {
     status: 200,

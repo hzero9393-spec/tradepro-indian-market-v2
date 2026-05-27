@@ -19,6 +19,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   BarChart3,
   TrendingUp,
   TrendingDown,
@@ -31,10 +39,15 @@ import {
   Landmark,
   LineChart,
   Activity,
+  Download,
+  FileText,
+  Calendar,
+  Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 import { formatINR, formatINRWhole } from '@/lib/format'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -75,6 +88,53 @@ export function ReportsPage() {
   const { setCurrentPage } = useAppStore()
   const [trades, setTrades] = useState<TradeData[]>([])
   const [loading, setLoading] = useState(true)
+  const [downloadingReport, setDownloadingReport] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'last' | 'monthly' | 'full' | null }>({ open: false, type: null })
+
+  // ─── Download Report Handler ────────────────────────────────
+  const handleDownloadReport = useCallback(async (type: 'last' | 'monthly' | 'full') => {
+    if (!token) {
+      toast.error('Please login to download reports')
+      setConfirmDialog({ open: false, type: null })
+      return
+    }
+    setDownloadingReport(type)
+    setConfirmDialog({ open: false, type: null })
+    try {
+      const res = await fetch(`/api/profile/report?type=${type}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        let errorMsg = 'Failed to download report'
+        try {
+          const errorData = await res.json()
+          errorMsg = errorData.error || errorMsg
+        } catch {
+          // response wasn't JSON, use default message
+        }
+        throw new Error(errorMsg)
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const filenameMap: Record<string, string> = {
+        last: 'last-trade-report.pdf',
+        monthly: 'monthly-report.pdf',
+        full: 'full-trading-report.pdf',
+      }
+      a.download = filenameMap[type]
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+      toast.success('Report downloaded successfully')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to download report. Please try again.')
+    } finally {
+      setDownloadingReport(null)
+    }
+  }, [token])
 
   // ─── Fetch All Data ───────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -716,8 +776,159 @@ export function ReportsPage() {
               </Card>
             </motion.div>
           )}
+
+          {/* ── Download Reports Section ────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+          >
+            <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <Download className="size-5 text-[#00D09C]" />
+                  <div>
+                    <CardTitle className="text-base font-semibold text-[#1a1a1a]">
+                      Download Reports
+                    </CardTitle>
+                    <p className="text-xs text-[#6b7280] mt-0.5">
+                      Export your trading data as PDF reports
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Last Trade Report */}
+                  <div className="rounded-xl border border-[#e5e7eb] bg-[#f8f9fb] p-5 hover:border-[#00D09C]/30 hover:bg-[#e6faf4]/30 transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="size-10 rounded-lg bg-[#00D09C]/10 flex items-center justify-center shrink-0 group-hover:bg-[#00D09C]/20 transition-colors">
+                        <FileText className="size-5 text-[#00D09C]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#1a1a1a]">Last Trade Report</p>
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">Your most recent trade</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full gap-2 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
+                      onClick={() => setConfirmDialog({ open: true, type: 'last' })}
+                      disabled={downloadingReport !== null}
+                    >
+                      {downloadingReport === 'last' ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Download className="size-4" />
+                      )}
+                      {downloadingReport === 'last' ? 'Downloading...' : 'Download PDF'}
+                    </Button>
+                  </div>
+
+                  {/* Monthly Report */}
+                  <div className="rounded-xl border border-[#e5e7eb] bg-[#f8f9fb] p-5 hover:border-[#00D09C]/30 hover:bg-[#e6faf4]/30 transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="size-10 rounded-lg bg-[#00D09C]/10 flex items-center justify-center shrink-0 group-hover:bg-[#00D09C]/20 transition-colors">
+                        <Calendar className="size-5 text-[#00D09C]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#1a1a1a]">Monthly Report</p>
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">Last 30 days of trading</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full gap-2 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
+                      onClick={() => setConfirmDialog({ open: true, type: 'monthly' })}
+                      disabled={downloadingReport !== null}
+                    >
+                      {downloadingReport === 'monthly' ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Download className="size-4" />
+                      )}
+                      {downloadingReport === 'monthly' ? 'Downloading...' : 'Download PDF'}
+                    </Button>
+                  </div>
+
+                  {/* Full Trading Report */}
+                  <div className="rounded-xl border border-[#e5e7eb] bg-[#f8f9fb] p-5 hover:border-[#00D09C]/30 hover:bg-[#e6faf4]/30 transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="size-10 rounded-lg bg-[#00D09C]/10 flex items-center justify-center shrink-0 group-hover:bg-[#00D09C]/20 transition-colors">
+                        <BarChart3 className="size-5 text-[#00D09C]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#1a1a1a]">Full Trading Report</p>
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">All your trading data</p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full gap-2 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
+                      onClick={() => setConfirmDialog({ open: true, type: 'full' })}
+                      disabled={downloadingReport !== null}
+                    >
+                      {downloadingReport === 'full' ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Download className="size-4" />
+                      )}
+                      {downloadingReport === 'full' ? 'Downloading...' : 'Download PDF'}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </>
       )}
+
+      {/* ── Download Confirmation Dialog ──────────────────────────── */}
+      <Dialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ open, type: open ? confirmDialog.type : null })}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1a1a1a]">
+              Download {confirmDialog.type === 'last' ? 'Last Trade' : confirmDialog.type === 'monthly' ? 'Monthly' : 'Full Trading'} Report
+            </DialogTitle>
+            <DialogDescription className="text-[#6b7280]">
+              {confirmDialog.type === 'last'
+                ? 'This will generate a PDF report containing your most recent trade with all details including P&L, entry/exit prices, and timestamps.'
+                : confirmDialog.type === 'monthly'
+                ? 'This will generate a PDF report containing all trades from the last 30 days, including performance summary, win/loss analysis, and AI insights.'
+                : 'This will generate a comprehensive PDF report containing all your trading data since account creation, including full performance analysis and AI insights.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              className="rounded-lg border-[#e5e7eb] text-[#6b7280]"
+              onClick={() => setConfirmDialog({ open: false, type: null })}
+              disabled={downloadingReport !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="gap-2 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
+              onClick={() => {
+                if (confirmDialog.type) {
+                  handleDownloadReport(confirmDialog.type)
+                }
+              }}
+              disabled={downloadingReport !== null}
+            >
+              {downloadingReport !== null ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
+              Download PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
