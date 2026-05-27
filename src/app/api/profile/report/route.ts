@@ -22,12 +22,12 @@ const COLORS = {
   warningText: rgb(0.8, 0.35, 0.1),
 }
 
-// ─── Helper: Format currency ────────────────────────────────────────
+// ─── Helper: Format currency (using Rs. instead of ₹ for Helvetica compatibility) ────
 function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '₹0.00'
+  if (value === null || value === undefined) return 'Rs.0.00'
   const sign = value >= 0 ? '' : '-'
   const abs = Math.abs(value)
-  return `${sign}₹${abs.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return `${sign}Rs.${abs.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 // ─── Helper: Format percent ─────────────────────────────────────────
@@ -260,7 +260,7 @@ async function generatePDF(
     id: string
     userId: string
     segment: string
-    productType: string
+    productType?: string | null
     tradeDirection: string
     symbol: string
     optionType: string | null
@@ -397,7 +397,7 @@ async function generatePDF(
   currentPage.drawText(`Email: ${user.email}`, { x: 55, y, size: 10, font: fontRegular, color: COLORS.darkBg })
   currentPage.drawText(`Plan: ${user.subscription}`, { x: 320, y, size: 10, font: fontRegular, color: COLORS.darkBg })
   y -= 16
-  currentPage.drawText(`Account Balance: ${formatCurrency(user.virtualBalance)}`, { x: 55, y, size: 10, font: fontBold, color: COLORS.darkBg })
+  currentPage.drawText(`Account Balance: ${formatCurrency(user.virtualBalance)}`, { x: 55, y, size: 9, font: fontBold, color: COLORS.darkBg })
   currentPage.drawText(`Member since: ${formatDate(user.createdAt)}`, { x: 320, y, size: 10, font: fontRegular, color: COLORS.midGray })
 
   y -= 35
@@ -443,8 +443,8 @@ async function generatePDF(
       { label: 'Entry Time', width: 82 },
       { label: 'Exit Time', width: 82 },
       { label: 'Qty', width: 32 },
-      { label: 'Entry', width: 55 },
-      { label: 'Exit', width: 55 },
+      { label: 'Entry', width: 58 },
+      { label: 'Exit', width: 58 },
       { label: 'Capital', width: 62 },
       { label: 'P&L', width: 75 },
     ]
@@ -520,9 +520,9 @@ async function generatePDF(
         { text: entryTime.length > 14 ? entryTime.substring(0, 14) : entryTime, width: 82 },
         { text: exitTime.length > 14 ? exitTime.substring(0, 14) : exitTime, width: 82 },
         { text: String(trade.quantity), width: 32 },
-        { text: `₹${trade.fillPrice.toFixed(2)}`, width: 55 },
-        { text: `₹${exitPrice.toFixed(2)}`, width: 55 },
-        { text: formatCurrency(trade.totalValue).replace('₹', '₹'), width: 62 },
+        { text: `Rs.${trade.fillPrice.toFixed(2)}`, width: 58 },
+        { text: `Rs.${exitPrice.toFixed(2)}`, width: 58 },
+        { text: formatCurrency(trade.totalValue), width: 62 },
         { text: `${formatCurrency(pnlValue)} (${formatPercent(trade.pnlPercent)})`, width: 75 },
       ]
 
@@ -580,12 +580,13 @@ async function generatePDF(
     : null
 
   // Summary cards
+  const totalBrokerage = trades.reduce((sum, t) => sum + (t.brokerage || 0), 0)
   const summaryItems = [
     { label: 'Total Trades', value: String(trades.length), color: COLORS.darkBg },
     { label: 'Win Rate', value: `${calculatedWinRate.toFixed(1)}%`, color: calculatedWinRate >= 50 ? COLORS.green : COLORS.red },
     { label: 'Net P&L', value: formatCurrency(totalPnlSum), color: totalPnlSum >= 0 ? COLORS.green : COLORS.red },
+    { label: 'Total Brokerage', value: formatCurrency(totalBrokerage), color: COLORS.darkBg },
     { label: 'Best Trade', value: bestTrade ? formatCurrency(bestTrade.pnl) : 'N/A', color: bestTrade && bestTrade.pnl! >= 0 ? COLORS.green : COLORS.red },
-    { label: 'Worst Trade', value: worstTrade ? formatCurrency(worstTrade.pnl) : 'N/A', color: worstTrade && worstTrade.pnl! < 0 ? COLORS.red : COLORS.green },
   ]
 
   const cardWidth = (contentWidth - 40) / summaryItems.length
@@ -711,7 +712,7 @@ async function generatePDF(
 
     let issueY = y
     for (const issue of issues) {
-      currentPage.drawText('⚠', { x: 55, y: issueY, size: 10, font: fontRegular, color: COLORS.warningText })
+      currentPage.drawText('!', { x: 55, y: issueY, size: 10, font: fontBold, color: COLORS.warningText })
       let issueText = `  ${issue}`
       while (fontRegular.widthOfTextAtSize(issueText, 9) > contentWidth - 10 && issueText.length > 5) {
         issueText = issueText.slice(0, -1)

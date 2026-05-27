@@ -100,37 +100,73 @@ export function ReportsPage() {
     }
     setDownloadingReport(type)
     setConfirmDialog({ open: false, type: null })
+
+    const reportLabel = type === 'last' ? 'Last Trade' : type === 'monthly' ? 'Monthly' : 'Full Trading'
+
     try {
+      toast.loading(`Generating ${reportLabel} report...`, { id: 'pdf-download' })
+
       const res = await fetch(`/api/profile/report?type=${type}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
+
       if (!res.ok) {
-        let errorMsg = 'Failed to download report'
+        let errorMsg = `Failed to generate ${reportLabel} report`
         try {
           const errorData = await res.json()
           errorMsg = errorData.error || errorMsg
         } catch {
-          // response wasn't JSON, use default message
+          // response wasn't JSON
+          if (res.status === 401) errorMsg = 'Session expired. Please login again.'
+          else if (res.status === 500) errorMsg = 'Server error. Please try again later.'
+          else errorMsg = `Error ${res.status}: ${res.statusText}`
         }
         throw new Error(errorMsg)
       }
+
+      // Verify we got a PDF response
+      const contentType = res.headers.get('content-type') || ''
+      if (!contentType.includes('pdf') && !contentType.includes('octet-stream')) {
+        throw new Error('Invalid response format. Expected PDF file.')
+      }
+
       const blob = await res.blob()
+
+      // Verify blob has content
+      if (blob.size < 100) {
+        throw new Error('Generated PDF is empty or corrupted. Please try again.')
+      }
+
+      // Create download link and trigger download
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       const filenameMap: Record<string, string> = {
-        last: 'last-trade-report.pdf',
-        monthly: 'monthly-report.pdf',
-        full: 'full-trading-report.pdf',
+        last: `tradepro-last-trade-${new Date().toISOString().split('T')[0]}.pdf`,
+        monthly: `tradepro-monthly-report-${new Date().toISOString().split('T')[0]}.pdf`,
+        full: `tradepro-full-report-${new Date().toISOString().split('T')[0]}.pdf`,
       }
       a.download = filenameMap[type]
+      a.style.display = 'none'
       document.body.appendChild(a)
       a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
-      toast.success('Report downloaded successfully')
+
+      // Cleanup after a short delay to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+      }, 250)
+
+      toast.dismiss('pdf-download')
+      toast.success(`${reportLabel} report downloaded successfully!`, {
+        description: `File: ${filenameMap[type]}`,
+        duration: 4000,
+      })
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to download report. Please try again.')
+      toast.dismiss('pdf-download')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download report. Please try again.'
+      toast.error(errorMessage, { duration: 6000 })
+      console.error('[Report Download Error]', err)
     } finally {
       setDownloadingReport(null)
     }
@@ -888,30 +924,74 @@ export function ReportsPage() {
         open={confirmDialog.open}
         onOpenChange={(open) => setConfirmDialog({ open, type: open ? confirmDialog.type : null })}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-[#1a1a1a]">
+            <DialogTitle className="text-[#1a1a1a] flex items-center gap-2">
+              <div className="size-8 rounded-lg bg-[#00D09C]/10 flex items-center justify-center">
+                <FileText className="size-4 text-[#00D09C]" />
+              </div>
               Download {confirmDialog.type === 'last' ? 'Last Trade' : confirmDialog.type === 'monthly' ? 'Monthly' : 'Full Trading'} Report
             </DialogTitle>
             <DialogDescription className="text-[#6b7280]">
               {confirmDialog.type === 'last'
-                ? 'This will generate a PDF report containing your most recent trade with all details including P&L, entry/exit prices, and timestamps.'
+                ? 'Generate a PDF report of your most recent trade.'
                 : confirmDialog.type === 'monthly'
-                ? 'This will generate a PDF report containing all trades from the last 30 days, including performance summary, win/loss analysis, and AI insights.'
-                : 'This will generate a comprehensive PDF report containing all your trading data since account creation, including full performance analysis and AI insights.'}
+                ? 'Generate a PDF report of all trades from the last 30 days.'
+                : 'Generate a comprehensive PDF of all your trading data.'}
             </DialogDescription>
           </DialogHeader>
+
+          {/* Report Preview */}
+          <div className="rounded-xl border border-[#e5e7eb] bg-[#f8f9fb] p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">
+              Report includes:
+            </p>
+            <div className="space-y-2">
+              {[
+                { label: 'User profile & account details', included: true },
+                { label: 'Trade details table with P&L', included: true },
+                { label: 'Performance summary & stats', included: true },
+                { label: 'Brokerage breakdown', included: true },
+                { label: 'AI analysis & suggestions', included: confirmDialog.type !== 'last' || trades.length > 0 },
+              ].filter(item => item.included).map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="size-4 rounded-full bg-[#00D09C]/10 flex items-center justify-center shrink-0">
+                    <svg className="size-2.5 text-[#00D09C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-[#1a1a1a]">{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {confirmDialog.type && (
+              <div className="pt-2 border-t border-[#e5e7eb]">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#6b7280]">Trade count:</span>
+                  <span className="font-semibold text-[#1a1a1a]">
+                    {confirmDialog.type === 'last' ? '1 trade' : confirmDialog.type === 'monthly' ? `Last 30 days` : `All trades`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <span className="text-[#6b7280]">Format:</span>
+                  <span className="font-semibold text-[#1a1a1a]">PDF Document</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
               variant="outline"
-              className="rounded-lg border-[#e5e7eb] text-[#6b7280]"
+              className="rounded-lg border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa]"
               onClick={() => setConfirmDialog({ open: false, type: null })}
               disabled={downloadingReport !== null}
             >
               Cancel
             </Button>
             <Button
-              className="gap-2 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
+              className="gap-2 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg min-w-[140px]"
               onClick={() => {
                 if (confirmDialog.type) {
                   handleDownloadReport(confirmDialog.type)
@@ -920,11 +1000,16 @@ export function ReportsPage() {
               disabled={downloadingReport !== null}
             >
               {downloadingReport !== null ? (
-                <Loader2 className="size-4 animate-spin" />
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Generating...
+                </>
               ) : (
-                <Download className="size-4" />
+                <>
+                  <Download className="size-4" />
+                  Download PDF
+                </>
               )}
-              Download PDF
             </Button>
           </DialogFooter>
         </DialogContent>
