@@ -558,9 +558,7 @@ function OrderPanel({
         tradeData={confirmData}
         onConfirm={executeTrade}
         onSuccess={() => {
-          setTimeout(() => {
-            useAppStore.getState().setCurrentPage('positions')
-          }, 1500)
+          useAppStore.getState().setCurrentPage('positions')
         }}
       />
     </Card>

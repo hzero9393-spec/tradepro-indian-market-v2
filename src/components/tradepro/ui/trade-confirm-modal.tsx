@@ -306,7 +306,7 @@ export function TradeConfirmModal({
                     ) : state === 'error' ? (
                       <>
                         <h3 className="text-lg font-bold text-white">Order Failed</h3>
-                        <p className="text-xs text-white/80">Could not execute your trade</p>
+                        <p className="text-xs text-white/80">Check the reason below</p>
                       </>
                     ) : (
                       <>
@@ -512,10 +512,44 @@ export function TradeConfirmModal({
                       <XCircle className="size-5 text-[#EB5B3C]" />
                       <span className="text-sm font-bold text-[#EB5B3C]">Order Rejected</span>
                     </motion.div>
-                    <p className="text-sm text-[#6b7280] max-w-xs mx-auto">
-                      {errorMsg}
-                    </p>
                   </div>
+
+                  {/* Prominent Error Reason Box */}
+                  <div className="bg-[#EB5B3C]/5 border border-[#EB5B3C]/20 rounded-xl p-4 mb-2">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="size-5 text-[#EB5B3C] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-[#EB5B3C] mb-1">Reason</p>
+                        <p className="text-sm text-[#1a1a1a] leading-relaxed">
+                          {errorMsg}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Helpful suggestion based on common errors */}
+                  {(errorMsg.includes('Insufficient') || errorMsg.includes('balance') || errorMsg.includes('margin')) && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                      <Wallet className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-amber-800">Tip</p>
+                        <p className="text-[11px] text-amber-700 mt-0.5">
+                          Try reducing the quantity or switch to a different segment with lower margin requirements.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {errorMsg.includes('No open position') && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                      <Shield className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-amber-800">Tip</p>
+                        <p className="text-[11px] text-amber-700 mt-0.5">
+                          You need to buy the stock first before selling. Check your Positions page to see what you hold.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : null}
             </div>
@@ -566,12 +600,23 @@ export function TradeConfirmModal({
                   <span className="text-sm font-semibold text-[#6b7280]">Placing your order...</span>
                 </div>
               ) : state === 'success' ? (
-                <button
-                  onClick={handleClose}
-                  className="w-full h-12 rounded-xl text-sm font-bold text-white bg-[#00B386] hover:bg-[#009B73] transition-all active:scale-[0.98]"
-                >
-                  Done
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleClose}
+                    className="flex-1 h-12 rounded-xl text-sm font-bold text-[#6b7280] bg-white border border-[#e5e7eb] hover:bg-[#f5f7fa] transition-all"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleClose()
+                      onSuccess?.()
+                    }}
+                    className="flex-1 h-12 rounded-xl text-sm font-bold text-white bg-[#00B386] hover:bg-[#009B73] transition-all active:scale-[0.98]"
+                  >
+                    View Positions
+                  </button>
+                </div>
               ) : state === 'error' ? (
                 <div className="flex gap-3">
                   <button

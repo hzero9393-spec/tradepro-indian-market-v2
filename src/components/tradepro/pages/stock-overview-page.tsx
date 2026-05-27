@@ -629,10 +629,8 @@ export function StockOverviewPage() {
 
   // ─── After trade confirm success callback ────────────────────────
   const handleTradeConfirmSuccess = useCallback(() => {
-    // Redirect to positions page after a short delay so user sees success
-    setTimeout(() => {
-      setCurrentPage('positions')
-    }, 1500)
+    // Redirect to positions page immediately
+    setCurrentPage('positions')
   }, [setCurrentPage])
 
   // ─── Navigate to option chain page ──────────────────────────────

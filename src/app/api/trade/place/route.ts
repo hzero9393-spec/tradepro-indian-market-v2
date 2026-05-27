@@ -1019,6 +1019,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Unsupported segment: ${segment}` }, { status: 400 })
   } catch (error) {
     console.error('[POST /api/trade/place] Error:', error)
-    return NextResponse.json({ error: 'Failed to place order' }, { status: 500 })
+    // Return the actual error reason so the user knows WHY the trade failed
+    let errorMessage = 'Failed to place order'
+    if (error instanceof Error) {
+      // Prisma errors often have useful messages
+      if (error.message.includes('Insufficient')) {
+        errorMessage = error.message
+      } else if (error.message.includes('prisma') || error.message.includes('Prisma')) {
+        errorMessage = 'Database error. Please try again.'
+      } else if (error.message.includes('Unique constraint')) {
+        errorMessage = 'Duplicate order detected. Please try again.'
+      } else {
+        // Include a sanitized version of the actual error for debugging
+        errorMessage = `Order failed: ${error.message.slice(0, 150)}`
+      }
+    }
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
