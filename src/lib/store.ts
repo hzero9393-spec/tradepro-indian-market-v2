@@ -14,6 +14,7 @@ export type PageId =
   | 'learning'     // Learn section
   | 'profile'      // Profile/settings
   | 'activeDevices' // Active devices/sessions detail
+  | 'helpSupport'   // Help & Support detail page
   // Footer pages
   | 'privacy-policy'
   | 'terms-of-service'

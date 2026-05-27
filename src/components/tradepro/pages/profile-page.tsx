@@ -1311,15 +1311,23 @@ export function ProfilePage() {
           <motion.div custom={si++} variants={fadeInUp} initial="hidden" animate="visible">
             <div className="bg-white border border-[#e8eaf0] rounded-2xl shadow-sm overflow-hidden">
               <div className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <HelpCircle className="size-5 text-[#00D09C]" />
-                  <h3 className="text-base font-semibold text-[#1a1a2e]">Help & Support</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <HelpCircle className="size-5 text-[#00D09C]" />
+                    <h3 className="text-base font-semibold text-[#1a1a2e]">Help & Support</h3>
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage('helpSupport')}
+                    className="text-xs font-semibold text-[#5367ff] hover:text-[#4356e0] flex items-center gap-1 transition-colors"
+                  >
+                    View Details <ChevronRight className="size-3" />
+                  </button>
                 </div>
               </div>
               <div className="px-5 pb-5 space-y-3">
                 {/* FAQ */}
                 <button
-                  onClick={() => toast.info('FAQ section coming soon!')}
+                  onClick={() => setCurrentPage('helpSupport')}
                   className="flex items-center justify-between w-full p-3 rounded-xl hover:bg-[#f7f8fc] transition-colors group"
                 >
                   <div className="flex items-center gap-3">
@@ -1336,7 +1344,7 @@ export function ProfilePage() {
 
                 {/* Contact Support */}
                 <button
-                  onClick={() => toast.info('Email us at support@tradepro.in')}
+                  onClick={() => setCurrentPage('helpSupport')}
                   className="flex items-center justify-between w-full p-3 rounded-xl hover:bg-[#f7f8fc] transition-colors group"
                 >
                   <div className="flex items-center gap-3">
@@ -1353,7 +1361,7 @@ export function ProfilePage() {
 
                 {/* Raise a Ticket */}
                 <button
-                  onClick={() => setRaiseTicketOpen(true)}
+                  onClick={() => setCurrentPage('helpSupport')}
                   className="flex items-center justify-between w-full p-3 rounded-xl hover:bg-[#f7f8fc] transition-colors group"
                 >
                   <div className="flex items-center gap-3">
