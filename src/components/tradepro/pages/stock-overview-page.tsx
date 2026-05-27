@@ -627,6 +627,14 @@ export function StockOverviewPage() {
     }
   }
 
+  // ─── After trade confirm success callback ────────────────────────
+  const handleTradeConfirmSuccess = useCallback(() => {
+    // Redirect to positions page after a short delay so user sees success
+    setTimeout(() => {
+      setCurrentPage('positions')
+    }, 1500)
+  }, [setCurrentPage])
+
   // ─── Navigate to option chain page ──────────────────────────────
   const handleViewFullOptionChain = () => {
     if (stockDetail) {
@@ -1803,6 +1811,15 @@ export function StockOverviewPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* ═══ Trade Confirmation Modal ═══════════════════════════════════ */}
+      <TradeConfirmModal
+        open={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        tradeData={confirmData}
+        onConfirm={executeTrade}
+        onSuccess={handleTradeConfirmSuccess}
+      />
     </div>
   )
 }
