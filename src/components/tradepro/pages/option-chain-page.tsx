@@ -207,7 +207,7 @@ function QuickTradeModal({
               <div className="text-xl font-bold">{side === 'CE' ? 'CALL' : 'PUT'} ₹{row.strike.toLocaleString()}</div>
             </div>
             <div className="text-right">
-              <div className="text-lg font-mono font-bold">₹{ltp.toFixed(2)}</div>
+              <div className="text-lg font-mono font-tabular font-bold">₹{ltp.toFixed(2)}</div>
               <div className={cn(
                 'text-sm font-semibold',
                 chgPct >= 0 ? 'text-white/90' : 'text-white/90'
@@ -259,7 +259,7 @@ function QuickTradeModal({
                 type="number"
                 value={lots}
                 onChange={(e) => setLots(Math.max(1, parseInt(e.target.value) || 1))}
-                className="text-center font-mono text-lg font-bold bg-white border-[#e5e7eb] h-10"
+                className="text-center font-mono font-tabular text-lg font-bold bg-white border-[#e5e7eb] h-10"
               />
               <button
                 className="size-10 rounded-lg border border-[#e5e7eb] flex items-center justify-center text-[#6b7280] hover:bg-[#f5f7fa] active:bg-[#e5e7eb] transition-colors"
@@ -274,15 +274,15 @@ function QuickTradeModal({
           <div className="bg-[#f9fafb] rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-[#6b7280]">Lot Size</span>
-              <span className="font-mono font-medium">{lotSize}</span>
+              <span className="font-mono font-tabular font-medium">{lotSize}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#6b7280]">Total Qty</span>
-              <span className="font-mono font-medium">{totalQty}</span>
+              <span className="font-mono font-tabular font-medium">{totalQty}</span>
             </div>
             <div className="border-t border-[#e5e7eb] pt-2 flex justify-between">
               <span className="text-[#6b7280] font-medium">Approx. Margin</span>
-              <span className="font-mono font-bold text-[#1a1a2e]">₹{marginRequired.toLocaleString()}</span>
+              <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{marginRequired.toLocaleString()}</span>
             </div>
           </div>
 
@@ -447,8 +447,8 @@ export function OptionChainPage() {
       {/* ── Header ────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-[#00d09c]/10">
-            <GitBranch className="size-4 text-[#00d09c]" />
+          <div className="flex size-9 items-center justify-center rounded-lg bg-[#00B386]/10">
+            <GitBranch className="size-4 text-[#00B386]" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-[#1a1a2e]">Options Chain</h1>
@@ -459,14 +459,14 @@ export function OptionChainPage() {
         <div className="hidden sm:flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1.5">
             <span className="text-[#6b7280]">Spot</span>
-            <span className="font-mono font-bold text-[#1a1a2e]">₹{spotPrice.toLocaleString()}</span>
+            <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{spotPrice.toLocaleString()}</span>
           </div>
           <div className="h-4 w-px bg-[#e5e7eb]" />
           <div className="flex items-center gap-1.5">
             <span className="text-[#6b7280]">PCR</span>
             <span className={cn(
               'font-mono font-bold',
-              pcr > 1 ? 'text-[#00d09c]' : pcr < 0.7 ? 'text-[#eb5b3c]' : 'text-[#1a1a2e]'
+              pcr > 1 ? 'text-[#00B386]' : pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#1a1a2e]'
             )}>
               {pcr.toFixed(2)}
             </span>
@@ -474,7 +474,7 @@ export function OptionChainPage() {
           <div className="h-4 w-px bg-[#e5e7eb]" />
           <div className="flex items-center gap-1.5">
             <span className="text-[#6b7280]">Max Pain</span>
-            <span className="font-mono font-bold text-[#1a1a2e]">₹{apiMaxPain.toLocaleString()}</span>
+            <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{apiMaxPain.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -519,12 +519,12 @@ export function OptionChainPage() {
       <div className="sm:hidden flex items-center gap-4 text-xs bg-white border border-[#e5e7eb] rounded-lg p-3">
         <div className="flex items-center gap-1">
           <span className="text-[#6b7280]">Spot</span>
-          <span className="font-mono font-bold text-[#1a1a2e]">₹{spotPrice.toLocaleString()}</span>
+          <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{spotPrice.toLocaleString()}</span>
         </div>
         <div className="h-3 w-px bg-[#e5e7eb]" />
         <div className="flex items-center gap-1">
           <span className="text-[#6b7280]">PCR</span>
-          <span className={cn('font-mono font-bold', pcr > 1 ? 'text-[#00d09c]' : pcr < 0.7 ? 'text-[#eb5b3c]' : 'text-[#1a1a2e]')}>
+          <span className={cn('font-mono font-bold', pcr > 1 ? 'text-[#00B386]' : pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#1a1a2e]')}>
             {pcr.toFixed(2)}
           </span>
         </div>
@@ -590,16 +590,16 @@ export function OptionChainPage() {
                       )}
                     >
                       {/* CE Side */}
-                      <td className={cn('px-2 py-1.5 text-right font-mono text-[#6b7280]', ceITM && 'bg-[#00d09c]/6')}>
+                      <td className={cn('px-2 py-1.5 text-right font-mono font-tabular text-[#6b7280]', ceITM && 'bg-[#00B386]/6')}>
                         {row.ceOI.toFixed(1)}
                       </td>
-                      <td className={cn('px-2 py-1.5 text-right font-mono text-[#9ca3af]', ceITM && 'bg-[#00d09c]/6')}>
+                      <td className={cn('px-2 py-1.5 text-right font-mono font-tabular text-[#9ca3af]', ceITM && 'bg-[#00B386]/6')}>
                         {row.ceVolume > 0 ? `${(row.ceVolume / 1000).toFixed(0)}K` : '-'}
                       </td>
                       <td
                         className={cn(
-                          'px-2 py-1.5 text-right font-mono font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#00d09c] hover:underline',
-                          ceITM && 'bg-[#00d09c]/6'
+                          'px-2 py-1.5 text-right font-mono font-tabular font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#00B386] hover:underline',
+                          ceITM && 'bg-[#00B386]/6'
                         )}
                         onClick={() => handleRowClick(row, 'CE')}
                       >
@@ -607,15 +607,15 @@ export function OptionChainPage() {
                       </td>
                       <td className={cn(
                         'px-2 py-1.5 text-right font-mono',
-                        row.ceChngPct > 0 ? 'text-[#00d09c]' : row.ceChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#9ca3af]',
-                        ceITM && 'bg-[#00d09c]/6'
+                        row.ceChngPct > 0 ? 'text-[#00B386]' : row.ceChngPct < 0 ? 'text-[#EB5B3C]' : 'text-[#9ca3af]',
+                        ceITM && 'bg-[#00B386]/6'
                       )}>
                         {row.ceChngPct > 0 ? '+' : ''}{row.ceChngPct.toFixed(1)}%
                       </td>
 
                       {/* Strike */}
                       <td className={cn(
-                        'px-2 py-1.5 text-center font-mono font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
+                        'px-2 py-1.5 text-center font-mono font-tabular font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
                         isATM ? 'text-[#1a1a2e] bg-[#1a1a2e]/10' : 'text-[#1a1a2e]'
                       )}>
                         {row.strike.toLocaleString()}
@@ -624,24 +624,24 @@ export function OptionChainPage() {
                       {/* PE Side */}
                       <td className={cn(
                         'px-2 py-1.5 text-left font-mono',
-                        row.peChngPct > 0 ? 'text-[#00d09c]' : row.peChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#9ca3af]',
-                        peITM && 'bg-[#eb5b3c]/6'
+                        row.peChngPct > 0 ? 'text-[#00B386]' : row.peChngPct < 0 ? 'text-[#EB5B3C]' : 'text-[#9ca3af]',
+                        peITM && 'bg-[#EB5B3C]/6'
                       )}>
                         {row.peChngPct > 0 ? '+' : ''}{row.peChngPct.toFixed(1)}%
                       </td>
                       <td
                         className={cn(
-                          'px-2 py-1.5 text-left font-mono font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#eb5b3c] hover:underline',
-                          peITM && 'bg-[#eb5b3c]/6'
+                          'px-2 py-1.5 text-left font-mono font-tabular font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#EB5B3C] hover:underline',
+                          peITM && 'bg-[#EB5B3C]/6'
                         )}
                         onClick={() => handleRowClick(row, 'PE')}
                       >
                         {row.peLTP.toFixed(2)}
                       </td>
-                      <td className={cn('px-2 py-1.5 text-left font-mono text-[#9ca3af]', peITM && 'bg-[#eb5b3c]/6')}>
+                      <td className={cn('px-2 py-1.5 text-left font-mono font-tabular text-[#9ca3af]', peITM && 'bg-[#EB5B3C]/6')}>
                         {row.peVolume > 0 ? `${(row.peVolume / 1000).toFixed(0)}K` : '-'}
                       </td>
-                      <td className={cn('px-2 py-1.5 text-left font-mono text-[#6b7280]', peITM && 'bg-[#eb5b3c]/6')}>
+                      <td className={cn('px-2 py-1.5 text-left font-mono font-tabular text-[#6b7280]', peITM && 'bg-[#EB5B3C]/6')}>
                         {row.peOI.toFixed(1)}
                       </td>
                     </tr>

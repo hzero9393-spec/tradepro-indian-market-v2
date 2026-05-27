@@ -26,6 +26,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { motion, AnimatePresence } from 'framer-motion'
+import { formatINR, formatVolume, calculateBrokerage } from '@/lib/format'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -117,27 +118,10 @@ const BANKNIFTY_SYMBOLS = new Set([
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-function calculateBrokerage(totalValue: number): number {
-  const brokeragePercent = 0.0005
-  const calculated = totalValue * brokeragePercent
-  return Math.max(20, Math.min(500, Math.round(calculated * 100) / 100))
-}
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function formatVolume(vol: number): string {
-  if (vol >= 10000000) return (vol / 10000000).toFixed(2) + ' Cr'
-  if (vol >= 100000) return (vol / 100000).toFixed(2) + ' L'
-  if (vol >= 1000) return (vol / 1000).toFixed(1) + ' K'
-  return vol.toString()
-}
-
 function getSectorColor(sector: string): string {
   const colors: Record<string, string> = {
     'Banking': 'bg-[#00D09C]/8 text-[#00D09C]',
-    'IT': 'bg-[#00d09c]/8 text-[#00d09c]',
+    'IT': 'bg-[#00B386]/8 text-[#00B386]',
     'Pharma': 'bg-purple-500/8 text-purple-600',
     'Auto': 'bg-orange-500/8 text-orange-600',
     'FMCG': 'bg-pink-500/8 text-pink-600',
@@ -189,7 +173,7 @@ function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => vo
           <div className="flex items-center gap-2">
             <span className="font-bold text-sm text-[#1a1a1a] truncate">{stock.symbol}</span>
             {stock.isFnoBan && (
-              <span className="text-[8px] font-bold bg-[#eb5b3c]/10 text-[#eb5b3c] px-1.5 py-0.5 rounded uppercase tracking-wider">
+              <span className="text-[8px] font-bold bg-[#EB5B3C]/10 text-[#EB5B3C] px-1.5 py-0.5 rounded uppercase tracking-wider">
                 F&O Ban
               </span>
             )}
@@ -204,15 +188,15 @@ function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => vo
         </span>
         {/* LTP */}
         <div className="text-right min-w-[90px]">
-          <span className="text-base font-bold font-mono text-[#1a1a1a]">
+          <span className="text-base font-bold font-mono font-tabular text-[#1a1a1a]">
             {formatINR(stock.currentPrice)}
           </span>
         </div>
         {/* Change pill */}
         <div className={`inline-flex items-center gap-0.5 px-2.5 py-1 rounded-md text-xs font-bold min-w-[72px] justify-center ${
           isPositive
-            ? 'bg-[#00d09c]/10 text-[#00d09c]'
-            : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+            ? 'bg-[#00B386]/10 text-[#00B386]'
+            : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
         }`}>
           {isPositive ? (
             <ArrowUpRight className="size-3" />
@@ -371,8 +355,8 @@ function OrderPanel({
               <span className="font-bold text-lg text-[#00D09C]">{selectedStock.symbol}</span>
               <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
                 isPositive
-                  ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                  : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                  ? 'bg-[#00B386]/10 text-[#00B386]'
+                  : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
               }`}>
                 {isPositive ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
                 {isPositive ? '+' : ''}{selectedStock.changePercent.toFixed(2)}%
@@ -381,10 +365,10 @@ function OrderPanel({
             <p className="text-xs text-[#6b7280] mt-0.5 truncate max-w-[180px]">{selectedStock.name}</p>
           </div>
           <div className="text-right">
-            <span className="text-2xl font-bold font-mono text-[#1a1a1a]">
+            <span className="text-2xl font-bold font-mono font-tabular text-[#1a1a1a]">
               {formatINR(selectedStock.currentPrice)}
             </span>
-            <p className={`text-xs font-medium ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+            <p className={`text-xs font-medium ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
               {isPositive ? '+' : ''}{formatINR(selectedStock.change)} today
             </p>
           </div>
@@ -460,7 +444,7 @@ function OrderPanel({
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              className="h-9 text-center font-mono border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
+              className="h-9 text-center font-mono font-tabular border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
             />
             <button
               className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f5f7fa] hover:text-[#1a1a1a] transition-colors"
@@ -481,7 +465,7 @@ function OrderPanel({
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="h-9 font-mono border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
+              className="h-9 font-mono font-tabular border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00D09C]/20 focus:border-[#00D09C]"
               placeholder="0.00"
             />
           </div>
@@ -491,19 +475,19 @@ function OrderPanel({
         <div className="rounded-xl bg-[#f5f7fa] p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-[#6b7280]">Estimated Total</span>
-            <span className="font-mono text-lg font-bold text-[#1a1a1a]">
+            <span className="font-mono font-tabular text-lg font-bold text-[#1a1a1a]">
               {formatINR(estimatedTotal)}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-[#6b7280]">Est. Brokerage (0.05%)</span>
-            <span className="font-mono text-[10px] font-medium text-[#6b7280]">
+            <span className="font-mono font-tabular text-[10px] font-medium text-[#6b7280]">
               {formatINR(estimatedBrokerage)}
             </span>
           </div>
           <div className="flex items-center justify-between pt-1 border-t border-[#e5e7eb]">
             <span className="text-[10px] text-[#6b7280]">Total (incl. brokerage)</span>
-            <span className="font-mono text-xs font-bold text-[#1a1a1a]">
+            <span className="font-mono font-tabular text-xs font-bold text-[#1a1a1a]">
               {formatINR(estimatedTotal + estimatedBrokerage)}
             </span>
           </div>
@@ -533,13 +517,13 @@ function OrderPanel({
         <div className="space-y-2 pt-3 border-t border-[#e5e7eb]">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-[#6b7280]">Available Balance</span>
-            <span className="font-mono text-xs font-semibold text-[#1a1a1a]">
+            <span className="font-mono font-tabular text-xs font-semibold text-[#1a1a1a]">
               {formatINR(availableBalance)}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-[#6b7280]">Buying Power</span>
-            <span className="font-mono text-xs font-semibold text-[#1a1a1a]">
+            <span className="font-mono font-tabular text-xs font-semibold text-[#1a1a1a]">
               {formatINR(Math.max(0, buyingPower))}
             </span>
           </div>
@@ -803,11 +787,11 @@ export function TradingPage() {
           {/* Market stats bar */}
           {!loadingStocks && stocks.length > 0 && (
             <div className="flex items-center gap-4 mt-3 text-[11px] font-semibold">
-              <span className="flex items-center gap-1 text-[#00d09c]">
+              <span className="flex items-center gap-1 text-[#00B386]">
                 <TrendingUp className="size-3" />
                 {marketStats.advancing} Advancing
               </span>
-              <span className="flex items-center gap-1 text-[#eb5b3c]">
+              <span className="flex items-center gap-1 text-[#EB5B3C]">
                 <TrendingDown className="size-3" />
                 {marketStats.declining} Declining
               </span>
@@ -836,12 +820,12 @@ export function TradingPage() {
               >
                 {tab.label}
                 {tab.id === 'gainers' && gainers.length > 0 && (
-                  <span className={`ml-1 text-[10px] ${activeTab === tab.id ? 'text-white/70' : 'text-[#00d09c]'}`}>
+                  <span className={`ml-1 text-[10px] ${activeTab === tab.id ? 'text-white/70' : 'text-[#00B386]'}`}>
                     +{gainers.length}
                   </span>
                 )}
                 {tab.id === 'losers' && losers.length > 0 && (
-                  <span className={`ml-1 text-[10px] ${activeTab === tab.id ? 'text-white/70' : 'text-[#eb5b3c]'}`}>
+                  <span className={`ml-1 text-[10px] ${activeTab === tab.id ? 'text-white/70' : 'text-[#EB5B3C]'}`}>
                     {losers.length}
                   </span>
                 )}
@@ -862,8 +846,8 @@ export function TradingPage() {
           >
             <Card className="bg-white border border-[#eb5b3c]/20 rounded-xl shadow-sm">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center">
-                <div className="size-14 rounded-full bg-[#eb5b3c]/10 flex items-center justify-center mb-4">
-                  <AlertCircle className="size-7 text-[#eb5b3c]" />
+                <div className="size-14 rounded-full bg-[#EB5B3C]/10 flex items-center justify-center mb-4">
+                  <AlertCircle className="size-7 text-[#EB5B3C]" />
                 </div>
                 <p className="text-[#1a1a1a] font-bold text-base">Markets data unavailable</p>
                 <p className="text-[#6b7280] text-sm mt-1 max-w-md">
@@ -1080,13 +1064,13 @@ export function TradingPage() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <span className={`text-sm font-bold font-mono ${
-                            isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                          <span className={`text-sm font-bold font-mono font-tabular ${
+                            isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                           }`}>
                             {isPositive ? '+' : ''}{formatINR(pos.unrealizedPnl)}
                           </span>
                           <p className={`text-[10px] font-medium ${
-                            isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                            isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                           }`}>
                             {isPositive ? '+' : ''}{pos.unrealizedPnlPercent.toFixed(2)}%
                           </p>

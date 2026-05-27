@@ -36,6 +36,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { motion, AnimatePresence } from 'framer-motion'
+import { formatINR, formatINRWhole, formatLargeNumber, formatVolume, calculateBrokerage } from '@/lib/format'
 import {
   AreaChart,
   Area,
@@ -174,30 +175,6 @@ interface FnoData {
 type RangeOption = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '5Y'
 type OverviewTab = 'overview' | 'fno' | 'technicals' | 'news'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function formatINRWhole(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })
-}
-
-function formatLargeNumber(value: number): string {
-  if (!value) return '--'
-  if (value >= 10000000) return '₹' + (value / 10000000).toFixed(2) + ' Cr'
-  if (value >= 100000) return '₹' + (value / 100000).toFixed(2) + ' L'
-  return formatINRWhole(value)
-}
-
-function formatVolume(vol: number): string {
-  if (vol >= 10000000) return (vol / 10000000).toFixed(2) + ' Cr'
-  if (vol >= 100000) return (vol / 100000).toFixed(2) + ' L'
-  if (vol >= 1000) return (vol / 1000).toFixed(1) + 'K'
-  return vol.toLocaleString('en-IN')
-}
-
 function formatDate(dateStr: string, range: RangeOption): string {
   const d = new Date(dateStr)
   if (range === '1D') return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
@@ -212,15 +189,10 @@ function formatExpiry(dateStr: string): string {
   return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function calculateBrokerage(totalValue: number): number {
-  const calculated = totalValue * 0.0005
-  return Math.max(20, Math.min(500, Math.round(calculated * 100) / 100))
-}
-
 function getDataSourceBadge(dataSource: 'dhan' | 'yahoo' | 'database') {
   switch (dataSource) {
     case 'dhan':
-      return <Badge className="text-[9px] font-bold bg-[#00d09c]/10 text-[#00d09c] border-[#00d09c]/20 border px-1.5 py-0">LIVE</Badge>
+      return <Badge className="text-[9px] font-bold bg-[#00B386]/10 text-[#00B386] border-[#00B386]/20 border px-1.5 py-0">LIVE</Badge>
     case 'yahoo':
       return <Badge className="text-[9px] font-bold bg-amber-500/10 text-amber-600 border-amber-500/20 border px-1.5 py-0">DELAYED</Badge>
     case 'database':
@@ -240,19 +212,19 @@ function CustomTooltip({ active, payload, range }: { active?: boolean; payload?:
       <div className="font-semibold text-[#1a1a1a] mb-1.5">{formatDate(d.date, range)}</div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
         <span className="text-[#6b7280]">Open</span>
-        <span className="font-mono text-right">{d.open.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.open.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">High</span>
-        <span className="font-mono text-right">{d.high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">Low</span>
-        <span className="font-mono text-right">{d.low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">Close</span>
-        <span className={`font-mono text-right font-semibold ${isUp ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+        <span className={`font-mono font-tabular text-right font-semibold ${isUp ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
           {d.close.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
         </span>
         {d.volume > 0 && (
           <>
             <span className="text-[#6b7280]">Volume</span>
-            <span className="font-mono text-right">{formatVolume(d.volume)}</span>
+            <span className="font-mono font-tabular text-right">{formatVolume(d.volume)}</span>
           </>
         )}
       </div>
@@ -279,9 +251,9 @@ function RangeBar({ label, low, high, current, lowLabel, highLabel }: {
         <span className="text-xs text-[#6b7280]">{lowLabel || label + ' Low'}</span>
         <span className="text-xs text-[#6b7280]">{highLabel || label + ' High'}</span>
       </div>
-      <div className="flex items-center justify-between text-sm font-mono font-semibold">
-        <span className="text-[#eb5b3c]">{low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-        <span className="text-[#00d09c]">{high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+      <div className="flex items-center justify-between text-sm font-mono font-tabular font-semibold">
+        <span className="text-[#EB5B3C]">{low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="text-[#00B386]">{high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
       </div>
       <div className="h-2 rounded-full bg-[#f0f2f5] relative overflow-hidden">
         <div
@@ -307,8 +279,8 @@ function MetricRow({ label, value, highlight }: { label: string; value: string; 
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-[#f0f2f5] last:border-b-0">
       <span className="text-sm text-[#6b7280]">{label}</span>
-      <span className={`text-sm font-semibold font-mono ${
-        highlight === 'green' ? 'text-[#00d09c]' : highlight === 'red' ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
+      <span className={`text-sm font-semibold font-mono font-tabular ${
+        highlight === 'green' ? 'text-[#00B386]' : highlight === 'red' ? 'text-[#EB5B3C]' : 'text-[#1a1a1a]'
       }`}>{value}</span>
     </div>
   )
@@ -685,10 +657,10 @@ export function StockOverviewPage() {
                   {getDataSourceBadge(stockDetail.dataSource)}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-2xl font-bold font-mono text-[#1a1a1a]">
+                  <span className="text-2xl font-bold font-mono font-tabular text-[#1a1a1a]">
                     {stockDetail.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                  <span className={`flex items-center gap-0.5 text-sm font-semibold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                  <span className={`flex items-center gap-0.5 text-sm font-semibold ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                     {isPositive ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                     {isPositive ? '+' : ''}{stockDetail.change.toFixed(2)} ({isPositive ? '+' : ''}{stockDetail.changePercent.toFixed(2)}%)
                   </span>
@@ -702,7 +674,7 @@ export function StockOverviewPage() {
                 </Badge>
               )}
               {stockDetail.isFnoBan && (
-                <Badge variant="outline" className="text-[10px] font-bold border-[#eb5b3c]/30 text-[#eb5b3c]">
+                <Badge variant="outline" className="text-[10px] font-bold border-[#eb5b3c]/30 text-[#EB5B3C]">
                   F&O BAN
                 </Badge>
               )}
@@ -872,37 +844,37 @@ export function StockOverviewPage() {
                   <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 pt-2">
                     <div className="text-center">
                       <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider">Open</p>
-                      <p className="text-sm font-bold font-mono text-[#1a1a1a] mt-1">
+                      <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a] mt-1">
                         {stockDetail.open > 0 ? stockDetail.open.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '--'}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider">Prev Close</p>
-                      <p className="text-sm font-bold font-mono text-[#1a1a1a] mt-1">
+                      <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a] mt-1">
                         {stockDetail.previousClose > 0 ? stockDetail.previousClose.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '--'}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider">Volume</p>
-                      <p className="text-sm font-bold font-mono text-[#1a1a1a] mt-1">
+                      <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a] mt-1">
                         {stockDetail.volume > 0 ? formatVolume(stockDetail.volume) : '--'}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider">VWAP</p>
-                      <p className="text-sm font-bold font-mono text-[#1a1a1a] mt-1">
+                      <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a] mt-1">
                         {stockDetail.vwap ? stockDetail.vwap.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '--'}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider">Avg Price</p>
-                      <p className="text-sm font-bold font-mono text-[#1a1a1a] mt-1">
+                      <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a] mt-1">
                         {stockDetail.averageTradePrice > 0 ? stockDetail.averageTradePrice.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : '--'}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider">Traded Value</p>
-                      <p className="text-sm font-bold font-mono text-[#1a1a1a] mt-1">
+                      <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a] mt-1">
                         {stockDetail.totalTradedValue > 0 ? formatLargeNumber(stockDetail.totalTradedValue) : '--'}
                       </p>
                     </div>
@@ -920,7 +892,7 @@ export function StockOverviewPage() {
                         <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Upper Circuit</p>
                         <div className="flex items-center gap-2">
                           <div className="size-3 rounded-full bg-[#00d09c]" />
-                          <span className="text-lg font-bold font-mono text-[#00d09c]">
+                          <span className="text-lg font-bold font-mono font-tabular text-[#00B386]">
                             {stockDetail.upperCircuit.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -934,7 +906,7 @@ export function StockOverviewPage() {
                         <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Lower Circuit</p>
                         <div className="flex items-center gap-2">
                           <div className="size-3 rounded-full bg-[#eb5b3c]" />
-                          <span className="text-lg font-bold font-mono text-[#eb5b3c]">
+                          <span className="text-lg font-bold font-mono font-tabular text-[#EB5B3C]">
                             {stockDetail.lowerCircuit.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -1001,7 +973,7 @@ export function StockOverviewPage() {
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-[#f0f2f5]">
                     <span className="text-sm text-[#6b7280]">ISIN</span>
-                    <span className="text-sm font-mono font-semibold text-[#1a1a1a]">{stockDetail.isin || '--'}</span>
+                    <span className="text-sm font-mono font-tabular font-semibold text-[#1a1a1a]">{stockDetail.isin || '--'}</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-[#f0f2f5]">
                     <span className="text-sm text-[#6b7280]">Lot Size</span>
@@ -1009,7 +981,7 @@ export function StockOverviewPage() {
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-[#f0f2f5]">
                     <span className="text-sm text-[#6b7280]">F&O Available</span>
-                    <span className={`text-sm font-semibold ${stockDetail.isFuturesAvailable || stockDetail.isOptionsAvailable ? 'text-[#00d09c]' : 'text-[#1a1a1a]'}`}>
+                    <span className={`text-sm font-semibold ${stockDetail.isFuturesAvailable || stockDetail.isOptionsAvailable ? 'text-[#00B386]' : 'text-[#1a1a1a]'}`}>
                       {stockDetail.isFuturesAvailable || stockDetail.isOptionsAvailable ? 'Yes' : 'No'}
                     </span>
                   </div>
@@ -1044,11 +1016,11 @@ export function StockOverviewPage() {
                           <p className="text-sm font-semibold text-[#1a1a1a] truncate">{stock.name}</p>
                           <p className="text-xs text-[#6b7280]">{stock.symbol}</p>
                           <div className="mt-2 flex items-center justify-between">
-                            <span className="text-sm font-bold font-mono text-[#1a1a1a]">
+                            <span className="text-sm font-bold font-mono font-tabular text-[#1a1a1a]">
                               {stock.currentPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                             </span>
                             <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                              stockPositive ? 'bg-[#00d09c]/10 text-[#00d09c]' : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                              stockPositive ? 'bg-[#00B386]/10 text-[#00B386]' : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                             }`}>
                               {stockPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
                             </span>
@@ -1124,9 +1096,9 @@ export function StockOverviewPage() {
                         {/* PCR */}
                         <div className="bg-[#f8f9fb] rounded-xl p-4 text-center">
                           <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">PCR</p>
-                          <p className={`text-2xl font-bold font-mono ${
-                            fnoData.optionChainSummary.pcr > 1 ? 'text-[#00d09c]' :
-                            fnoData.optionChainSummary.pcr < 0.7 ? 'text-[#eb5b3c]' :
+                          <p className={`text-2xl font-bold font-mono font-tabular ${
+                            fnoData.optionChainSummary.pcr > 1 ? 'text-[#00B386]' :
+                            fnoData.optionChainSummary.pcr < 0.7 ? 'text-[#EB5B3C]' :
                             'text-[#1a1a1a]'
                           }`}>
                             {fnoData.optionChainSummary.pcr > 0 ? fnoData.optionChainSummary.pcr.toFixed(2) : '--'}
@@ -1140,7 +1112,7 @@ export function StockOverviewPage() {
                         {/* Max Pain */}
                         <div className="bg-[#f8f9fb] rounded-xl p-4 text-center">
                           <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Max Pain</p>
-                          <p className="text-2xl font-bold font-mono text-[#1a1a1a]">
+                          <p className="text-2xl font-bold font-mono font-tabular text-[#1a1a1a]">
                             {fnoData.optionChainSummary.maxPain > 0 ? '₹' + fnoData.optionChainSummary.maxPain.toLocaleString('en-IN') : '--'}
                           </p>
                           <div className="flex items-center justify-center gap-1 mt-0.5">
@@ -1157,7 +1129,7 @@ export function StockOverviewPage() {
                         {/* IV Percentile */}
                         <div className="bg-[#f8f9fb] rounded-xl p-4 text-center">
                           <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">IV Percentile</p>
-                          <p className="text-2xl font-bold font-mono text-[#1a1a1a]">
+                          <p className="text-2xl font-bold font-mono font-tabular text-[#1a1a1a]">
                             {fnoData.optionChainSummary.ivPercentile > 0 ? `${fnoData.optionChainSummary.ivPercentile.toFixed(0)}%` : '--'}
                           </p>
                           <div className="flex items-center justify-center gap-1 mt-0.5">
@@ -1173,7 +1145,7 @@ export function StockOverviewPage() {
                         {/* Nearest Expiry */}
                         <div className="bg-[#f8f9fb] rounded-xl p-4 text-center">
                           <p className="text-[10px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Nearest Expiry</p>
-                          <p className="text-lg font-bold font-mono text-[#1a1a1a]">
+                          <p className="text-lg font-bold font-mono font-tabular text-[#1a1a1a]">
                             {fnoData.optionChainSummary.nearestExpiry
                               ? formatExpiry(fnoData.optionChainSummary.nearestExpiry)
                               : '--'}
@@ -1197,7 +1169,7 @@ export function StockOverviewPage() {
                         <div className="flex items-center gap-1.5">
                           <div className="size-2.5 rounded-sm bg-[#00d09c]" />
                           <span className="text-[#6b7280]">Total Call OI:</span>
-                          <span className="font-mono font-semibold text-[#1a1a1a]">
+                          <span className="font-mono font-tabular font-semibold text-[#1a1a1a]">
                             {fnoData.optionChainSummary.totalCallOI > 0 ? formatVolume(fnoData.optionChainSummary.totalCallOI) : '--'}
                           </span>
                         </div>
@@ -1205,7 +1177,7 @@ export function StockOverviewPage() {
                         <div className="flex items-center gap-1.5">
                           <div className="size-2.5 rounded-sm bg-[#eb5b3c]" />
                           <span className="text-[#6b7280]">Total Put OI:</span>
-                          <span className="font-mono font-semibold text-[#1a1a1a]">
+                          <span className="font-mono font-tabular font-semibold text-[#1a1a1a]">
                             {fnoData.optionChainSummary.totalPutOI > 0 ? formatVolume(fnoData.optionChainSummary.totalPutOI) : '--'}
                           </span>
                         </div>
@@ -1249,21 +1221,21 @@ export function StockOverviewPage() {
                                   <span className="font-medium text-[#1a1a1a]">{formatExpiry(fut.expiryDate)}</span>
                                   <span className="text-[10px] text-[#6b7280] ml-1.5">({fut.lotSize} lot)</span>
                                 </td>
-                                <td className="px-2 py-3 text-right font-mono font-semibold text-[#1a1a1a]">
+                                <td className="px-2 py-3 text-right font-mono font-tabular font-semibold text-[#1a1a1a]">
                                   {fut.ltp.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                                 </td>
-                                <td className={`px-2 py-3 text-right font-mono font-semibold ${isUp ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                                <td className={`px-2 py-3 text-right font-mono font-tabular font-semibold ${isUp ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                                   {isUp ? '+' : ''}{fut.change.toFixed(2)}
                                   <span className="ml-1 text-[10px]">({isUp ? '+' : ''}{fut.changePercent.toFixed(2)}%)</span>
                                 </td>
-                                <td className="px-2 py-3 text-right font-mono text-[#6b7280]">
+                                <td className="px-2 py-3 text-right font-mono font-tabular text-[#6b7280]">
                                   {fut.oi > 0 ? formatVolume(fut.oi) : '--'}
                                 </td>
-                                <td className="px-2 py-3 text-right font-mono text-[#6b7280]">
+                                <td className="px-2 py-3 text-right font-mono font-tabular text-[#6b7280]">
                                   {fut.volume > 0 ? formatVolume(fut.volume) : '--'}
                                 </td>
                                 <td className="px-2 py-3 text-right font-mono">
-                                  <span className={fut.basis >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}>
+                                  <span className={fut.basis >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}>
                                     {fut.basis.toFixed(2)}
                                   </span>
                                   <span className="text-[10px] text-[#6b7280] ml-1">({fut.basisPercent.toFixed(2)}%)</span>
@@ -1304,9 +1276,9 @@ export function StockOverviewPage() {
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="border-b border-[#e5e7eb]">
-                            <th colSpan={3} className="px-2 py-2.5 text-center font-semibold text-[#00d09c] uppercase tracking-wider text-[10px]">CALLS</th>
+                            <th colSpan={3} className="px-2 py-2.5 text-center font-semibold text-[#00B386] uppercase tracking-wider text-[10px]">CALLS</th>
                             <th className="px-2 py-2.5 text-center font-bold text-[#1a1a1a] bg-[#f5f7fa] border-x border-[#e5e7eb] uppercase tracking-wider text-[10px]">Strike</th>
-                            <th colSpan={3} className="px-2 py-2.5 text-center font-semibold text-[#eb5b3c] uppercase tracking-wider text-[10px]">PUTS</th>
+                            <th colSpan={3} className="px-2 py-2.5 text-center font-semibold text-[#EB5B3C] uppercase tracking-wider text-[10px]">PUTS</th>
                           </tr>
                           <tr className="border-b border-[#e5e7eb] text-[#6b7280]">
                             <th className="px-2 py-2 text-right font-medium text-[10px]">OI</th>
@@ -1328,35 +1300,35 @@ export function StockOverviewPage() {
                               <tr
                                 key={opt.strikePrice}
                                 className={`border-b border-[#f0f2f5] last:border-b-0 ${
-                                  isAtm ? 'bg-[#00d09c]/8' : 'hover:bg-[#f8f9fb]'
+                                  isAtm ? 'bg-[#00B386]/8' : 'hover:bg-[#f8f9fb]'
                                 }`}
                               >
                                 {/* CE Side */}
-                                <td className={`px-2 py-2 text-right font-mono text-[#6b7280] ${ceItm ? 'bg-[#00d09c]/5' : ''}`}>
+                                <td className={`px-2 py-2 text-right font-mono font-tabular text-[#6b7280] ${ceItm ? 'bg-[#00B386]/5' : ''}`}>
                                   {opt.ceOI > 0 ? formatVolume(opt.ceOI) : '-'}
                                 </td>
-                                <td className={`px-2 py-2 text-right font-mono ${opt.ceChange >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'} ${ceItm ? 'bg-[#00d09c]/5' : ''}`}>
+                                <td className={`px-2 py-2 text-right font-mono font-tabular ${opt.ceChange >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'} ${ceItm ? 'bg-[#00B386]/5' : ''}`}>
                                   {opt.ceChange !== 0 ? `${opt.ceChange >= 0 ? '+' : ''}${opt.ceChange.toFixed(2)}` : '-'}
                                 </td>
-                                <td className={`px-2 py-2 text-right font-mono font-semibold text-[#1a1a1a] ${ceItm ? 'bg-[#00d09c]/5' : ''}`}>
+                                <td className={`px-2 py-2 text-right font-mono font-tabular font-semibold text-[#1a1a1a] ${ceItm ? 'bg-[#00B386]/5' : ''}`}>
                                   {opt.ceLtp > 0 ? opt.ceLtp.toFixed(2) : '-'}
                                 </td>
 
                                 {/* Strike */}
-                                <td className={`px-2 py-2 text-center font-mono font-bold bg-[#f5f7fa] border-x border-[#e5e7eb] ${
-                                  isAtm ? 'bg-[#00d09c]/15 text-[#00d09c]' : 'text-[#1a1a1a]'
+                                <td className={`px-2 py-2 text-center font-mono font-tabular font-bold bg-[#f5f7fa] border-x border-[#e5e7eb] ${
+                                  isAtm ? 'bg-[#00B386]/15 text-[#00B386]' : 'text-[#1a1a1a]'
                                 }`}>
                                   {opt.strikePrice.toLocaleString('en-IN')}
                                 </td>
 
                                 {/* PE Side */}
-                                <td className={`px-2 py-2 text-left font-mono font-semibold text-[#1a1a1a] ${peItm ? 'bg-[#eb5b3c]/5' : ''}`}>
+                                <td className={`px-2 py-2 text-left font-mono font-tabular font-semibold text-[#1a1a1a] ${peItm ? 'bg-[#EB5B3C]/5' : ''}`}>
                                   {opt.peLtp > 0 ? opt.peLtp.toFixed(2) : '-'}
                                 </td>
-                                <td className={`px-2 py-2 text-left font-mono ${opt.peChange >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'} ${peItm ? 'bg-[#eb5b3c]/5' : ''}`}>
+                                <td className={`px-2 py-2 text-left font-mono font-tabular ${opt.peChange >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'} ${peItm ? 'bg-[#EB5B3C]/5' : ''}`}>
                                   {opt.peChange !== 0 ? `${opt.peChange >= 0 ? '+' : ''}${opt.peChange.toFixed(2)}` : '-'}
                                 </td>
-                                <td className={`px-2 py-2 text-left font-mono text-[#6b7280] ${peItm ? 'bg-[#eb5b3c]/5' : ''}`}>
+                                <td className={`px-2 py-2 text-left font-mono font-tabular text-[#6b7280] ${peItm ? 'bg-[#EB5B3C]/5' : ''}`}>
                                   {opt.peOI > 0 ? formatVolume(opt.peOI) : '-'}
                                 </td>
                               </tr>
@@ -1458,35 +1430,35 @@ export function StockOverviewPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#6b7280]">Resistance 3</span>
-                      <span className="text-sm font-mono font-semibold text-[#eb5b3c]">--</span>
+                      <span className="text-sm font-mono font-tabular font-semibold text-[#EB5B3C]">--</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#6b7280]">Resistance 2</span>
-                      <span className="text-sm font-mono font-semibold text-[#eb5b3c]">--</span>
+                      <span className="text-sm font-mono font-tabular font-semibold text-[#EB5B3C]">--</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#6b7280]">Resistance 1</span>
-                      <span className="text-sm font-mono font-semibold text-[#eb5b3c]">--</span>
+                      <span className="text-sm font-mono font-tabular font-semibold text-[#EB5B3C]">--</span>
                     </div>
                     <div className="h-px bg-[#e5e7eb]" />
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-[#1a1a1a]">Current Price</span>
-                      <span className={`text-sm font-mono font-bold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                      <span className={`text-sm font-mono font-tabular font-bold ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                         {stockDetail.currentPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                       </span>
                     </div>
                     <div className="h-px bg-[#e5e7eb]" />
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#6b7280]">Support 1</span>
-                      <span className="text-sm font-mono font-semibold text-[#00d09c]">--</span>
+                      <span className="text-sm font-mono font-tabular font-semibold text-[#00B386]">--</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#6b7280]">Support 2</span>
-                      <span className="text-sm font-mono font-semibold text-[#00d09c]">--</span>
+                      <span className="text-sm font-mono font-tabular font-semibold text-[#00B386]">--</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#6b7280]">Support 3</span>
-                      <span className="text-sm font-mono font-semibold text-[#00d09c]">--</span>
+                      <span className="text-sm font-mono font-tabular font-semibold text-[#00B386]">--</span>
                     </div>
                   </div>
                 </CardContent>
@@ -1577,12 +1549,12 @@ export function StockOverviewPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-lg text-[#00D09C]">{stockDetail.symbol}</span>
                         <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                          isPositive ? 'bg-[#00d09c]/10 text-[#00d09c]' : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                          isPositive ? 'bg-[#00B386]/10 text-[#00B386]' : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                         }`}>
                           {isPositive ? '+' : ''}{stockDetail.changePercent.toFixed(2)}%
                         </span>
                         {tradeSegment !== 'EQUITY' && (
-                          <Badge className="text-[9px] font-bold bg-[#00d09c]/10 text-[#00d09c] border-[#00d09c]/20 border px-1.5 py-0">
+                          <Badge className="text-[9px] font-bold bg-[#00B386]/10 text-[#00B386] border-[#00B386]/20 border px-1.5 py-0">
                             {tradeSegment}
                           </Badge>
                         )}
@@ -1590,10 +1562,10 @@ export function StockOverviewPage() {
                       <p className="text-xs text-[#6b7280] mt-0.5 truncate max-w-[200px]">{stockDetail.name}</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-bold font-mono text-[#1a1a1a]">
+                      <span className="text-2xl font-bold font-mono font-tabular text-[#1a1a1a]">
                         {formatINR(stockDetail.currentPrice)}
                       </span>
-                      <p className={`text-xs font-medium ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                      <p className={`text-xs font-medium ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                         {isPositive ? '+' : ''}{formatINR(stockDetail.change)} today
                       </p>
                     </div>
@@ -1646,7 +1618,7 @@ export function StockOverviewPage() {
                           onClick={() => setOrderType(type)}
                           className={`flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
                             orderType === type
-                              ? 'border-[#00d09c] bg-[#00d09c]/5 text-[#00d09c]'
+                              ? 'border-[#00d09c] bg-[#00B386]/5 text-[#00B386]'
                               : 'border-[#e5e7eb] text-[#6b7280] hover:border-[#d1d5db]'
                           }`}
                         >
@@ -1666,7 +1638,7 @@ export function StockOverviewPage() {
                           onClick={() => setProductType(type)}
                           className={`flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
                             productType === type
-                              ? 'border-[#00d09c] bg-[#00d09c]/5 text-[#00d09c]'
+                              ? 'border-[#00d09c] bg-[#00B386]/5 text-[#00B386]'
                               : 'border-[#e5e7eb] text-[#6b7280] hover:border-[#d1d5db]'
                           }`}
                         >
@@ -1692,7 +1664,7 @@ export function StockOverviewPage() {
                         type="number"
                         value={quantity}
                         onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="text-center font-mono text-lg font-bold bg-white border-[#e5e7eb] h-10"
+                        className="text-center font-mono font-tabular text-lg font-bold bg-white border-[#e5e7eb] h-10"
                       />
                       <button
                         className="size-10 rounded-lg border border-[#e5e7eb] flex items-center justify-center text-[#6b7280] hover:bg-[#f5f7fa] active:bg-[#e5e7eb] transition-colors"
@@ -1712,7 +1684,7 @@ export function StockOverviewPage() {
                         value={price}
                         onChange={(e) => setPrice(e.target.value)}
                         placeholder="Enter price"
-                        className="font-mono text-lg font-bold bg-white border-[#e5e7eb] h-10"
+                        className="font-mono font-tabular text-lg font-bold bg-white border-[#e5e7eb] h-10"
                       />
                     </div>
                   )}
@@ -1721,11 +1693,11 @@ export function StockOverviewPage() {
                   <div className="bg-[#f8f9fb] rounded-xl p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#6b7280]">Estimated Total</span>
-                      <span className="text-sm font-bold font-mono text-[#1a1a1a]">{formatINR(estimatedTotal)}</span>
+                      <span className="text-sm font-bold font-mono font-tabular text-[#1a1a1a]">{formatINR(estimatedTotal)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#6b7280]">Brokerage</span>
-                      <span className="text-sm font-mono font-semibold text-[#6b7280]">{formatINR(estimatedBrokerage)}</span>
+                      <span className="text-sm font-mono font-tabular font-semibold text-[#6b7280]">{formatINR(estimatedBrokerage)}</span>
                     </div>
                     <div className="h-px bg-[#e5e7eb]" />
                     <div className="flex items-center justify-between">
@@ -1742,11 +1714,11 @@ export function StockOverviewPage() {
                   <div className="bg-[#f0fdf4] rounded-xl p-4 space-y-2 border border-[#00d09c]/10">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#6b7280]">Available Balance</span>
-                      <span className="text-sm font-bold font-mono text-[#1a1a1a]">{formatINR(availableBalance)}</span>
+                      <span className="text-sm font-bold font-mono font-tabular text-[#1a1a1a]">{formatINR(availableBalance)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-[#6b7280]">Buying Power</span>
-                      <span className="text-sm font-bold font-mono text-[#00d09c]">{formatINR(buyingPower)}</span>
+                      <span className="text-sm font-bold font-mono font-tabular text-[#00B386]">{formatINR(buyingPower)}</span>
                     </div>
                   </div>
 

@@ -35,6 +35,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { toast } from 'sonner'
+import { formatINR, formatPnL, formatPercent } from '@/lib/format'
 
 // ─── Types ───────────────────────────────────────────────────────────
 type Instrument = 'NIFTY' | 'BANKNIFTY' | 'FINNIFTY' | 'SENSEX' | 'MIDCPNIFTY'
@@ -79,11 +80,6 @@ interface PortfolioData {
   virtualBalance: number
   marginUsed: number
   availableMargin: number
-}
-
-// ─── Helper ──────────────────────────────────────────────────────────
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })
 }
 
 function generatePriceData(spotPrice: number) {
@@ -376,25 +372,25 @@ export function FuturesPage() {
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">LTP</div>
-                    <div className="font-mono font-bold text-[#1a1a1a]">₹{contract.ltp.toLocaleString()}</div>
+                    <div className="font-mono font-tabular font-bold text-[#1a1a1a]">₹{contract.ltp.toLocaleString()}</div>
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">Change</div>
                     <div className={cn(
-                      'font-mono font-semibold text-sm',
-                      contract.changePct > 0 ? 'text-[#00d09c]' : contract.changePct < 0 ? 'text-[#eb5b3c]' : 'text-[#6b7280]'
+                      'font-mono font-tabular font-semibold text-sm',
+                      contract.changePct > 0 ? 'text-[#00B386]' : contract.changePct < 0 ? 'text-[#EB5B3C]' : 'text-[#6b7280]'
                     )}>
-                      {contract.changePct > 0 ? '+' : ''}{contract.changePct.toFixed(2)}%
+                      {formatPercent(contract.changePct)}
                       <span className="ml-1 text-xs">({contract.change > 0 ? '+' : ''}{contract.change.toFixed(2)})</span>
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">OI</div>
-                    <div className="font-mono text-sm text-[#1a1a1a]">{contract.oi}L</div>
+                    <div className="font-mono font-tabular text-sm text-[#1a1a1a]">{contract.oi}L</div>
                   </div>
                   <div>
                     <div className="text-xs text-[#6b7280]">Volume</div>
-                    <div className="font-mono text-sm text-[#1a1a1a]">{(contract.volume / 1000).toFixed(1)}K</div>
+                    <div className="font-mono font-tabular text-sm text-[#1a1a1a]">{(contract.volume / 1000).toFixed(1)}K</div>
                   </div>
                 </div>
               </TabsContent>
@@ -414,7 +410,7 @@ export function FuturesPage() {
                 <BarChart3 className="size-4 text-[#00D09C]" />
                 {selectedContract?.name || instrument} — Price Movement
               </h3>
-              <Badge variant="outline" className="text-xs font-mono border-[#e5e7eb] text-[#6b7280]">
+              <Badge variant="outline" className="text-xs font-mono font-tabular border-[#e5e7eb] text-[#6b7280]">
                 Live
               </Badge>
             </div>
@@ -476,32 +472,32 @@ export function FuturesPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">LTP</div>
-                <div className="font-mono font-bold text-[#1a1a1a] text-lg">₹{selectedContract.ltp.toLocaleString()}</div>
+                <div className="font-mono font-tabular font-bold text-[#1a1a1a] text-lg">₹{selectedContract.ltp.toLocaleString()}</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Change</div>
                 <div className={cn(
-                  'font-mono font-bold text-lg',
-                  selectedContract.changePct > 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                  'font-mono font-tabular font-bold text-lg',
+                  selectedContract.changePct > 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                 )}>
-                  {selectedContract.changePct > 0 ? '+' : ''}{selectedContract.changePct.toFixed(2)}%
+                  {formatPercent(selectedContract.changePct)}
                 </div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Open Interest</div>
-                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{selectedContract.oi}L</div>
+                <div className="font-mono font-tabular font-bold text-[#1a1a1a] text-lg">{selectedContract.oi}L</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Volume</div>
-                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{(selectedContract.volume / 1000).toFixed(1)}K</div>
+                <div className="font-mono font-tabular font-bold text-[#1a1a1a] text-lg">{(selectedContract.volume / 1000).toFixed(1)}K</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Lot Size</div>
-                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{selectedContract.lotSize}</div>
+                <div className="font-mono font-tabular font-bold text-[#1a1a1a] text-lg">{selectedContract.lotSize}</div>
               </div>
               <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl text-center">
                 <div className="text-[10px] text-[#6b7280] uppercase tracking-wider mb-1">Margin %</div>
-                <div className="font-mono font-bold text-[#1a1a1a] text-lg">{selectedContract.marginPercent}%</div>
+                <div className="font-mono font-tabular font-bold text-[#1a1a1a] text-lg">{selectedContract.marginPercent}%</div>
               </div>
             </div>
           )}
@@ -529,7 +525,7 @@ export function FuturesPage() {
                       'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200',
                       direction === 'BUY'
                         ? 'bg-[#00d09c] text-white shadow-lg shadow-[#00d09c]/20'
-                        : 'bg-[#00d09c]/10 text-[#00d09c] hover:bg-[#00d09c]/20'
+                        : 'bg-[#00B386]/10 text-[#00B386] hover:bg-[#00B386]/20'
                     )}
                   >
                     <ArrowUpRight className="size-4 inline mr-1" />
@@ -541,7 +537,7 @@ export function FuturesPage() {
                       'flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-200',
                       direction === 'SELL'
                         ? 'bg-[#eb5b3c] text-white shadow-lg shadow-[#eb5b3c]/20'
-                        : 'bg-[#eb5b3c]/10 text-[#eb5b3c] hover:bg-[#eb5b3c]/20'
+                        : 'bg-[#EB5B3C]/10 text-[#EB5B3C] hover:bg-[#eb5b3c]/20'
                     )}
                   >
                     <ArrowDownRight className="size-4 inline mr-1" />
@@ -590,7 +586,7 @@ export function FuturesPage() {
                       type="number"
                       value={lots}
                       onChange={(e) => setLots(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="text-center font-mono text-lg font-bold h-10 bg-white border-[#e5e7eb]"
+                      className="text-center font-mono font-tabular text-lg font-bold h-10 bg-white border-[#e5e7eb]"
                     />
                     <Button
                       variant="outline"
@@ -614,7 +610,7 @@ export function FuturesPage() {
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder={selectedContract.ltp.toFixed(2)}
-                      className="font-mono h-10 bg-white border-[#e5e7eb]"
+                      className="font-mono font-tabular h-10 bg-white border-[#e5e7eb]"
                     />
                   </div>
                 )}
@@ -623,15 +619,15 @@ export function FuturesPage() {
                 <div className="bg-[#f5f7fa] border border-[#e5e7eb] p-3 rounded-xl space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Lot Size</span>
-                    <span className="font-mono font-medium text-[#1a1a1a]">{lotSize}</span>
+                    <span className="font-mono font-tabular font-medium text-[#1a1a1a]">{lotSize}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#6b7280]">Total Qty</span>
-                    <span className="font-mono font-medium text-[#1a1a1a]">{totalQty}</span>
+                    <span className="font-mono font-tabular font-medium text-[#1a1a1a]">{totalQty}</span>
                   </div>
                   <div className="flex justify-between border-t border-[#e5e7eb] pt-2">
                     <span className="text-[#6b7280] font-semibold">Margin Required</span>
-                    <span className="font-mono font-bold text-[#00D09C] text-base">₹{Number(marginRequired).toLocaleString()}</span>
+                    <span className="font-mono font-tabular font-bold text-[#00D09C] text-base">₹{Number(marginRequired).toLocaleString()}</span>
                   </div>
                 </div>
 
@@ -642,8 +638,8 @@ export function FuturesPage() {
                     <span className="text-xs font-medium text-[#6b7280]">Available Margin</span>
                   </div>
                   <span className={cn(
-                    'font-mono font-bold text-sm',
-                    availableMargin >= marginRequired ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                    'font-mono font-tabular font-bold text-sm',
+                    availableMargin >= marginRequired ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                   )}>
                     ₹{availableMargin.toLocaleString()}
                   </span>
@@ -690,10 +686,10 @@ export function FuturesPage() {
             <div className="flex items-center gap-3">
               <span className="text-xs text-[#6b7280]">Net P&L:</span>
               <span className={cn(
-                'font-mono font-bold',
-                totalPnl > 0 ? 'text-[#00d09c]' : totalPnl < 0 ? 'text-[#eb5b3c]' : 'text-[#6b7280]'
+                'font-mono font-tabular font-bold',
+                totalPnl > 0 ? 'text-[#00B386]' : totalPnl < 0 ? 'text-[#EB5B3C]' : 'text-[#6b7280]'
               )}>
-                {totalPnl > 0 ? '+' : ''}₹{totalPnl.toLocaleString()}
+                {formatPnL(totalPnl)}
               </span>
             </div>
           )}
@@ -743,30 +739,30 @@ export function FuturesPage() {
                           <Badge className={cn(
                             'text-xs font-bold',
                             pos.tradeDirection === 'BUY'
-                              ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                              : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                              ? 'bg-[#00B386]/10 text-[#00B386]'
+                              : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                           )}>
                             {pos.tradeDirection === 'BUY' ? <ArrowUpRight className="size-3 mr-1" /> : <ArrowDownRight className="size-3 mr-1" />}
                             {pos.tradeDirection}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a1a]">{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a1a]">₹{pos.entryPrice.toLocaleString()}</td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[#1a1a1a]">₹{pos.currentPrice.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-tabular text-[#1a1a1a]">{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-tabular text-[#1a1a1a]">₹{pos.entryPrice.toLocaleString()}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-tabular text-[#1a1a1a]">₹{pos.currentPrice.toLocaleString()}</td>
                         <td className={cn(
-                          'px-3 py-2.5 text-right font-mono font-bold',
-                          isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                          'px-3 py-2.5 text-right font-mono font-tabular font-bold',
+                          isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                         )}>
                           {isPositive ? '+' : ''}₹{pos.unrealizedPnl.toLocaleString()}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[#6b7280]">
+                        <td className="px-3 py-2.5 text-right font-mono font-tabular text-[#6b7280]">
                           ₹{(pos.marginUsed || 0).toLocaleString()}
                         </td>
                         <td className="px-3 py-2.5 text-center">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-xs h-7 text-[#eb5b3c] border-[#eb5b3c]/20 hover:bg-[#eb5b3c]/10 hover:text-[#eb5b3c]"
+                            className="text-xs h-7 text-[#EB5B3C] border-[#eb5b3c]/20 hover:bg-[#EB5B3C]/10 hover:text-[#EB5B3C]"
                             disabled={squaringOff === pos.id}
                             onClick={() => handleSquareOff(pos.id, pos.symbol)}
                           >
@@ -796,27 +792,27 @@ export function FuturesPage() {
                         <Badge className={cn(
                           'text-[10px] font-bold',
                           pos.tradeDirection === 'BUY'
-                            ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                            : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                            ? 'bg-[#00B386]/10 text-[#00B386]'
+                            : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                         )}>
                           {pos.tradeDirection}
                         </Badge>
                       </div>
                       <span className={cn(
-                        'font-mono font-bold',
-                        isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                        'font-mono font-tabular font-bold',
+                        isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                       )}>
-                        {isPositive ? '+' : ''}₹{pos.unrealizedPnl.toLocaleString()}
+                        {formatPnL(pos.unrealizedPnl)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs text-[#6b7280]">
+                    <div className="flex justify-between text-xs text-[#6b7280] font-tabular">
                       <span>{pos.lots || Math.round(pos.quantity / (pos.lotSize || 50))} lot(s)</span>
                       <span>₹{pos.entryPrice.toLocaleString()} → ₹{pos.currentPrice.toLocaleString()}</span>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs h-7 text-[#eb5b3c] border-[#eb5b3c]/20 hover:bg-[#eb5b3c]/10"
+                      className="w-full text-xs h-7 text-[#EB5B3C] border-[#eb5b3c]/20 hover:bg-[#EB5B3C]/10"
                       disabled={squaringOff === pos.id}
                       onClick={() => handleSquareOff(pos.id, pos.symbol)}
                     >

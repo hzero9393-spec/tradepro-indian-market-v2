@@ -36,6 +36,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
+import { formatINR, formatINRWhole } from '@/lib/format'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -80,16 +81,6 @@ interface PortfolioData {
     futures: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number; positions?: PositionData[] }
     options: { count: number; invested: number; currentValue: number; unrealizedPnl: number; marginUsed: number; positions?: PositionData[] }
   }
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function formatINRWhole(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })
 }
 
 // ─── Component ───────────────────────────────────────────────────
@@ -287,8 +278,8 @@ export default function PortfolioPage() {
                   </p>
                   <div className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${
                     totalPnl >= 0
-                      ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                      : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                      ? 'bg-[#00B386]/10 text-[#00B386]'
+                      : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                   }`}>
                     {totalPnl >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                     {totalPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
@@ -297,7 +288,7 @@ export default function PortfolioPage() {
                 </div>
 
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl sm:text-4xl font-bold font-mono-data text-[#1a1a1a]">
+                  <span className="text-3xl sm:text-4xl font-bold font-mono-data font-tabular text-[#1a1a1a]">
                     {formatINRWhole(totalValue)}
                   </span>
                   <span className="text-lg text-[#6b7280]">
@@ -313,7 +304,7 @@ export default function PortfolioPage() {
                       </div>
                       <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Available Balance</span>
                     </div>
-                    <span className="text-lg font-bold font-mono-data text-[#1a1a1a]">
+                    <span className="text-lg font-bold font-mono-data font-tabular text-[#1a1a1a]">
                       {formatINR(portfolio?.virtualBalance ?? 100000)}
                     </span>
                   </div>
@@ -324,18 +315,18 @@ export default function PortfolioPage() {
                       </div>
                       <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Invested</span>
                     </div>
-                    <span className="text-lg font-bold font-mono-data text-[#1a1a1a]">
+                    <span className="text-lg font-bold font-mono-data font-tabular text-[#1a1a1a]">
                       {formatINR(investedAmount)}
                     </span>
                   </div>
                   <div className="bg-[#f8f9fb] rounded-xl p-4 border border-[#e5e7eb]/50">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <div className="size-7 rounded-lg bg-[#00d09c]/10 flex items-center justify-center">
-                        <Landmark className="size-3.5 text-[#00d09c]" />
+                      <div className="size-7 rounded-lg bg-[#00B386]/10 flex items-center justify-center">
+                        <Landmark className="size-3.5 text-[#00B386]" />
                       </div>
                       <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">Current Value</span>
                     </div>
-                    <span className="text-lg font-bold font-mono-data text-[#1a1a1a]">
+                    <span className="text-lg font-bold font-mono-data font-tabular text-[#1a1a1a]">
                       {formatINR(currentvalue)}
                     </span>
                   </div>
@@ -351,14 +342,14 @@ export default function PortfolioPage() {
                 <CardContent className="p-5">
                   <div className="mb-2 flex items-start justify-between">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Total P&amp;L</p>
-                    <div className={`size-7 rounded-lg flex items-center justify-center ${totalPnl >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
-                      {totalPnl >= 0 ? <TrendingUp className="size-3.5 text-[#00d09c]" /> : <TrendingDown className="size-3.5 text-[#eb5b3c]" />}
+                    <div className={`size-7 rounded-lg flex items-center justify-center ${totalPnl >= 0 ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10'}`}>
+                      {totalPnl >= 0 ? <TrendingUp className="size-3.5 text-[#00B386]" /> : <TrendingDown className="size-3.5 text-[#EB5B3C]" />}
                     </div>
                   </div>
-                  <h3 className={`font-mono-data text-2xl font-bold ${totalPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                  <h3 className={`font-mono-data font-tabular text-2xl font-bold ${totalPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                     {totalPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
                   </h3>
-                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${totalPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${totalPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                     {totalPnl >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                     {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(2)}% returns
                   </div>
@@ -371,14 +362,14 @@ export default function PortfolioPage() {
                 <CardContent className="p-5">
                   <div className="mb-2 flex items-start justify-between">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Unrealized P&amp;L</p>
-                    <div className={`size-7 rounded-lg flex items-center justify-center ${unrealizedPnl >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
-                      {unrealizedPnl >= 0 ? <TrendingUp className="size-3.5 text-[#00d09c]" /> : <TrendingDown className="size-3.5 text-[#eb5b3c]" />}
+                    <div className={`size-7 rounded-lg flex items-center justify-center ${unrealizedPnl >= 0 ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10'}`}>
+                      {unrealizedPnl >= 0 ? <TrendingUp className="size-3.5 text-[#00B386]" /> : <TrendingDown className="size-3.5 text-[#EB5B3C]" />}
                     </div>
                   </div>
-                  <h3 className={`font-mono-data text-2xl font-bold ${unrealizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                  <h3 className={`font-mono-data font-tabular text-2xl font-bold ${unrealizedPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                     {unrealizedPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(unrealizedPnl))}
                   </h3>
-                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${unrealizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                  <div className={`mt-2 flex items-center gap-1 text-xs font-semibold ${unrealizedPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                     {unrealizedPnl >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                     {investedAmount > 0 ? ((unrealizedPnl / investedAmount) * 100).toFixed(2) : '0.00'}% ROI
                   </div>
@@ -391,11 +382,11 @@ export default function PortfolioPage() {
                 <CardContent className="p-5">
                   <div className="mb-2 flex items-start justify-between">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6b7280]">Realized P&amp;L</p>
-                    <div className={`size-7 rounded-lg flex items-center justify-center ${realizedPnl >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'}`}>
-                      <Wallet className={`size-3.5 ${realizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`} />
+                    <div className={`size-7 rounded-lg flex items-center justify-center ${realizedPnl >= 0 ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10'}`}>
+                      <Wallet className={`size-3.5 ${realizedPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`} />
                     </div>
                   </div>
-                  <h3 className={`font-mono-data text-2xl font-bold ${realizedPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                  <h3 className={`font-mono-data font-tabular text-2xl font-bold ${realizedPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                     {realizedPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(realizedPnl))}
                   </h3>
                   <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#6b7280]">
@@ -414,7 +405,7 @@ export default function PortfolioPage() {
                       <Briefcase className="size-3.5 text-[#00D09C]" />
                     </div>
                   </div>
-                  <h3 className="font-mono-data text-2xl font-bold text-[#1a1a1a]">
+                  <h3 className="font-mono-data font-tabular text-2xl font-bold text-[#1a1a1a]">
                     {portfolio?.openPositionsCount ?? 0}
                   </h3>
                   <div className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#00D09C]">
@@ -492,34 +483,34 @@ export default function PortfolioPage() {
                             </TableCell>
                             <TableCell>
                               <Badge variant="secondary" className={`text-[10px] font-semibold border-0 gap-0.5 ${
-                                isLong ? 'bg-[#00d09c]/10 text-[#00d09c]' : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                                isLong ? 'bg-[#00B386]/10 text-[#00B386]' : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                               }`}>
                                 {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
                                 {isLong ? 'Long' : 'Short'}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs text-[#6b7280]">{pos.segment}</TableCell>
-                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a1a]">{pos.quantity}</TableCell>
-                            <TableCell className="text-right font-mono-data text-sm text-[#6b7280]">{formatINR(pos.entryPrice)}</TableCell>
-                            <TableCell className="text-right font-mono-data text-sm text-[#1a1a1a]">{formatINR(pos.currentPrice)}</TableCell>
+                            <TableCell className="text-right font-mono-data font-tabular text-sm text-[#1a1a1a]">{pos.quantity}</TableCell>
+                            <TableCell className="text-right font-mono-data font-tabular text-sm text-[#6b7280]">{formatINR(pos.entryPrice)}</TableCell>
+                            <TableCell className="text-right font-mono-data font-tabular text-sm text-[#1a1a1a]">{formatINR(pos.currentPrice)}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex flex-col items-end">
-                                <span className={`font-mono-data text-sm font-semibold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                                <span className={`font-mono-data font-tabular text-sm font-semibold ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                                   {isPositive ? '+' : '-'}{formatINR(Math.abs(pnlValue))}
                                 </span>
-                                <span className={`text-[10px] font-semibold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                                <span className={`text-[10px] font-semibold ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                                   {isPositive ? '+' : ''}{pnlPercent.toFixed(2)}%
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right font-mono-data text-sm font-medium text-[#1a1a1a]">
+                            <TableCell className="text-right font-mono-data font-tabular text-sm font-medium text-[#1a1a1a]">
                               {formatINR(pos.currentValue)}
                             </TableCell>
                             <TableCell className="text-center">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="rounded-lg border border-[#eb5b3c]/30 bg-[#eb5b3c]/5 px-3 py-1.5 text-[11px] font-semibold text-[#eb5b3c] transition-all hover:bg-[#eb5b3c] hover:text-white hover:border-[#eb5b3c] active:scale-95"
+                                className="rounded-lg border border-[#eb5b3c]/30 bg-[#EB5B3C]/5 px-3 py-1.5 text-[11px] font-semibold text-[#EB5B3C] transition-all hover:bg-[#eb5b3c] hover:text-white hover:border-[#eb5b3c] active:scale-95"
                                 disabled={squaringOff === pos.id}
                                 onClick={() => handleSquareOff(pos.id, pos.symbol)}
                               >
@@ -573,7 +564,7 @@ export default function PortfolioPage() {
                             </div>
                           </div>
                           <Badge variant="outline" className={`text-[10px] font-semibold border-0 ${
-                            isProfit ? 'bg-[#00d09c]/10 text-[#00d09c]' : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                            isProfit ? 'bg-[#00B386]/10 text-[#00B386]' : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                           }`}>
                             {isProfit ? '+' : ''}{pnlPercent}%
                           </Badge>
@@ -581,16 +572,16 @@ export default function PortfolioPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-[#6b7280]">Current Value</span>
-                            <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">{formatINRWhole(segment.value)}</span>
+                            <span className="font-mono-data font-tabular text-sm font-semibold text-[#1a1a1a]">{formatINRWhole(segment.value)}</span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-[#6b7280]">Invested</span>
-                            <span className="font-mono-data text-sm text-[#6b7280]">{formatINRWhole(segment.invested)}</span>
+                            <span className="font-mono-data font-tabular text-sm text-[#6b7280]">{formatINRWhole(segment.invested)}</span>
                           </div>
                           <div className="h-px bg-[#e5e7eb]" />
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-[#6b7280]">P&amp;L</span>
-                            <span className={`font-mono-data text-sm font-semibold ${isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                            <span className={`font-mono-data font-tabular text-sm font-semibold ${isProfit ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                               {isProfit ? '+' : '-'}{formatINR(Math.abs(segment.pnl))}
                             </span>
                           </div>
@@ -652,7 +643,7 @@ export default function PortfolioPage() {
                                 <span className="text-xs font-semibold text-[#1a1a1a]">{item.name}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono-data text-sm text-[#1a1a1a]">₹{item.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                                <span className="font-mono-data font-tabular text-sm text-[#1a1a1a]">₹{item.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                                 <Badge variant="outline" className="border-[#e5e7eb] text-[10px] text-[#6b7280]">{percent}%</Badge>
                               </div>
                             </div>
@@ -692,19 +683,19 @@ export default function PortfolioPage() {
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Available Balance</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">{formatINR(portfolio?.virtualBalance ?? 100000)}</span>
+                      <span className="font-mono-data font-tabular text-sm font-semibold text-[#1a1a1a]">{formatINR(portfolio?.virtualBalance ?? 100000)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Margin Used</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">{formatINR(portfolio?.marginUsed ?? 0)}</span>
+                      <span className="font-mono-data font-tabular text-sm font-semibold text-[#1a1a1a]">{formatINR(portfolio?.marginUsed ?? 0)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Available Margin</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">{formatINR(portfolio?.availableMargin ?? 100000)}</span>
+                      <span className="font-mono-data font-tabular text-sm font-semibold text-[#1a1a1a]">{formatINR(portfolio?.availableMargin ?? 100000)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-[#6b7280]">Total Trades</span>
-                      <span className="font-mono-data text-sm font-semibold text-[#1a1a1a]">{portfolio?.totalTrades ?? 0}</span>
+                      <span className="font-mono-data font-tabular text-sm font-semibold text-[#1a1a1a]">{portfolio?.totalTrades ?? 0}</span>
                     </div>
                   </div>
                 </CardContent>

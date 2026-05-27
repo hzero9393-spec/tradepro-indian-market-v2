@@ -35,6 +35,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
+import { formatINR, formatINRWhole } from '@/lib/format'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -57,16 +58,6 @@ interface TradeData {
   executedAt: string
   squaredOffAt?: string | null
   createdAt: string
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function formatINRWhole(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })
 }
 
 function formatDate(isoDate: string): string {
@@ -156,27 +147,27 @@ export function ReportsPage() {
       value: `${winRate.toFixed(1)}%`,
       icon: Target,
       borderColor: winRate >= 50 ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]',
-      textColor: winRate >= 50 ? 'text-[#00d09c]' : 'text-[#eb5b3c]',
-      bgColor: winRate >= 50 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10',
-      valueColor: winRate >= 50 ? 'text-[#00d09c]' : 'text-[#eb5b3c]',
+      textColor: winRate >= 50 ? 'text-[#00B386]' : 'text-[#EB5B3C]',
+      bgColor: winRate >= 50 ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10',
+      valueColor: winRate >= 50 ? 'text-[#00B386]' : 'text-[#EB5B3C]',
     },
     {
       label: 'Total P&L',
       value: totalPnl >= 0 ? `+${formatINR(Math.abs(totalPnl))}` : `-${formatINR(Math.abs(totalPnl))}`,
       icon: Landmark,
       borderColor: totalPnl >= 0 ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]',
-      textColor: totalPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]',
-      bgColor: totalPnl >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10',
-      valueColor: totalPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]',
+      textColor: totalPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]',
+      bgColor: totalPnl >= 0 ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10',
+      valueColor: totalPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]',
     },
     {
       label: 'Avg P&L / Trade',
       value: avgPnlPerTrade >= 0 ? `+${formatINR(Math.abs(avgPnlPerTrade))}` : `-${formatINR(Math.abs(avgPnlPerTrade))}`,
       icon: BarChart3,
       borderColor: avgPnlPerTrade >= 0 ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]',
-      textColor: avgPnlPerTrade >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]',
-      bgColor: avgPnlPerTrade >= 0 ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10',
-      valueColor: avgPnlPerTrade >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]',
+      textColor: avgPnlPerTrade >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]',
+      bgColor: avgPnlPerTrade >= 0 ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10',
+      valueColor: avgPnlPerTrade >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]',
     },
   ]
 
@@ -237,7 +228,7 @@ export function ReportsPage() {
                       <Icon className={`size-3.5 ${stat.textColor}`} />
                     </div>
                   </div>
-                  <p className={`text-lg font-bold font-mono-data ${stat.valueColor}`}>
+                  <p className={`text-lg font-bold font-mono-data font-tabular ${stat.valueColor}`}>
                     {stat.value}
                   </p>
                 </CardContent>
@@ -296,8 +287,8 @@ export function ReportsPage() {
                     variant="outline"
                     className={`text-[10px] font-semibold border-0 ${
                       totalPnl >= 0
-                        ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                        : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                        ? 'bg-[#00B386]/10 text-[#00B386]'
+                        : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                     }`}
                   >
                     {totalPnl >= 0 ? <ArrowUpRight className="size-3 mr-0.5" /> : <ArrowDownRight className="size-3 mr-0.5" />}
@@ -348,7 +339,7 @@ export function ReportsPage() {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Win Rate</span>
-                          <span className={`font-mono-data text-sm font-bold ${winRate >= 50 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                          <span className={`font-mono-data font-tabular text-sm font-bold ${winRate >= 50 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                             {winRate.toFixed(1)}%
                           </span>
                         </div>
@@ -384,13 +375,13 @@ export function ReportsPage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="size-8 rounded-lg bg-[#00d09c]/10 flex items-center justify-center">
-                              <TrendingUp className="size-4 text-[#00d09c]" />
+                            <div className="size-8 rounded-lg bg-[#00B386]/10 flex items-center justify-center">
+                              <TrendingUp className="size-4 text-[#00B386]" />
                             </div>
                             <span className="text-sm font-semibold text-[#1a1a1a]">Winning Trades</span>
                           </div>
                           <div className="text-right">
-                            <p className="font-mono-data text-sm font-semibold text-[#00d09c]">
+                            <p className="font-mono-data font-tabular text-sm font-semibold text-[#00B386]">
                               +{formatINR(winningTrades.reduce((s, t) => s + (t.pnl || 0), 0))}
                             </p>
                           </div>
@@ -398,7 +389,7 @@ export function ReportsPage() {
                         {winningTrades.length > 0 && (
                           <div className="flex items-center justify-between pl-10">
                             <span className="text-xs text-[#6b7280]">Best Trade</span>
-                            <span className="font-mono-data text-xs font-semibold text-[#00d09c]">
+                            <span className="font-mono-data font-tabular text-xs font-semibold text-[#00B386]">
                               +{formatINR(Math.max(...winningTrades.map(t => t.pnl || 0)))}
                             </span>
                           </div>
@@ -406,7 +397,7 @@ export function ReportsPage() {
                         {winningTrades.length > 0 && (
                           <div className="flex items-center justify-between pl-10">
                             <span className="text-xs text-[#6b7280]">Avg Win</span>
-                            <span className="font-mono-data text-xs font-semibold text-[#00d09c]">
+                            <span className="font-mono-data font-tabular text-xs font-semibold text-[#00B386]">
                               +{formatINR(winningTrades.reduce((s, t) => s + (t.pnl || 0), 0) / winningTrades.length)}
                             </span>
                           </div>
@@ -419,13 +410,13 @@ export function ReportsPage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="size-8 rounded-lg bg-[#eb5b3c]/10 flex items-center justify-center">
-                              <TrendingDown className="size-4 text-[#eb5b3c]" />
+                            <div className="size-8 rounded-lg bg-[#EB5B3C]/10 flex items-center justify-center">
+                              <TrendingDown className="size-4 text-[#EB5B3C]" />
                             </div>
                             <span className="text-sm font-semibold text-[#1a1a1a]">Losing Trades</span>
                           </div>
                           <div className="text-right">
-                            <p className="font-mono-data text-sm font-semibold text-[#eb5b3c]">
+                            <p className="font-mono-data font-tabular text-sm font-semibold text-[#EB5B3C]">
                               -{formatINR(Math.abs(losingTrades.reduce((s, t) => s + (t.pnl || 0), 0)))}
                             </p>
                           </div>
@@ -433,7 +424,7 @@ export function ReportsPage() {
                         {losingTrades.length > 0 && (
                           <div className="flex items-center justify-between pl-10">
                             <span className="text-xs text-[#6b7280]">Worst Trade</span>
-                            <span className="font-mono-data text-xs font-semibold text-[#eb5b3c]">
+                            <span className="font-mono-data font-tabular text-xs font-semibold text-[#EB5B3C]">
                               -{formatINR(Math.abs(Math.min(...losingTrades.map(t => t.pnl || 0))))}
                             </span>
                           </div>
@@ -441,7 +432,7 @@ export function ReportsPage() {
                         {losingTrades.length > 0 && (
                           <div className="flex items-center justify-between pl-10">
                             <span className="text-xs text-[#6b7280]">Avg Loss</span>
-                            <span className="font-mono-data text-xs font-semibold text-[#eb5b3c]">
+                            <span className="font-mono-data font-tabular text-xs font-semibold text-[#EB5B3C]">
                               -{formatINR(Math.abs(losingTrades.reduce((s, t) => s + (t.pnl || 0), 0) / losingTrades.length))}
                             </span>
                           </div>
@@ -537,8 +528,8 @@ export function ReportsPage() {
                                     variant="outline"
                                     className={`text-[10px] font-semibold border-0 ${
                                       isProfit
-                                        ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                                        : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                                        ? 'bg-[#00B386]/10 text-[#00B386]'
+                                        : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                                     }`}
                                   >
                                     {isProfit ? '+' : ''}{segmentPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(segmentPnl))}
@@ -551,7 +542,7 @@ export function ReportsPage() {
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                                     Total Trades
                                   </p>
-                                  <p className="font-mono-data text-sm font-semibold text-[#1a1a1a] mt-0.5">
+                                  <p className="font-mono-data font-tabular text-sm font-semibold text-[#1a1a1a] mt-0.5">
                                     {segment.trades.length}
                                   </p>
                                 </div>
@@ -559,7 +550,7 @@ export function ReportsPage() {
                                   <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                                     Closed P&amp;L
                                   </p>
-                                  <p className={`font-mono-data text-sm font-semibold mt-0.5 ${closedCount === 0 ? 'text-[#6b7280]' : isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                                  <p className={`font-mono-data font-tabular text-sm font-semibold mt-0.5 ${closedCount === 0 ? 'text-[#6b7280]' : isProfit ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                                     {closedCount === 0 ? '—' : `${isProfit ? '+' : '-'}${formatINR(Math.abs(segmentPnl))}`}
                                   </p>
                                 </div>
@@ -642,7 +633,7 @@ export function ReportsPage() {
                               <Badge
                                 variant="secondary"
                                 className={`text-[10px] font-semibold border-0 gap-0.5 ${
-                                  isBuy ? 'bg-[#00d09c]/10 text-[#00d09c]' : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                                  isBuy ? 'bg-[#00B386]/10 text-[#00B386]' : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                                 }`}
                               >
                                 {isBuy ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
@@ -650,15 +641,15 @@ export function ReportsPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-xs text-[#6b7280]">{trade.segment}</TableCell>
-                            <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a]">{trade.quantity}</TableCell>
-                            <TableCell className="font-mono-data text-sm text-right text-[#6b7280]">
+                            <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a]">{trade.quantity}</TableCell>
+                            <TableCell className="font-mono-data font-tabular text-sm text-right text-[#6b7280]">
                               {formatINR(trade.fillPrice)}
                             </TableCell>
-                            <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a]">
+                            <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a]">
                               {formatINRWhole(trade.totalValue)}
                             </TableCell>
-                            <TableCell className={`font-mono-data text-sm font-semibold text-right ${
-                              !hasPnl ? 'text-[#6b7280]' : isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                            <TableCell className={`font-mono-data font-tabular text-sm font-semibold text-right ${
+                              !hasPnl ? 'text-[#6b7280]' : isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                             }`}>
                               {!hasPnl ? '—' : `${isPositive ? '+' : '-'}${formatINR(Math.abs(trade.pnl!))}`}
                             </TableCell>
@@ -692,7 +683,7 @@ export function ReportsPage() {
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                         Gross Profit
                       </p>
-                      <p className="font-mono-data text-sm font-bold text-[#00d09c] mt-0.5">
+                      <p className="font-mono-data font-tabular text-sm font-bold text-[#00B386] mt-0.5">
                         +{formatINR(winningTrades.reduce((s, t) => s + (t.pnl || 0), 0))}
                       </p>
                     </div>
@@ -700,7 +691,7 @@ export function ReportsPage() {
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                         Gross Loss
                       </p>
-                      <p className="font-mono-data text-sm font-bold text-[#eb5b3c] mt-0.5">
+                      <p className="font-mono-data font-tabular text-sm font-bold text-[#EB5B3C] mt-0.5">
                         -{formatINR(Math.abs(losingTrades.reduce((s, t) => s + (t.pnl || 0), 0)))}
                       </p>
                     </div>
@@ -708,7 +699,7 @@ export function ReportsPage() {
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                         Total Brokerage
                       </p>
-                      <p className="font-mono-data text-sm font-bold text-[#1a1a1a] mt-0.5">
+                      <p className="font-mono-data font-tabular text-sm font-bold text-[#1a1a1a] mt-0.5">
                         {formatINR(trades.reduce((s, t) => s + t.brokerage, 0))}
                       </p>
                     </div>
@@ -716,7 +707,7 @@ export function ReportsPage() {
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
                         Net P&amp;L
                       </p>
-                      <p className={`font-mono-data text-sm font-bold mt-0.5 ${totalPnl >= 0 ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                      <p className={`font-mono-data font-tabular text-sm font-bold mt-0.5 ${totalPnl >= 0 ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                         {totalPnl >= 0 ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
                       </p>
                     </div>

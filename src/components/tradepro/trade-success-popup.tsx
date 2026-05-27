@@ -153,19 +153,19 @@ export function TradeSuccessProvider({ children }: { children: React.ReactNode }
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-[#0a0e17] rounded-lg p-3 border border-[#1f2937]">
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Quantity</p>
-                      <p className="text-sm font-bold font-mono text-white">{tradeData.qty}</p>
+                      <p className="text-sm font-bold font-mono font-tabular text-white">{tradeData.qty}</p>
                     </div>
                     <div className="bg-[#0a0e17] rounded-lg p-3 border border-[#1f2937]">
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Price</p>
-                      <p className="text-sm font-bold font-mono text-white">₹{tradeData.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-sm font-bold font-mono font-tabular text-white">₹{tradeData.price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                     </div>
                     <div className="bg-[#0a0e17] rounded-lg p-3 border border-[#1f2937]">
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Time</p>
-                      <p className="text-sm font-mono text-white">{tradeData.time}</p>
+                      <p className="text-sm font-mono font-tabular text-white">{tradeData.time}</p>
                     </div>
                     <div className="bg-[#0a0e17] rounded-lg p-3 border border-[#1f2937]">
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Order ID</p>
-                      <p className="text-xs font-mono text-gray-400">#{tradeData.orderId}</p>
+                      <p className="text-xs font-mono font-tabular text-gray-400">#{tradeData.orderId}</p>
                     </div>
                   </div>
 
@@ -173,7 +173,7 @@ export function TradeSuccessProvider({ children }: { children: React.ReactNode }
                   {tradeData.totalValue && (
                     <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
                       <span className="text-sm font-medium text-gray-400">Total Value</span>
-                      <span className="text-lg font-bold font-mono text-amber-500">
+                      <span className="text-lg font-bold font-mono font-tabular text-amber-500">
                         ₹{tradeData.totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </span>
                     </div>

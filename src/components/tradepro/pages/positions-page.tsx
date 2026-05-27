@@ -35,6 +35,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
+import { formatINR, formatINRWhole } from '@/lib/format'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -62,16 +63,6 @@ interface PositionData {
   lotSize: number
   isOpen: boolean
   createdAt: string
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function formatINRWhole(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })
 }
 
 function formatDuration(startIso: string, endIso?: string | null): string {
@@ -181,7 +172,7 @@ export function PositionsPage() {
   const stats = [
     { label: 'Open Positions', value: String(openPositions.length), icon: Crosshair, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
     { label: 'Total Invested', value: formatINRWhole(totalInvested), icon: IndianRupee, borderColor: 'border-l-[#6b7280]', iconBg: 'bg-[#6b7280]/10', iconColor: 'text-[#6b7280]' },
-    { label: 'Unrealized P&L', value: `${isProfit ? '+' : '-'}${formatINR(Math.abs(totalPnl))}`, icon: isProfit ? TrendingUp : AlertTriangle, borderColor: isProfit ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]', iconBg: isProfit ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10', iconColor: isProfit ? 'text-[#00d09c]' : 'text-[#eb5b3c]' },
+    { label: 'Unrealized P&L', value: `${isProfit ? '+' : '-'}${formatINR(Math.abs(totalPnl))}`, icon: isProfit ? TrendingUp : AlertTriangle, borderColor: isProfit ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]', iconBg: isProfit ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10', iconColor: isProfit ? 'text-[#00B386]' : 'text-[#EB5B3C]' },
     { label: 'Margin Used', value: formatINRWhole(totalMargin), icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
   ]
 
@@ -255,8 +246,8 @@ export function PositionsPage() {
                       <span
                         className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                           isLong
-                            ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                            : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                            ? 'bg-[#00B386]/10 text-[#00B386]'
+                            : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                         }`}
                       >
                         {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
@@ -264,22 +255,22 @@ export function PositionsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-[#6b7280] py-4">{pos.segment}</TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">{pos.quantity}</TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-[#6b7280] py-4">
+                    <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">{pos.quantity}</TableCell>
+                    <TableCell className="font-mono-data font-tabular text-sm text-right text-[#6b7280] py-4">
                       {formatINR(pos.entryPrice)}
                     </TableCell>
-                    <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
+                    <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                       {formatINR(pos.currentPrice)}
                     </TableCell>
                     <TableCell className="py-4 text-right">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
                         isPositive
-                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                          ? 'bg-[#00B386]/10 text-[#00B386]'
+                          : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                       }`}>
                         {isPositive ? '+' : '-'}{formatINR(Math.abs(pos.unrealizedPnl))}
                       </span>
-                      <div className={`text-[10px] font-medium mt-0.5 ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                      <div className={`text-[10px] font-medium mt-0.5 ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                         {isPositive ? '+' : ''}{pos.unrealizedPnlPercent.toFixed(2)}%
                       </div>
                     </TableCell>
@@ -362,25 +353,25 @@ export function PositionsPage() {
                     <span
                       className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                         isLong
-                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                          ? 'bg-[#00B386]/10 text-[#00B386]'
+                          : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                       }`}
                     >
                       {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
                       {isLong ? 'BUY' : 'SELL'}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#6b7280] py-4">
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#6b7280] py-4">
                     {formatINR(pos.entryPrice)}
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                     {pos.exitPrice ? formatINR(pos.exitPrice) : '—'}
                   </TableCell>
                   <TableCell className="py-4 text-right">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
                       isPositive
-                        ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                        : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                        ? 'bg-[#00B386]/10 text-[#00B386]'
+                        : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                     }`}>
                       {isPositive ? '+' : '-'}{formatINR(Math.abs(realizedPnl))}
                     </span>
@@ -436,7 +427,7 @@ export function PositionsPage() {
                     <Icon className={`size-3.5 ${stat.iconColor}`} />
                   </div>
                 </div>
-                <p className="text-lg font-bold font-mono-data text-[#1a1a1a]">
+                <p className="text-lg font-bold font-mono-data font-tabular text-[#1a1a1a]">
                   {stat.value}
                 </p>
               </CardContent>

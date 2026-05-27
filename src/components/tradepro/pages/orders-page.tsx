@@ -36,6 +36,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
+import { formatINR, formatPnL } from '@/lib/format'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -81,12 +82,6 @@ interface TradeData {
   }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 function formatTime(isoDate: string): string {
   return new Date(isoDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
 }
@@ -99,9 +94,9 @@ function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, string> = {
     PENDING: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/20',
     PARTIALLY_FILLED: 'bg-[#00D09C]/10 text-[#00D09C] border-[#00D09C]/20',
-    FILLED: 'bg-[#00d09c]/10 text-[#00d09c] border-[#00d09c]/20',
-    CANCELLED: 'bg-[#eb5b3c]/10 text-[#eb5b3c] border-[#eb5b3c]/20',
-    REJECTED: 'bg-[#eb5b3c]/10 text-[#eb5b3c] border-[#eb5b3c]/20',
+    FILLED: 'bg-[#00B386]/10 text-[#00B386] border-[#00B386]/20',
+    CANCELLED: 'bg-[#EB5B3C]/10 text-[#EB5B3C] border-[#eb5b3c]/20',
+    REJECTED: 'bg-[#EB5B3C]/10 text-[#EB5B3C] border-[#eb5b3c]/20',
     EXPIRED: 'bg-[#6b7280]/10 text-[#6b7280] border-[#6b7280]/20',
   }
   return (
@@ -231,18 +226,18 @@ export function OrdersPage() {
                     <span
                       className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                         isBuy
-                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                          ? 'bg-[#00B386]/10 text-[#00B386]'
+                          : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                       }`}
                     >
                       {isBuy ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
                       {order.tradeDirection}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                     {formatINR(order.price)}
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                     {order.quantity}
                   </TableCell>
                   <TableCell className="py-4">
@@ -311,28 +306,28 @@ export function OrdersPage() {
                     <span
                       className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                         trade.tradeDirection === 'BUY'
-                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                          ? 'bg-[#00B386]/10 text-[#00B386]'
+                          : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                       }`}
                     >
                       {trade.tradeDirection === 'BUY' ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
                       {trade.tradeDirection}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                     {formatINR(trade.fillPrice)}
                   </TableCell>
-                  <TableCell className="font-mono-data text-sm text-right text-[#1a1a1a] py-4">
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                     {trade.quantity}
                   </TableCell>
                   <TableCell className="py-4 text-right">
                     {trade.pnl !== null ? (
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold font-tabular ${
                         isPositive
-                          ? 'bg-[#00d09c]/10 text-[#00d09c]'
-                          : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+                          ? 'bg-[#00B386]/10 text-[#00B386]'
+                          : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
                       }`}>
-                        {isPositive ? '+' : '-'}{formatINR(Math.abs(trade.pnl))}
+                        {formatPnL(trade.pnl!)}
                       </span>
                     ) : (
                       <span className="text-xs text-[#6b7280]">—</span>
@@ -378,8 +373,8 @@ export function OrdersPage() {
       >
         {[
           { label: 'Total Orders', value: String(orders.length), icon: ClipboardList, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
-          { label: 'Filled', value: String(filledCount), icon: CheckCircle2, borderColor: 'border-l-[#00d09c]', iconBg: 'bg-[#00d09c]/10', iconColor: 'text-[#00d09c]' },
-          { label: 'Cancelled', value: String(orders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#eb5b3c]/10', iconColor: 'text-[#eb5b3c]' },
+          { label: 'Filled', value: String(filledCount), icon: CheckCircle2, borderColor: 'border-l-[#00B386]', iconBg: 'bg-[#00B386]/10', iconColor: 'text-[#00B386]' },
+          { label: 'Cancelled', value: String(orders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#EB5B3C]/10', iconColor: 'text-[#EB5B3C]' },
           { label: 'Total Volume', value: totalVolume >= 100000 ? `₹${(totalVolume / 100000).toFixed(1)}L` : `₹${totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
         ].map((stat) => {
           const Icon = stat.icon
@@ -394,7 +389,7 @@ export function OrdersPage() {
                     <Icon className={`size-3.5 ${stat.iconColor}`} />
                   </div>
                 </div>
-                <p className="text-lg font-bold font-mono-data text-[#1a1a1a]">
+                <p className="text-lg font-bold font-tabular text-[#1a1a1a]">
                   {stat.value}
                 </p>
               </CardContent>

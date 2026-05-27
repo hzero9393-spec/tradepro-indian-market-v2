@@ -21,6 +21,7 @@ import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { formatINR, formatINRWhole } from '@/lib/format'
 import {
   User,
   Mail,
@@ -88,21 +89,6 @@ interface AppSettings {
   confirmBeforeTrade: boolean
   defaultOrderType: 'MARKET' | 'LIMIT'
   notifications: boolean
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
-function formatINRWhole(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', {
-    maximumFractionDigits: 0,
-  })
 }
 
 function formatDate(dateStr: string | null): string {
@@ -501,8 +487,8 @@ export function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-[#eb5b3c]/20 bg-[#fef2ef]"
         >
-          <AlertTriangle className="size-5 text-[#eb5b3c] shrink-0" />
-          <p className="text-sm font-medium text-[#eb5b3c]">
+          <AlertTriangle className="size-5 text-[#EB5B3C] shrink-0" />
+          <p className="text-sm font-medium text-[#EB5B3C]">
             Low Balance Warning: Your virtual balance is below ₹10,000. Consider adding funds.
           </p>
         </motion.div>
@@ -533,7 +519,7 @@ export function ProfilePage() {
                     <h2 className="text-lg font-bold text-[#1a1a2e]">{user?.name ?? 'User'}</h2>
                     <p className="text-sm text-[#6b7280] mt-0.5">{user?.email ?? '—'}</p>
                     <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-md bg-[#f0f2f5] text-[#9ca3af] border border-[#e8eaf0]">
+                      <span className="text-[10px] font-mono font-tabular px-2.5 py-0.5 rounded-md bg-[#f0f2f5] text-[#9ca3af] border border-[#e8eaf0]">
                         ID: {user?.id?.slice(0, 8) ?? '--------'}
                       </span>
                     </div>
@@ -691,11 +677,11 @@ export function ProfilePage() {
               )}>
                 <div className="flex items-center gap-2 mb-3">
                   <div className={cn('size-9 rounded-lg flex items-center justify-center', isProfit ? 'bg-[#e6faf4]' : 'bg-[#fef2ef]')}>
-                    {isProfit ? <TrendingUp className="size-4 text-[#00D09C]" /> : <TrendingDown className="size-4 text-[#eb5b3c]" />}
+                    {isProfit ? <TrendingUp className="size-4 text-[#00D09C]" /> : <TrendingDown className="size-4 text-[#EB5B3C]" />}
                   </div>
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-[#6b7280]">Total P&L</span>
                 </div>
-                <p className={cn('text-xl font-bold', isProfit ? 'text-[#00D09C]' : 'text-[#eb5b3c]')}>
+                <p className={cn('text-xl font-bold', isProfit ? 'text-[#00D09C]' : 'text-[#EB5B3C]')}>
                   {isProfit ? '+' : '-'}{formatINR(Math.abs(totalPnl))}
                 </p>
               </div>
@@ -844,7 +830,7 @@ export function ProfilePage() {
                 <div className="flex items-center justify-between pt-2 border-t border-[#e8eaf0]">
                   <div className="flex items-center gap-3">
                     <div className="size-9 rounded-lg bg-[#fef2ef] flex items-center justify-center">
-                      <RotateCcw className="size-4 text-[#eb5b3c]" />
+                      <RotateCcw className="size-4 text-[#EB5B3C]" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-[#1a1a2e]">Reset Virtual Balance</p>
@@ -854,7 +840,7 @@ export function ProfilePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs font-semibold border-[#eb5b3c]/30 text-[#eb5b3c] hover:bg-[#fef2ef]"
+                    className="text-xs font-semibold border-[#eb5b3c]/30 text-[#EB5B3C] hover:bg-[#fef2ef]"
                     onClick={handleResetBalance}
                   >
                     Reset
@@ -900,7 +886,7 @@ export function ProfilePage() {
                       <Target className="size-4 text-[#00D09C]" />
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Win Rate</span>
                     </div>
-                    <p className={cn('text-xl font-bold', winRate >= 50 ? 'text-[#00D09C]' : 'text-[#eb5b3c]')}>
+                    <p className={cn('text-xl font-bold', winRate >= 50 ? 'text-[#00D09C]' : 'text-[#EB5B3C]')}>
                       {winRate.toFixed(1)}%
                     </p>
                   </div>
@@ -908,10 +894,10 @@ export function ProfilePage() {
                   {/* Total P&L */}
                   <div className="bg-[#f7f8fc] rounded-xl p-4 border border-[#e8eaf0]/50">
                     <div className="flex items-center gap-2 mb-2">
-                      {isProfit ? <TrendingUp className="size-4 text-[#00D09C]" /> : <TrendingDown className="size-4 text-[#eb5b3c]" />}
+                      {isProfit ? <TrendingUp className="size-4 text-[#00D09C]" /> : <TrendingDown className="size-4 text-[#EB5B3C]" />}
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Total P&L</span>
                     </div>
-                    <p className={cn('text-xl font-bold', isProfit ? 'text-[#00D09C]' : 'text-[#eb5b3c]')}>
+                    <p className={cn('text-xl font-bold', isProfit ? 'text-[#00D09C]' : 'text-[#EB5B3C]')}>
                       {isProfit ? '+' : ''}{formatINR(totalPnl)}
                     </p>
                   </div>
@@ -922,7 +908,7 @@ export function ProfilePage() {
                       <Star className="size-4 text-[#f59e0b]" />
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Best Trade</span>
                     </div>
-                    <p className={cn('text-xl font-bold', bestTradePnl >= 0 ? 'text-[#00D09C]' : 'text-[#eb5b3c]')}>
+                    <p className={cn('text-xl font-bold', bestTradePnl >= 0 ? 'text-[#00D09C]' : 'text-[#EB5B3C]')}>
                       {bestTradePnl > 0 ? '+' : ''}{formatINR(bestTradePnl)}
                     </p>
                   </div>
@@ -1137,8 +1123,8 @@ export function ProfilePage() {
               onClick={handleLogout}
               className="flex items-center justify-center gap-2 w-full p-4 rounded-2xl border border-[#eb5b3c]/20 bg-[#fef2ef] hover:bg-[#fde5dd] transition-colors group"
             >
-              <LogOut className="size-5 text-[#eb5b3c] group-hover:translate-x-0.5 transition-transform" />
-              <span className="text-sm font-bold text-[#eb5b3c]">Logout</span>
+              <LogOut className="size-5 text-[#EB5B3C] group-hover:translate-x-0.5 transition-transform" />
+              <span className="text-sm font-bold text-[#EB5B3C]">Logout</span>
             </button>
           </motion.div>
         </div>
@@ -1317,7 +1303,7 @@ export function ProfilePage() {
         <DialogContent className="sm:max-w-md bg-white border-[#e8eaf0]">
           <DialogHeader>
             <DialogTitle className="text-[#1a1a2e] flex items-center gap-2">
-              <ArrowUpRight className="size-5 text-[#eb5b3c]" /> Withdraw
+              <ArrowUpRight className="size-5 text-[#EB5B3C]" /> Withdraw
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">

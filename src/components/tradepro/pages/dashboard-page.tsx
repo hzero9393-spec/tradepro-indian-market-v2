@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
+import { formatPrice } from '@/lib/format'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -97,10 +98,6 @@ const fallbackOtherStocks: StockData[] = [
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function formatPrice(value: number): string {
-  return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 // ─── Stock Row Component ────────────────────────────────────────────────────
 
 function StockRow({ stock, onClick }: { stock: StockData; onClick: () => void }) {
@@ -112,9 +109,9 @@ function StockRow({ stock, onClick }: { stock: StockData; onClick: () => void })
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className={`size-9 rounded-lg flex items-center justify-center shrink-0 ${
-          isPositive ? 'bg-[#00d09c]/8' : 'bg-[#eb5b3c]/8'
+          isPositive ? 'bg-[#00B386]/8' : 'bg-[#EB5B3C]/8'
         }`}>
-          <span className={`text-[10px] font-bold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+          <span className={`text-[10px] font-bold ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
             {stock.symbol.substring(0, 2)}
           </span>
         </div>
@@ -132,16 +129,16 @@ function StockRow({ stock, onClick }: { stock: StockData; onClick: () => void })
       </div>
       <div className="text-right shrink-0 ml-3 flex items-center gap-2">
         <div>
-          <div className="text-sm font-bold font-mono text-[#1a1a1a]">
+          <div className="text-sm font-bold font-mono font-tabular text-[#1a1a1a]">
             ₹{formatPrice(stock.currentPrice)}
           </div>
           <div className={`flex items-center justify-end gap-1 text-xs font-semibold ${
-            isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+            isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
           }`}>
             {isPositive ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
             <span>{isPositive ? '+' : ''}{stock.change.toFixed(2)}</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-              isPositive ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'
+              isPositive ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10'
             }`}>
               {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
             </span>
@@ -353,15 +350,15 @@ export function DashboardPage() {
                             {index.name || index.symbol}
                           </span>
                           {isPositive ? (
-                            <TrendingUp className="size-4 text-[#00d09c] group-hover:scale-110 transition-transform" />
+                            <TrendingUp className="size-4 text-[#00B386] group-hover:scale-110 transition-transform" />
                           ) : (
-                            <TrendingDown className="size-4 text-[#eb5b3c] group-hover:scale-110 transition-transform" />
+                            <TrendingDown className="size-4 text-[#EB5B3C] group-hover:scale-110 transition-transform" />
                           )}
                         </div>
-                        <div className="text-2xl font-bold font-mono text-[#1a1a1a] mb-1">
+                        <div className="text-2xl font-bold font-mono font-tabular text-[#1a1a1a] mb-1">
                           {formatPrice(index.currentPrice)}
                         </div>
-                        <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'}`}>
+                        <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
                           {isPositive ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
                           <span>{isPositive ? '+' : ''}{index.change.toFixed(2)} ({isPositive ? '+' : ''}{index.changePercent.toFixed(2)}%)</span>
                         </div>
@@ -378,8 +375,8 @@ export function DashboardPage() {
             <CardContent className="p-0">
               <div className="flex items-center justify-between px-5 pt-4 pb-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="size-7 rounded-lg bg-[#00d09c]/10 flex items-center justify-center">
-                    <Flame className="size-3.5 text-[#00d09c]" />
+                  <div className="size-7 rounded-lg bg-[#00B386]/10 flex items-center justify-center">
+                    <Flame className="size-3.5 text-[#00B386]" />
                   </div>
                   <h3 className="text-sm font-semibold text-[#1a1a1a]">Top Gainers</h3>
                 </div>
@@ -409,8 +406,8 @@ export function DashboardPage() {
             <CardContent className="p-0">
               <div className="flex items-center justify-between px-5 pt-4 pb-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="size-7 rounded-lg bg-[#eb5b3c]/10 flex items-center justify-center">
-                    <TrendingDown className="size-3.5 text-[#eb5b3c]" />
+                  <div className="size-7 rounded-lg bg-[#EB5B3C]/10 flex items-center justify-center">
+                    <TrendingDown className="size-3.5 text-[#EB5B3C]" />
                   </div>
                   <h3 className="text-sm font-semibold text-[#1a1a1a]">Top Losers</h3>
                 </div>
@@ -482,7 +479,6 @@ export function DashboardPage() {
           </Card>
         </div>
       )}
-
 
     </div>
   )

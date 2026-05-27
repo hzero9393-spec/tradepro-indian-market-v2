@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { formatPercent } from '@/lib/format'
 
 interface IndexData {
   symbol: string
@@ -102,15 +103,15 @@ export function IndexTicker() {
                   <span className="text-[11px] font-semibold" style={{ color: '#4a4a4a' }}>
                     {idx.symbol}
                   </span>
-                  <span className="text-[12px] font-semibold" style={{ color: '#1a1a1a' }}>
+                  <span className="text-[12px] font-semibold font-tabular" style={{ color: '#1a1a1a' }}>
                     {idx.currentPrice.toLocaleString('en-IN')}
                   </span>
                   <span
-                    className="flex items-center gap-0.5 text-[11px] font-semibold"
-                    style={{ color: isPositive ? '#00D09C' : '#eb5b3c' }}
+                    className="flex items-center gap-0.5 text-[11px] font-semibold font-tabular"
+                    style={{ color: isPositive ? '#00B386' : '#eb5b3c' }}
                   >
                     {isPositive ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-                    {isPositive ? '+' : ''}{idx.changePercent.toFixed(2)}%
+                    {isPositive ? '+' : ''}{formatPercent(idx.changePercent)}
                   </span>
                 </button>
               )

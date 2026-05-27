@@ -41,6 +41,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import { formatINR, formatNumber } from '@/lib/format'
 import {
   AreaChart,
   Area,
@@ -99,19 +100,6 @@ interface OptionRow {
 }
 
 type RangeOption = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '5Y'
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function formatNumber(value: number): string {
-  if (value >= 10000000) return (value / 10000000).toFixed(2) + ' Cr'
-  if (value >= 100000) return (value / 100000).toFixed(2) + ' L'
-  if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
-  return value.toLocaleString('en-IN')
-}
 
 function formatDate(dateStr: string, range: RangeOption): string {
   const d = new Date(dateStr)
@@ -189,19 +177,19 @@ function CustomTooltip({ active, payload, label, range }: { active?: boolean; pa
       <div className="font-semibold text-[#1a1a1a] mb-1.5">{formatDate(d.date, range)}</div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
         <span className="text-[#6b7280]">Open</span>
-        <span className="font-mono text-right">{d.open.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.open.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">High</span>
-        <span className="font-mono text-right">{d.high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">Low</span>
-        <span className="font-mono text-right">{d.low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">Close</span>
-        <span className={cn('font-mono text-right font-semibold', isUp ? 'text-[#00d09c]' : 'text-[#eb5b3c]')}>
+        <span className={cn('font-mono font-tabular text-right font-semibold', isUp ? 'text-[#00B386]' : 'text-[#EB5B3C]')}>
           {d.close.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
         </span>
         {d.volume > 0 && (
           <>
             <span className="text-[#6b7280]">Volume</span>
-            <span className="font-mono text-right">{formatNumber(d.volume)}</span>
+            <span className="font-mono font-tabular text-right">{formatNumber(d.volume)}</span>
           </>
         )}
       </div>
@@ -399,7 +387,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
     return chartData.map((d) => ({
       ...d,
       dateLabel: formatDate(d.date, range),
-      color: d.close >= d.open ? '#00d09c' : '#eb5b3c',
+      color: d.close >= d.open ? '#00B386' : '#eb5b3c',
     }))
   }, [chartData, range])
 
@@ -436,23 +424,23 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <>
                   <div className={cn(
                     'flex size-10 items-center justify-center rounded-xl',
-                    isPositive ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'
+                    isPositive ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10'
                   )}>
                     {isPositive ? (
-                      <TrendingUp className="size-5 text-[#00d09c]" />
+                      <TrendingUp className="size-5 text-[#00B386]" />
                     ) : (
-                      <TrendingDown className="size-5 text-[#eb5b3c]" />
+                      <TrendingDown className="size-5 text-[#EB5B3C]" />
                     )}
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-[#1a1a1a]">{detail?.name || symbol}</h2>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-2xl font-bold font-mono-data text-[#1a1a1a]">
+                      <span className="text-2xl font-bold font-mono-data font-tabular text-[#1a1a1a]">
                         {detail?.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                       </span>
                       <span className={cn(
                         'flex items-center gap-0.5 text-sm font-semibold',
-                        isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                        isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                       )}>
                         {isPositive ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                         {isPositive ? '+' : ''}{detail?.change.toFixed(2)} ({isPositive ? '+' : ''}{detail?.changePercent.toFixed(2)}%)
@@ -571,8 +559,8 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                         <AreaChart data={chartDataFormatted} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                           <defs>
                             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={isPositive ? '#00d09c' : '#eb5b3c'} stopOpacity={0.3} />
-                              <stop offset="95%" stopColor={isPositive ? '#00d09c' : '#eb5b3c'} stopOpacity={0} />
+                              <stop offset="5%" stopColor={isPositive ? '#00B386' : '#eb5b3c'} stopOpacity={0.3} />
+                              <stop offset="95%" stopColor={isPositive ? '#00B386' : '#eb5b3c'} stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" />
@@ -595,7 +583,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                           <Area
                             type="monotone"
                             dataKey="close"
-                            stroke={isPositive ? '#00d09c' : '#eb5b3c'}
+                            stroke={isPositive ? '#00B386' : '#eb5b3c'}
                             strokeWidth={2}
                             fill={`url(#${gradientId})`}
                             dot={false}
@@ -632,7 +620,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                                   y={y}
                                   width={Math.max(1, width as number)}
                                   height={height}
-                                  fill={isUp ? '#00d09c' : '#eb5b3c'}
+                                  fill={isUp ? '#00B386' : '#eb5b3c'}
                                   opacity={0.85}
                                   rx={1}
                                 />
@@ -665,14 +653,14 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
               <div className="flex items-center gap-4 text-xs bg-white border border-[#e5e7eb] rounded-lg p-2.5">
                 <div className="flex items-center gap-1">
                   <span className="text-[#6b7280]">Spot</span>
-                  <span className="font-mono font-bold text-[#1a1a1a]">{detail?.currentPrice.toLocaleString('en-IN') || '--'}</span>
+                  <span className="font-mono font-tabular font-bold text-[#1a1a1a]">{detail?.currentPrice.toLocaleString('en-IN') || '--'}</span>
                 </div>
                 <div className="h-3 w-px bg-[#e5e7eb]" />
                 <div className="flex items-center gap-1">
                   <span className="text-[#6b7280]">PCR</span>
                   <span className={cn(
-                    'font-mono font-bold',
-                    optionStats.pcr > 1 ? 'text-[#00d09c]' : optionStats.pcr < 0.7 ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
+                    'font-mono font-tabular font-bold',
+                    optionStats.pcr > 1 ? 'text-[#00B386]' : optionStats.pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#1a1a1a]'
                   )}>
                     {optionStats.pcr.toFixed(2)}
                   </span>
@@ -680,7 +668,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="h-3 w-px bg-[#e5e7eb]" />
                 <div className="flex items-center gap-1">
                   <span className="text-[#6b7280]">Max Pain</span>
-                  <span className="font-mono font-bold text-[#1a1a1a]">{optionStats.maxPain.toLocaleString()}</span>
+                  <span className="font-mono font-tabular font-bold text-[#1a1a1a]">{optionStats.maxPain.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -741,16 +729,16 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             )}
                           >
                             {/* CE Side */}
-                            <td className={cn('px-1.5 py-1 text-right font-mono text-[#6b7280]', ceITM && 'bg-[#00d09c]/6')}>
+                            <td className={cn('px-1.5 py-1 text-right font-mono font-tabular text-[#6b7280]', ceITM && 'bg-[#00B386]/6')}>
                               {row.ceOI.toFixed(1)}
                             </td>
-                            <td className={cn('px-1.5 py-1 text-right font-mono text-[#9ca3af]', ceITM && 'bg-[#00d09c]/6')}>
+                            <td className={cn('px-1.5 py-1 text-right font-mono font-tabular text-[#9ca3af]', ceITM && 'bg-[#00B386]/6')}>
                               {row.ceVolume > 0 ? `${(row.ceVolume / 1000).toFixed(0)}K` : '-'}
                             </td>
                             <td
                               className={cn(
-                                'px-1.5 py-1 text-right font-mono font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#00d09c] hover:underline',
-                                ceITM && 'bg-[#00d09c]/6'
+                                'px-1.5 py-1 text-right font-mono font-tabular font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#00B386] hover:underline',
+                                ceITM && 'bg-[#00B386]/6'
                               )}
                               onClick={() => handleOptionClick(row, 'CE')}
                             >
@@ -758,15 +746,15 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             </td>
                             <td className={cn(
                               'px-1.5 py-1 text-right font-mono',
-                              row.ceChngPct > 0 ? 'text-[#00d09c]' : row.ceChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#9ca3af]',
-                              ceITM && 'bg-[#00d09c]/6'
+                              row.ceChngPct > 0 ? 'text-[#00B386]' : row.ceChngPct < 0 ? 'text-[#EB5B3C]' : 'text-[#9ca3af]',
+                              ceITM && 'bg-[#00B386]/6'
                             )}>
                               {row.ceChngPct > 0 ? '+' : ''}{row.ceChngPct.toFixed(1)}%
                             </td>
 
                             {/* Strike */}
                             <td className={cn(
-                              'px-2 py-1 text-center font-mono font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
+                              'px-2 py-1 text-center font-mono font-tabular font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
                               isATM ? 'text-[#1a1a1a] bg-[#1a1a1a]/10' : 'text-[#1a1a1a]'
                             )}>
                               {row.strike.toLocaleString()}
@@ -775,24 +763,24 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             {/* PE Side */}
                             <td className={cn(
                               'px-1.5 py-1 text-left font-mono',
-                              row.peChngPct > 0 ? 'text-[#00d09c]' : row.peChngPct < 0 ? 'text-[#eb5b3c]' : 'text-[#9ca3af]',
-                              peITM && 'bg-[#eb5b3c]/6'
+                              row.peChngPct > 0 ? 'text-[#00B386]' : row.peChngPct < 0 ? 'text-[#EB5B3C]' : 'text-[#9ca3af]',
+                              peITM && 'bg-[#EB5B3C]/6'
                             )}>
                               {row.peChngPct > 0 ? '+' : ''}{row.peChngPct.toFixed(1)}%
                             </td>
                             <td
                               className={cn(
-                                'px-1.5 py-1 text-left font-mono font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#eb5b3c] hover:underline',
-                                peITM && 'bg-[#eb5b3c]/6'
+                                'px-1.5 py-1 text-left font-mono font-tabular font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#EB5B3C] hover:underline',
+                                peITM && 'bg-[#EB5B3C]/6'
                               )}
                               onClick={() => handleOptionClick(row, 'PE')}
                             >
                               {row.peLTP.toFixed(2)}
                             </td>
-                            <td className={cn('px-1.5 py-1 text-left font-mono text-[#9ca3af]', peITM && 'bg-[#eb5b3c]/6')}>
+                            <td className={cn('px-1.5 py-1 text-left font-mono font-tabular text-[#9ca3af]', peITM && 'bg-[#EB5B3C]/6')}>
                               {row.peVolume > 0 ? `${(row.peVolume / 1000).toFixed(0)}K` : '-'}
                             </td>
-                            <td className={cn('px-1.5 py-1 text-left font-mono text-[#6b7280]', peITM && 'bg-[#eb5b3c]/6')}>
+                            <td className={cn('px-1.5 py-1 text-left font-mono font-tabular text-[#6b7280]', peITM && 'bg-[#EB5B3C]/6')}>
                               {row.peOI.toFixed(1)}
                             </td>
                           </tr>
@@ -823,9 +811,9 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl space-y-3">
                   <h4 className="text-sm font-semibold text-[#1a1a1a]">Day Range</h4>
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-[#eb5b3c] font-semibold">{detail.low.toLocaleString('en-IN')}</span>
-                      <span className="text-[#00d09c] font-semibold">{detail.high.toLocaleString('en-IN')}</span>
+                    <div className="flex justify-between text-xs font-mono font-tabular">
+                      <span className="text-[#EB5B3C] font-semibold">{detail.low.toLocaleString('en-IN')}</span>
+                      <span className="text-[#00B386] font-semibold">{detail.high.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="h-2 rounded-full bg-[#ffffff] relative overflow-hidden">
                       {(() => {
@@ -834,7 +822,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                         return (
                           <>
                             <div
-                              className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] to-[#00d09c] opacity-30"
+                              className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] to-[#00B386] opacity-30"
                               style={{ width: '100%' }}
                             />
                             <div
@@ -854,9 +842,9 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl space-y-3">
                   <h4 className="text-sm font-semibold text-[#1a1a1a]">52 Week Range</h4>
                   <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-[#eb5b3c] font-semibold">{detail.week52Low.toLocaleString('en-IN')}</span>
-                      <span className="text-[#00d09c] font-semibold">{detail.week52High.toLocaleString('en-IN')}</span>
+                    <div className="flex justify-between text-xs font-mono font-tabular">
+                      <span className="text-[#EB5B3C] font-semibold">{detail.week52Low.toLocaleString('en-IN')}</span>
+                      <span className="text-[#00B386] font-semibold">{detail.week52High.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="h-2 rounded-full bg-[#ffffff] relative overflow-hidden">
                       {(() => {
@@ -865,7 +853,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                         return (
                           <>
                             <div
-                              className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] via-[#00D09C] to-[#00d09c] opacity-30"
+                              className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] via-[#00B386] to-[#00B386] opacity-30"
                               style={{ width: '100%' }}
                             />
                             <div
@@ -921,7 +909,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                   {detail?.isRealData && (
                     <div className="flex justify-between">
                       <span className="text-[#6b7280]">Data Source</span>
-                      <Badge className="bg-[#00d09c]/10 text-[#00d09c] text-[10px] font-semibold px-2 py-0.5 border-0">
+                      <Badge className="bg-[#00B386]/10 text-[#00B386] text-[10px] font-semibold px-2 py-0.5 border-0">
                         LIVE
                       </Badge>
                     </div>
@@ -1059,19 +1047,19 @@ function OptionTradeModal({
           <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-[#6b7280]">Spot Price</span>
-              <span className="font-mono font-semibold">₹{spotPrice.toLocaleString()}</span>
+              <span className="font-mono font-tabular font-semibold">₹{spotPrice.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#6b7280]">LTP</span>
-              <span className="font-mono font-semibold">₹{ltp.toFixed(2)}</span>
+              <span className="font-mono font-tabular font-semibold">₹{ltp.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#6b7280]">IV</span>
-              <span className="font-mono">{side === 'CE' ? row.ceIV : row.peIV}%</span>
+              <span className="font-mono font-tabular">{side === 'CE' ? row.ceIV : row.peIV}%</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[#6b7280]">OI</span>
-              <span className="font-mono">{(side === 'CE' ? row.ceOI : row.peOI).toFixed(1)} L</span>
+              <span className="font-mono font-tabular">{(side === 'CE' ? row.ceOI : row.peOI).toFixed(1)} L</span>
             </div>
           </div>
 
@@ -1115,23 +1103,23 @@ function OptionTradeModal({
           <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-[#6b7280]">Lot Size</span>
-              <span className="font-mono font-medium">{lotSize}</span>
+              <span className="font-mono font-tabular font-medium">{lotSize}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#6b7280]">Total Qty</span>
-              <span className="font-mono font-medium">{totalQty}</span>
+              <span className="font-mono font-tabular font-medium">{totalQty}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#6b7280]">Premium</span>
-              <span className="font-mono font-medium">₹{totalPremium.toLocaleString()}</span>
+              <span className="font-mono font-tabular font-medium">₹{totalPremium.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#6b7280]">Brokerage</span>
-              <span className="font-mono font-medium">₹{brokerage.toLocaleString()}</span>
+              <span className="font-mono font-tabular font-medium">₹{brokerage.toLocaleString()}</span>
             </div>
             <div className="flex justify-between border-t border-[#e5e7eb]/20 pt-2">
               <span className="text-[#6b7280] font-semibold">{direction === 'BUY' ? 'Total Cost' : 'Margin Required'}</span>
-              <span className="font-mono font-bold text-[#00D09C] text-base">₹{marginRequired.toLocaleString()}</span>
+              <span className="font-mono font-tabular font-bold text-[#00D09C] text-base">₹{marginRequired.toLocaleString()}</span>
             </div>
           </div>
 
@@ -1169,8 +1157,8 @@ function StatBox({ label, value, highlight, danger }: { label: string; value: st
     <div className="bg-[#f5f7fa] rounded-xl p-3 border border-[#e5e7eb]/10">
       <p className="text-[10px] font-semibold text-[#6b7280] tracking-wider uppercase mb-1">{label}</p>
       <p className={cn(
-        'font-mono font-semibold text-sm',
-        highlight ? 'text-[#00d09c]' : danger ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
+        'font-mono font-tabular font-semibold text-sm',
+        highlight ? 'text-[#00B386]' : danger ? 'text-[#EB5B3C]' : 'text-[#1a1a1a]'
       )}>
         {value}
       </p>
@@ -1183,8 +1171,8 @@ function StatCard({ label, value, highlight, danger }: { label: string; value: s
     <div className="bg-[#ffffff] border border-[#e5e7eb] p-4 rounded-xl">
       <p className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase mb-1.5">{label}</p>
       <p className={cn(
-        'font-mono font-bold text-lg',
-        highlight ? 'text-[#00d09c]' : danger ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
+        'font-mono font-tabular font-bold text-lg',
+        highlight ? 'text-[#00B386]' : danger ? 'text-[#EB5B3C]' : 'text-[#1a1a1a]'
       )}>
         {value}
       </p>
@@ -1199,16 +1187,16 @@ function PerformanceRow({ label, change, changePercent }: { label: string; chang
       <span className="text-sm text-[#6b7280]">{label}</span>
       <div className="flex items-center gap-2">
         <span className={cn(
-          'font-mono text-sm font-semibold',
-          isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+          'font-mono font-tabular text-sm font-semibold',
+          isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
         )}>
           {isPositive ? '+' : ''}{change.toFixed(2)}
         </span>
         <span className={cn(
           'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold',
           isPositive
-            ? 'bg-[#00d09c]/10 text-[#00d09c]'
-            : 'bg-[#eb5b3c]/10 text-[#eb5b3c]'
+            ? 'bg-[#00B386]/10 text-[#00B386]'
+            : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
         )}>
           {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
         </span>

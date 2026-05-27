@@ -46,7 +46,7 @@ interface LearningPath {
 function getDifficultyBadge(difficulty: string) {
   switch (difficulty?.toLowerCase()) {
     case 'beginner':
-      return 'bg-[#00d09c]/10 text-[#00d09c]'
+      return 'bg-[#00B386]/10 text-[#00B386]'
     case 'intermediate':
       return 'bg-[#00D09C]/10 text-[#00D09C]'
     case 'advanced':
@@ -59,7 +59,7 @@ function getDifficultyBadge(difficulty: string) {
 function getDifficultyBorderColor(difficulty: string) {
   switch (difficulty?.toLowerCase()) {
     case 'beginner':
-      return 'border-l-[#00d09c]'
+      return 'border-l-[#00B386]'
     case 'intermediate':
       return 'border-l-[#00D09C]'
     case 'advanced':

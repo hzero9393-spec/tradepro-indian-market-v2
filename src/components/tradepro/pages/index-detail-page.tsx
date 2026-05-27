@@ -14,6 +14,7 @@ import {
   GitBranch,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatINR, formatNumber } from '@/lib/format'
 import {
   AreaChart,
   Area,
@@ -57,19 +58,6 @@ interface CandleData {
 
 type RangeOption = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '5Y'
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function formatINR(value: number): string {
-  return '₹' + Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function formatNumber(value: number): string {
-  if (value >= 10000000) return (value / 10000000).toFixed(2) + ' Cr'
-  if (value >= 100000) return (value / 100000).toFixed(2) + ' L'
-  if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
-  return value.toLocaleString('en-IN')
-}
-
 function formatDate(dateStr: string, range: RangeOption): string {
   const d = new Date(dateStr)
   if (range === '1D') return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })
@@ -90,19 +78,19 @@ function CustomTooltip({ active, payload, range }: { active?: boolean; payload?:
       <div className="font-semibold text-[#1a1a1a] mb-1.5">{formatDate(d.date, range)}</div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
         <span className="text-[#6b7280]">Open</span>
-        <span className="font-mono text-right">{d.open.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.open.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">High</span>
-        <span className="font-mono text-right">{d.high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.high.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">Low</span>
-        <span className="font-mono text-right">{d.low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+        <span className="font-mono font-tabular text-right">{d.low.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
         <span className="text-[#6b7280]">Close</span>
-        <span className={cn('font-mono text-right font-semibold', isUp ? 'text-[#00d09c]' : 'text-[#eb5b3c]')}>
+        <span className={cn('font-mono text-right font-semibold', isUp ? 'text-[#00B386]' : 'text-[#EB5B3C]')}>
           {d.close.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
         </span>
         {d.volume > 0 && (
           <>
             <span className="text-[#6b7280]">Volume</span>
-            <span className="font-mono text-right">{formatNumber(d.volume)}</span>
+            <span className="font-mono font-tabular text-right">{formatNumber(d.volume)}</span>
           </>
         )}
       </div>
@@ -117,8 +105,8 @@ function StatCard({ label, value, highlight, danger }: { label: string; value: s
     <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
       <p className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase mb-1.5">{label}</p>
       <p className={cn(
-        'font-mono font-bold text-lg',
-        highlight ? 'text-[#00d09c]' : danger ? 'text-[#eb5b3c]' : 'text-[#1a1a1a]'
+        'font-mono font-tabular font-bold text-lg',
+        highlight ? 'text-[#00B386]' : danger ? 'text-[#EB5B3C]' : 'text-[#1a1a1a]'
       )}>
         {value}
       </p>
@@ -136,13 +124,13 @@ function RangeBar({ label, low, high, current }: { label: string; low: number; h
     <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl space-y-3">
       <h4 className="text-sm font-semibold text-[#1a1a1a]">{label}</h4>
       <div className="space-y-1.5">
-        <div className="flex justify-between text-xs font-mono">
-          <span className="text-[#eb5b3c] font-semibold">{low.toLocaleString('en-IN')}</span>
-          <span className="text-[#00d09c] font-semibold">{high.toLocaleString('en-IN')}</span>
+        <div className="flex justify-between text-xs font-mono font-tabular">
+          <span className="text-[#EB5B3C] font-semibold">{low.toLocaleString('en-IN')}</span>
+          <span className="text-[#00B386] font-semibold">{high.toLocaleString('en-IN')}</span>
         </div>
         <div className="h-2 rounded-full bg-[#f5f7fa] relative overflow-hidden border border-[#e5e7eb]/50">
           <div
-            className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] to-[#00d09c] opacity-30"
+            className="absolute top-0 left-0 h-full rounded-full bg-gradient-to-r from-[#eb5b3c] to-[#00B386] opacity-30"
             style={{ width: '100%' }}
           />
           <div
@@ -220,7 +208,7 @@ export function IndexDetailPage() {
     return chartData.map((d) => ({
       ...d,
       dateLabel: formatDate(d.date, range),
-      color: d.close >= d.open ? '#00d09c' : '#eb5b3c',
+      color: d.close >= d.open ? '#00B386' : '#eb5b3c',
     }))
   }, [chartData, range])
 
@@ -284,23 +272,23 @@ export function IndexDetailPage() {
                 <>
                   <div className={cn(
                     'flex size-10 items-center justify-center rounded-xl shrink-0',
-                    isPositive ? 'bg-[#00d09c]/10' : 'bg-[#eb5b3c]/10'
+                    isPositive ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10'
                   )}>
                     {isPositive ? (
-                      <TrendingUp className="size-5 text-[#00d09c]" />
+                      <TrendingUp className="size-5 text-[#00B386]" />
                     ) : (
-                      <TrendingDown className="size-5 text-[#eb5b3c]" />
+                      <TrendingDown className="size-5 text-[#EB5B3C]" />
                     )}
                   </div>
                   <div>
                     <h1 className="text-lg font-bold text-[#1a1a1a]">{detail?.name || symbol}</h1>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xl font-bold font-mono text-[#1a1a1a]">
+                      <span className="text-xl font-bold font-mono font-tabular text-[#1a1a1a]">
                         {detail?.currentPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                       </span>
                       <span className={cn(
                         'flex items-center gap-0.5 text-sm font-semibold',
-                        isPositive ? 'text-[#00d09c]' : 'text-[#eb5b3c]'
+                        isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'
                       )}>
                         {isPositive ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
                         {isPositive ? '+' : ''}{detail?.change.toFixed(2)} ({isPositive ? '+' : ''}{detail?.changePercent.toFixed(2)}%)
@@ -392,8 +380,8 @@ export function IndexDetailPage() {
                     <AreaChart data={chartDataFormatted} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={isPositive ? '#00d09c' : '#eb5b3c'} stopOpacity={0.3} />
-                          <stop offset="95%" stopColor={isPositive ? '#00d09c' : '#eb5b3c'} stopOpacity={0} />
+                          <stop offset="5%" stopColor={isPositive ? '#00B386' : '#eb5b3c'} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={isPositive ? '#00B386' : '#eb5b3c'} stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" />
@@ -416,7 +404,7 @@ export function IndexDetailPage() {
                       <Area
                         type="monotone"
                         dataKey="close"
-                        stroke={isPositive ? '#00d09c' : '#eb5b3c'}
+                        stroke={isPositive ? '#00B386' : '#eb5b3c'}
                         strokeWidth={2}
                         fill={`url(#${gradientId})`}
                         dot={false}
@@ -453,7 +441,7 @@ export function IndexDetailPage() {
                               y={y}
                               width={Math.max(1, width as number)}
                               height={height}
-                              fill={isUp ? '#00d09c' : '#eb5b3c'}
+                              fill={isUp ? '#00B386' : '#eb5b3c'}
                               opacity={0.85}
                               rx={1}
                             />
