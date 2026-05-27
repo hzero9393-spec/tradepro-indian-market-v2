@@ -19,6 +19,7 @@ import { OptionChainPage } from '@/components/tradepro/pages/option-chain-page'
 import { IndexDetailPage } from '@/components/tradepro/pages/index-detail-page'
 import { FuturesPage } from '@/components/tradepro/pages/futures-page'
 import { LearningPage } from '@/components/tradepro/pages/learning-page'
+import { ActiveDevicesPage } from '@/components/tradepro/pages/active-devices-page'
 import { IndexTicker } from '@/components/tradepro/index-ticker'
 import { TradeSuccessProvider } from '@/components/tradepro/trade-success-popup'
 import { Footer } from '@/components/tradepro/footer'
@@ -73,6 +74,8 @@ function PageContent({ page }: { page: string }) {
       return <LearningPage />
     case 'profile':
       return <ProfilePage />
+    case 'activeDevices':
+      return <ActiveDevicesPage />
     // Footer pages
     case 'privacy-policy':
       return <PrivacyPolicyPage />

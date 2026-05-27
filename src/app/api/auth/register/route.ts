@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword, generateToken } from '@/lib/auth'
 import { parseUserAgent } from '@/lib/ua-parser'
+import { getLocationFromIP } from '@/lib/geo-location'
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,16 +80,19 @@ export async function POST(request: NextRequest) {
 
     const userAgent = request.headers.get('user-agent')?.substring(0, 255) || 'Unknown'
     const parsedUA = parseUserAgent(userAgent)
+    const ipAddress = request.headers.get('x-forwarded-for') || null
+    const location = await getLocationFromIP(ipAddress)
 
     await db.session.create({
       data: {
         userId: user.id,
         token,
         device: userAgent,
-        ipAddress: request.headers.get('x-forwarded-for') || null,
+        ipAddress,
         browser: parsedUA.browser,
         os: parsedUA.os,
         deviceType: parsedUA.deviceType,
+        location,
         expiresAt,
       },
     })

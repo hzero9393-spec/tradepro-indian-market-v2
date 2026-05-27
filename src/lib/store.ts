@@ -13,6 +13,7 @@ export type PageId =
   | 'futures'      // Futures trading
   | 'learning'     // Learn section
   | 'profile'      // Profile/settings
+  | 'activeDevices' // Active devices/sessions detail
   // Footer pages
   | 'privacy-policy'
   | 'terms-of-service'

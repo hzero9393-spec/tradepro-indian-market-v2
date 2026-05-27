@@ -1181,15 +1181,23 @@ export function ProfilePage() {
                     <MonitorSmartphone className="size-5 text-[#00D09C]" />
                     <h3 className="text-base font-semibold text-[#1a1a2e]">Active Devices</h3>
                   </div>
-                  {sessions.length > 1 && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setLogoutAllConfirmOpen(true)}
-                      className="text-xs font-semibold text-[#EB5B3C] hover:text-[#d94f33] flex items-center gap-1 transition-colors"
+                      onClick={() => setCurrentPage('activeDevices')}
+                      className="text-xs font-semibold text-[#5367ff] hover:text-[#4356e0] flex items-center gap-1 transition-colors"
                     >
-                      <LogOut className="size-3" />
-                      Logout All
+                      View Details <ChevronRight className="size-3" />
                     </button>
-                  )}
+                    {sessions.length > 1 && (
+                      <button
+                        onClick={() => setLogoutAllConfirmOpen(true)}
+                        className="text-xs font-semibold text-[#EB5B3C] hover:text-[#d94f33] flex items-center gap-1 transition-colors"
+                      >
+                        <LogOut className="size-3" />
+                        Logout All
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs text-[#9ca3af] mt-1">
                   Your account is logged in on {sessions.length} device{sessions.length !== 1 ? 's' : ''}

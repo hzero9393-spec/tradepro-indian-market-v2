@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateToken } from '@/lib/auth'
 import { parseUserAgent } from '@/lib/ua-parser'
+import { getLocationFromIP } from '@/lib/geo-location'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
@@ -195,6 +196,8 @@ export async function GET(request: NextRequest) {
 
     const userAgent = request.headers.get('user-agent')?.substring(0, 255) || 'Google OAuth'
     const parsedUA = parseUserAgent(userAgent)
+    const ipAddress = request.headers.get('x-forwarded-for') || null
+    const location = await getLocationFromIP(ipAddress)
 
     let sessionCreated = false
 
@@ -204,10 +207,11 @@ export async function GET(request: NextRequest) {
           userId: user.id,
           token,
           device: userAgent,
-          ipAddress: request.headers.get('x-forwarded-for') || null,
+          ipAddress,
           browser: parsedUA.browser,
           os: parsedUA.os,
           deviceType: parsedUA.deviceType,
+          location,
           expiresAt,
         },
       })
@@ -218,8 +222,8 @@ export async function GET(request: NextRequest) {
       try {
         const sessionId = `ses_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
         const now = new Date().toISOString()
-        await db.$executeRaw`INSERT INTO sessions (id, "userId", token, device, "ipAddress", "expiresAt", "createdAt", browser, os, "deviceType")
-          VALUES (${sessionId}, ${user.id}, ${token}, ${userAgent}, ${request.headers.get('x-forwarded-for') || null}, ${expiresAt.toISOString()}, ${now}, ${parsedUA.browser}, ${parsedUA.os}, ${parsedUA.deviceType})`
+        await db.$executeRaw`INSERT INTO sessions (id, "userId", token, device, "ipAddress", location, "expiresAt", "createdAt", browser, os, "deviceType")
+          VALUES (${sessionId}, ${user.id}, ${token}, ${userAgent}, ${ipAddress}, ${location}, ${expiresAt.toISOString()}, ${now}, ${parsedUA.browser}, ${parsedUA.os}, ${parsedUA.deviceType})`
         sessionCreated = true
       } catch (rawSessErr: any) {
         console.error('[Google OAuth] Raw session insert also failed:', rawSessErr.message)
