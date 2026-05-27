@@ -5,7 +5,7 @@ import {
   Pagination, PaginationContent, PaginationItem, PaginationLink,
   PaginationPrevious, PaginationNext, PaginationEllipsis
 } from '@/components/ui/pagination'
-import type { ChartConfig } from '@/components/ui/chart'
+// Chart types are imported directly in pages that need them
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export type PageKey = 'dashboard' | 'users' | 'paid-users' | 'free-users' | 'trades' | 'positions' | 'analytics' | 'reports' | 'profile' | 'settings'
@@ -169,12 +169,8 @@ export const mockConversionFunnel = [
   { stage: 'Premium Trial', value: 310 }, { stage: 'Paid', value: 234 },
 ]
 
-export const chartConfig: ChartConfig = {
-  count: { label: 'Users', color: '#00D09C' },
-  trades: { label: 'Trades', color: '#00D09C' },
-  revenue: { label: 'Revenue', color: '#00D09C' },
-  users: { label: 'Users', color: '#00D09C' },
-}
+// Chart config is defined in pages that need charts
+// export const chartConfig - removed to avoid recharts import in shared module
 
 // ─── Mock Data Generators ────────────────────────────────────────────────────
 export function generateMockUsers(count: number): AdminUser[] {
