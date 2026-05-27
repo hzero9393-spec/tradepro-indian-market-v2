@@ -354,12 +354,10 @@ export function ActiveDevicesPage() {
                             <span>IP: {currentSession.ipAddress.split(',')[0].trim()}</span>
                           </div>
                         )}
-                        {currentSession.location && currentSession.location !== 'Unknown Location' && (
-                          <div className="flex items-center gap-2 text-sm text-[#6b7280]">
-                            <MapPin className="size-3.5 shrink-0 text-[#9ca3af]" />
-                            <span>{currentSession.location}</span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 text-sm text-[#6b7280]">
+                          <MapPin className="size-3.5 shrink-0 text-[#00D09C]" />
+                          <span className="font-medium">{currentSession.location && currentSession.location !== 'Unknown Location' ? currentSession.location : 'Detecting...'}</span>
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-[#6b7280]">
                           <Clock className="size-3.5 shrink-0 text-[#9ca3af]" />
                           <span>Login: {formatRelativeTime(currentSession.createdAt)}</span>
@@ -462,12 +460,10 @@ export function ActiveDevicesPage() {
                             </>
                           )}
                         </div>
-                        {session.location && session.location !== 'Unknown Location' && (
-                          <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
-                            <MapPin className="size-3 shrink-0" />
-                            <span>{session.location}</span>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
+                          <MapPin className="size-3 shrink-0 text-[#5367ff]" />
+                          <span>{session.location && session.location !== 'Unknown Location' ? session.location : 'Detecting...'}</span>
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
                           <Clock className="size-3 shrink-0" />
                           <span>{formatRelativeTime(session.createdAt)}</span>

@@ -1271,6 +1271,12 @@ export function ProfilePage() {
                             </>
                           )}
                         </div>
+                        {session.location && session.location !== 'Unknown Location' && (
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-[#9ca3af]">
+                            <MapPin className="size-3 shrink-0" />
+                            <span className="truncate">{session.location}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-[#9ca3af]">
                           <Clock className="size-3 shrink-0" />
                           <span>{formatRelativeTime(session.createdAt)}</span>

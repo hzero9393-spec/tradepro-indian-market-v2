@@ -1,25 +1,27 @@
-// IP-based geolocation utility using ipapi.co free API
+// IP-based geolocation utility using ip-api.com (free, reliable, no API key needed)
 // Caches results in-memory to avoid repeated API calls for the same IP
 
 const geoCache = new Map<string, string>()
 const CACHE_MAX_SIZE = 500
 
-interface GeoAPIResponse {
+interface IPAPIResponse {
+  status?: string
+  message?: string
   city?: string
-  region?: string
-  country_name?: string
-  country_code?: string
-  error?: boolean
-  reason?: string
+  regionName?: string
+  country?: string
+  countryCode?: string
 }
 
 /**
  * Get a formatted location string from an IP address.
- * Uses https://ipapi.co/{ip}/json/ to resolve city, region, country.
+ * Uses http://ip-api.com/json/{ip} to resolve city, region, country.
  * Results are cached in-memory to avoid redundant API calls.
  *
+ * Free tier: 45 requests per minute — more than enough for login flows.
+ *
  * @param ipAddress - The IP address to look up (can be null/empty)
- * @returns Formatted location string like "Mumbai, Maharashtra, IN" or "Unknown Location"
+ * @returns Formatted location string like "New Delhi, Delhi, IN" or "Unknown Location"
  */
 export async function getLocationFromIP(ipAddress: string | null): Promise<string> {
   if (!ipAddress) {
@@ -33,6 +35,11 @@ export async function getLocationFromIP(ipAddress: string | null): Promise<strin
     return 'Unknown Location'
   }
 
+  // Skip private/local IPs
+  if (cleanIP === '127.0.0.1' || cleanIP === '::1' || cleanIP.startsWith('192.168.') || cleanIP.startsWith('10.') || cleanIP.startsWith('172.')) {
+    return 'Local Network'
+  }
+
   // Check cache first
   const cached = geoCache.get(cleanIP)
   if (cached) {
@@ -43,12 +50,10 @@ export async function getLocationFromIP(ipAddress: string | null): Promise<strin
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 3000)
 
-    const response = await fetch(`https://ipapi.co/${encodeURIComponent(cleanIP)}/json/`, {
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-      },
-    })
+    const response = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(cleanIP)}?fields=status,message,city,regionName,country,countryCode`,
+      { signal: controller.signal }
+    )
 
     clearTimeout(timeoutId)
 
@@ -57,26 +62,26 @@ export async function getLocationFromIP(ipAddress: string | null): Promise<strin
       return 'Unknown Location'
     }
 
-    const data: GeoAPIResponse = await response.json()
+    const data: IPAPIResponse = await response.json()
 
-    if (data.error) {
-      console.warn(`[GeoLocation] API error for IP ${cleanIP}: ${data.reason || 'Unknown'}`)
+    if (data.status === 'fail' || !data.city) {
+      console.warn(`[GeoLocation] API error for IP ${cleanIP}: ${data.message || 'No city data'}`)
       return 'Unknown Location'
     }
 
-    // Build formatted location string
+    // Build formatted location string: "City, Region, Country Code"
     const parts: string[] = []
 
     if (data.city) {
       parts.push(data.city)
     }
 
-    if (data.region && data.region !== data.city) {
-      parts.push(data.region)
+    if (data.regionName && data.regionName !== data.city) {
+      parts.push(data.regionName)
     }
 
-    if (data.country_code) {
-      parts.push(data.country_code)
+    if (data.countryCode) {
+      parts.push(data.countryCode)
     }
 
     const location = parts.length > 0 ? parts.join(', ') : 'Unknown Location'
