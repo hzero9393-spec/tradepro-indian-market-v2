@@ -162,8 +162,9 @@ export async function GET(request: NextRequest) {
         // Maybe email already exists with different case? Try raw insert
         try {
           const id = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+          const now = new Date().toISOString()
           await db.$executeRaw`INSERT INTO users (id, name, email, "oauthProvider", "oauthId", avatar, "isEmailVerified", "virtualBalance", role, subscription, "isActive", "totalTrades", "winRate", "totalPnl", "marginUsed", "isPhoneVerified", "createdAt", "updatedAt")
-            VALUES (${id}, ${googleUser.name}, ${googleUser.email}, 'google', ${googleUser.sub}, ${googleUser.picture}, ${googleUser.email_verified}, 100000, 'USER', 'FREE', true, 0, 0, 0, 0, false, NOW(), NOW())`
+            VALUES (${id}, ${googleUser.name}, ${googleUser.email}, 'google', ${googleUser.sub}, ${googleUser.picture}, ${googleUser.email_verified}, 100000, 'USER', 'FREE', true, 0, 0, 0, 0, false, ${now}, ${now})`
           user = { id, email: googleUser.email, role: 'USER', isActive: true }
           console.log('[Google OAuth] Raw insert user created:', id)
         } catch (rawErr: any) {
@@ -195,6 +196,8 @@ export async function GET(request: NextRequest) {
     const userAgent = request.headers.get('user-agent')?.substring(0, 255) || 'Google OAuth'
     const parsedUA = parseUserAgent(userAgent)
 
+    let sessionCreated = false
+
     try {
       await db.session.create({
         data: {
@@ -208,17 +211,23 @@ export async function GET(request: NextRequest) {
           expiresAt,
         },
       })
+      sessionCreated = true
     } catch (sessionErr: any) {
-      console.error('[Google OAuth] Session create failed (non-blocking):', sessionErr.message)
+      console.error('[Google OAuth] Session create failed:', sessionErr.message)
       // Try raw insert as fallback
       try {
         const sessionId = `ses_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
-        await db.$executeRaw`INSERT INTO sessions (id, "userId", token, device, "ipAddress", "expiresAt", "createdAt")
-          VALUES (${sessionId}, ${user.id}, ${token}, ${request.headers.get('user-agent')?.substring(0, 255) || 'Google OAuth'}, ${request.headers.get('x-forwarded-for') || null}, ${expiresAt}, NOW())`
+        const now = new Date().toISOString()
+        await db.$executeRaw`INSERT INTO sessions (id, "userId", token, device, "ipAddress", "expiresAt", "createdAt", browser, os, "deviceType")
+          VALUES (${sessionId}, ${user.id}, ${token}, ${userAgent}, ${request.headers.get('x-forwarded-for') || null}, ${expiresAt.toISOString()}, ${now}, ${parsedUA.browser}, ${parsedUA.os}, ${parsedUA.deviceType})`
+        sessionCreated = true
       } catch (rawSessErr: any) {
         console.error('[Google OAuth] Raw session insert also failed:', rawSessErr.message)
-        // Continue anyway - session is not critical for login
       }
+    }
+
+    if (!sessionCreated) {
+      return safeErrorRedirect(baseUrl, 'session_create_failed', 'Could not create login session. Please try again.')
     }
 
     console.log('[Google OAuth] SUCCESS - redirecting with token')
