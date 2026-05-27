@@ -65,6 +65,11 @@ import {
   AlertCircle,
   LogIn,
   Sparkles,
+  Monitor,
+  Smartphone,
+  Tablet,
+  MapPin,
+  Globe,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -92,6 +97,19 @@ interface AppSettings {
   notifications: boolean
 }
 
+interface SessionInfo {
+  id: string
+  browser: string
+  os: string
+  deviceType: string
+  location: string | null
+  ipAddress: string | null
+  device: string
+  isCurrent: boolean
+  createdAt: string
+  expiresAt: string
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -109,6 +127,22 @@ function getInitials(name: string | null | undefined): string {
     .join('')
     .toUpperCase()
     .slice(0, 2)
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHr = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHr / 24)
+
+  if (diffSec < 60) return 'Just now'
+  if (diffMin < 60) return `${diffMin} min${diffMin !== 1 ? 's' : ''} ago`
+  if (diffHr < 24) return `${diffHr} hour${diffHr !== 1 ? 's' : ''} ago`
+  if (diffDay < 7) return `${diffDay} day${diffDay !== 1 ? 's' : ''} ago`
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 // ─── Animation Variants ──────────────────────────────────────────
@@ -179,6 +213,13 @@ export function ProfilePage() {
   const [ticketMessage, setTicketMessage] = useState('')
   const [ticketSubmitting, setTicketSubmitting] = useState(false)
 
+  // Sessions State
+  const [sessions, setSessions] = useState<SessionInfo[]>([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [logoutAllConfirmOpen, setLogoutAllConfirmOpen] = useState(false)
+  const [logoutAllSubmitting, setLogoutAllSubmitting] = useState(false)
+  const [loggingOutSessionId, setLoggingOutSessionId] = useState<string | null>(null)
+
   // Settings State
   const [settings, setSettings] = useState<AppSettings>({
     confirmBeforeTrade: true,
@@ -229,6 +270,11 @@ export function ProfilePage() {
       }
     } catch { /* silent */ }
   }, [])
+
+  // Fetch active sessions on mount
+  useEffect(() => {
+    fetchSessions()
+  }, [fetchSessions])
 
   // Save settings
   const saveSettings = useCallback((newSettings: AppSettings) => {
@@ -374,6 +420,7 @@ export function ProfilePage() {
 
   const handleLogoutAll = async () => {
     if (!token) return
+    setLogoutAllSubmitting(true)
     try {
       const res = await fetch('/api/profile/logout-all', {
         method: 'POST',
@@ -382,8 +429,53 @@ export function ProfilePage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Failed')
       toast.success(`Logged out from ${data.sessionsTerminated} device(s)`)
+      setLogoutAllConfirmOpen(false)
+      // Refresh sessions list
+      fetchSessions()
     } catch {
       toast.error('Failed to logout from all devices')
+    } finally {
+      setLogoutAllSubmitting(false)
+    }
+  }
+
+  const fetchSessions = useCallback(async () => {
+    if (!token) return
+    setSessionsLoading(true)
+    try {
+      const res = await fetch('/api/auth/sessions', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSessions(data.sessions || [])
+      }
+    } catch {
+      // Silent fail for sessions
+    } finally {
+      setSessionsLoading(false)
+    }
+  }, [token])
+
+  const handleLogoutSession = async (sessionId: string) => {
+    if (!token) return
+    setLoggingOutSessionId(sessionId)
+    try {
+      const res = await fetch(`/api/auth/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        toast.success('Device logged out successfully')
+        setSessions(prev => prev.filter(s => s.id !== sessionId))
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to logout device')
+      }
+    } catch {
+      toast.error('Failed to logout device')
+    } finally {
+      setLoggingOutSessionId(null)
     }
   }
 
@@ -1059,23 +1151,6 @@ export function ProfilePage() {
                   <ChevronRight className="size-4 text-[#9ca3af]" />
                 </button>
 
-                {/* Logout from all devices */}
-                <button
-                  onClick={handleLogoutAll}
-                  className="flex items-center justify-between w-full p-3 rounded-xl hover:bg-[#f7f8fc] transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="size-9 rounded-lg bg-[#f0f2f5] flex items-center justify-center group-hover:bg-[#e6faf4] transition-colors">
-                      <MonitorSmartphone className="size-4 text-[#6b7280] group-hover:text-[#00D09C] transition-colors" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium text-[#1a1a2e]">Logout from all devices</p>
-                      <p className="text-xs text-[#9ca3af]">End all other active sessions</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="size-4 text-[#9ca3af]" />
-                </button>
-
                 {/* Enable 2FA */}
                 <button
                   onClick={() => toast.info('Two-Factor Authentication coming soon!')}
@@ -1092,6 +1167,127 @@ export function ProfilePage() {
                   </div>
                   <Badge className="border-0 text-[10px] font-bold px-2 py-0.5 bg-[#f0f2f5] text-[#9ca3af]">Soon</Badge>
                 </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ── 7.5. ACTIVE SESSIONS / DEVICES SECTION ─────────── */}
+          <motion.div custom={si++} variants={fadeInUp} initial="hidden" animate="visible">
+            <div className="bg-white border border-[#e8eaf0] rounded-2xl shadow-sm overflow-hidden">
+              <div className="p-5 pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MonitorSmartphone className="size-5 text-[#00D09C]" />
+                    <h3 className="text-base font-semibold text-[#1a1a2e]">Active Devices</h3>
+                  </div>
+                  {sessions.length > 1 && (
+                    <button
+                      onClick={() => setLogoutAllConfirmOpen(true)}
+                      className="text-xs font-semibold text-[#EB5B3C] hover:text-[#d94f33] flex items-center gap-1 transition-colors"
+                    >
+                      <LogOut className="size-3" />
+                      Logout All
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-[#9ca3af] mt-1">
+                  Your account is logged in on {sessions.length} device{sessions.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className="px-5 pb-5 space-y-2">
+                {sessionsLoading ? (
+                  // Loading skeleton
+                  [1, 2].map(i => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-[#e8eaf0]">
+                      <div className="size-10 rounded-lg bg-[#f0f2f5] animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3.5 w-32 rounded bg-[#f0f2f5] animate-pulse" />
+                        <div className="h-3 w-24 rounded bg-[#f0f2f5] animate-pulse" />
+                      </div>
+                    </div>
+                  ))
+                ) : sessions.length === 0 ? (
+                  <div className="py-6 text-center">
+                    <MonitorSmartphone className="size-8 text-[#d1d5db] mx-auto mb-2" />
+                    <p className="text-sm text-[#9ca3af]">No active sessions found</p>
+                  </div>
+                ) : (
+                  sessions.map(session => (
+                    <div
+                      key={session.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border transition-colors",
+                        session.isCurrent
+                          ? "border-[#00D09C]/20 bg-[#e6faf4]/30"
+                          : "border-[#e8eaf0] hover:bg-[#f7f8fc]"
+                      )}
+                    >
+                      {/* Device Icon */}
+                      <div className={cn(
+                        "size-10 rounded-lg flex items-center justify-center shrink-0",
+                        session.isCurrent
+                          ? "bg-[#00D09C]/10"
+                          : session.deviceType === 'Mobile'
+                            ? "bg-[#5367ff]/10"
+                            : session.deviceType === 'Tablet'
+                              ? "bg-[#f59e0b]/10"
+                              : "bg-[#f0f2f5]"
+                      )}>
+                        {session.deviceType === 'Mobile' ? (
+                          <Smartphone className={cn("size-5", session.isCurrent ? "text-[#00D09C]" : "text-[#5367ff]")} />
+                        ) : session.deviceType === 'Tablet' ? (
+                          <Tablet className={cn("size-5", session.isCurrent ? "text-[#00D09C]" : "text-[#f59e0b]")} />
+                        ) : (
+                          <Monitor className={cn("size-5", session.isCurrent ? "text-[#00D09C]" : "text-[#6b7280]")} />
+                        )}
+                      </div>
+
+                      {/* Device Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium text-[#1a1a2e] truncate">{session.os}</p>
+                          {session.isCurrent && (
+                            <Badge className="bg-[#00D09C]/10 text-[#00D09C] hover:bg-[#00D09C]/20 border-0 text-[10px] px-1.5 py-0 font-semibold">
+                              This Device
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-[#9ca3af]">
+                          <Globe className="size-3 shrink-0" />
+                          <span className="truncate">{session.browser}</span>
+                          {session.ipAddress && (
+                            <>
+                              <span className="text-[#d1d5db]">·</span>
+                              <span className="truncate">{session.ipAddress.split(',')[0].trim()}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-[#9ca3af]">
+                          <Clock className="size-3 shrink-0" />
+                          <span>{formatRelativeTime(session.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      {/* Logout Button */}
+                      {!session.isCurrent && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={loggingOutSessionId === session.id}
+                          onClick={() => handleLogoutSession(session.id)}
+                          className="text-[#9ca3af] hover:text-[#EB5B3C] hover:bg-[#EB5B3C]/5 shrink-0 gap-1"
+                        >
+                          {loggingOutSessionId === session.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <LogOut className="size-3.5" />
+                          )}
+                          <span className="hidden sm:inline text-xs">Logout</span>
+                        </Button>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </motion.div>
@@ -1176,6 +1372,59 @@ export function ProfilePage() {
       {/* ═══════════════════════════════════════════════════════════
           ALL DIALOGS
       ═══════════════════════════════════════════════════════════ */}
+
+      {/* ── Logout All Devices Confirmation Dialog ──────────── */}
+      <Dialog open={logoutAllConfirmOpen} onOpenChange={setLogoutAllConfirmOpen}>
+        <DialogContent className="sm:max-w-md bg-white border-[#e8eaf0]">
+          <DialogHeader>
+            <DialogTitle className="text-[#1a1a2e] flex items-center gap-2">
+              <MonitorSmartphone className="size-5 text-[#EB5B3C]" /> Logout from all devices?
+            </DialogTitle>
+            <DialogDescription className="text-[#6b7280]">
+              This will end all active sessions except your current device. You will need to login again on all other devices.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-3">
+            <div className="p-3 rounded-xl bg-[#EB5B3C]/5 border border-[#EB5B3C]/20">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="size-4 text-[#EB5B3C] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-[#1a1a2e]">
+                    {sessions.filter(s => !s.isCurrent).length} other device{sessions.filter(s => !s.isCurrent).length !== 1 ? 's' : ''} will be logged out
+                  </p>
+                  <p className="text-xs text-[#9ca3af] mt-0.5">
+                    Your current session will remain active.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" className="border-[#e8eaf0]" disabled={logoutAllSubmitting}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={handleLogoutAll}
+              disabled={logoutAllSubmitting}
+              className="bg-[#EB5B3C] hover:bg-[#d94f33] text-white gap-2"
+            >
+              {logoutAllSubmitting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Logging out...
+                </>
+              ) : (
+                <>
+                  <LogOut className="size-4" />
+                  Logout All Devices
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Edit Profile Dialog ─────────────────────────────────── */}
       <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>

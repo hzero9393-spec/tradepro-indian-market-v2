@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -61,13 +60,20 @@ model Session {
   id           String   @id @default(cuid())
   userId       String
   token        String   @unique
-  device       String?
+  device       String?   // Full user-agent string (for fallback)
   ipAddress    String?
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 
+  // Parsed device info for better display
+  browser      String?   // Chrome 120, Safari 17, Firefox 121
+  os           String?   // Windows 11, macOS 14, Android 14, iOS 17
+  deviceType   String?   // Desktop, Mobile, Tablet
+  location     String?   // City, Country (from IP)
+
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("sessions")
 }
 

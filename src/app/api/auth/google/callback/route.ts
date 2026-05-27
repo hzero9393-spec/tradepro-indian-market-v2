@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { generateToken } from '@/lib/auth'
+import { parseUserAgent } from '@/lib/ua-parser'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
@@ -191,13 +192,19 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
+    const userAgent = request.headers.get('user-agent')?.substring(0, 255) || 'Google OAuth'
+    const parsedUA = parseUserAgent(userAgent)
+
     try {
       await db.session.create({
         data: {
           userId: user.id,
           token,
-          device: request.headers.get('user-agent')?.substring(0, 255) || 'Google OAuth',
+          device: userAgent,
           ipAddress: request.headers.get('x-forwarded-for') || null,
+          browser: parsedUA.browser,
+          os: parsedUA.os,
+          deviceType: parsedUA.deviceType,
           expiresAt,
         },
       })

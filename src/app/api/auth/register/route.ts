@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { hashPassword, generateToken } from '@/lib/auth'
+import { parseUserAgent } from '@/lib/ua-parser'
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,12 +77,18 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
+    const userAgent = request.headers.get('user-agent')?.substring(0, 255) || 'Unknown'
+    const parsedUA = parseUserAgent(userAgent)
+
     await db.session.create({
       data: {
         userId: user.id,
         token,
-        device: request.headers.get('user-agent')?.substring(0, 255) || 'Unknown',
+        device: userAgent,
         ipAddress: request.headers.get('x-forwarded-for') || null,
+        browser: parsedUA.browser,
+        os: parsedUA.os,
+        deviceType: parsedUA.deviceType,
         expiresAt,
       },
     })

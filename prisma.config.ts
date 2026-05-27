@@ -6,7 +6,6 @@ export default defineConfig({
   schema: path.join(__dirname, 'prisma', 'schema.prisma'),
   migrate: {
     async url() {
-      // For db push/migrate, use the Turso URL if available, otherwise local SQLite
       const tursoUrl = process.env.TURSO_DATABASE_URL
       const tursoToken = process.env.TURSO_AUTH_TOKEN
       if (tursoUrl && tursoToken) {
