@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
       if (!stock) {
         stock = await db.stock.findFirst({
-          where: { symbol: { equals: symbol, mode: 'insensitive' }, isActive: true }
+          where: { symbol, isActive: true }
         })
         if (stock) {
           cache.set(CacheKeys.stockPrice(stock.symbol), stock, CacheTTL.STOCK_PRICE)
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
 
       if (!future) {
         const futureWhere: Record<string, unknown> = {
-          underlying: { equals: symbol, mode: 'insensitive' },
+          underlying: symbol,
           isActive: true,
         }
         if (expiryDate) futureWhere.expiryDate = expiryDate
@@ -322,7 +322,7 @@ export async function POST(request: NextRequest) {
       }
 
       const indexData = await db.index.findFirst({
-        where: { symbol: { equals: symbol, mode: 'insensitive' } },
+        where: { symbol },
       })
 
       const lotSize = indexData?.lotSize || (future as Record<string, unknown>)?.lotSize as number || 50
@@ -607,7 +607,7 @@ export async function POST(request: NextRequest) {
       if (!option) {
         option = await db.option.findFirst({
           where: {
-            underlying: { equals: symbol, mode: 'insensitive' },
+            underlying: symbol,
             optionType: optionType as 'CE' | 'PE',
             strikePrice,
             isActive: true,
@@ -627,7 +627,7 @@ export async function POST(request: NextRequest) {
       }
 
       const indexData = await db.index.findFirst({
-        where: { symbol: { equals: symbol, mode: 'insensitive' } },
+        where: { symbol },
       })
       const lotSize = indexData?.lotSize || 50
 
@@ -1018,22 +1018,48 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: `Unsupported segment: ${segment}` }, { status: 400 })
   } catch (error) {
-    console.error('[POST /api/trade/place] Error:', error)
-    // Return the actual error reason so the user knows WHY the trade failed
-    let errorMessage = 'Failed to place order'
+    console.error('[POST /api/trade/place] FULL ERROR:', JSON.stringify(error, null, 2))
+
+    let errorMessage = 'Failed to place order. Please try again.'
+    let statusCode = 500
+
     if (error instanceof Error) {
-      // Prisma errors often have useful messages
-      if (error.message.includes('Insufficient')) {
-        errorMessage = error.message
-      } else if (error.message.includes('prisma') || error.message.includes('Prisma')) {
-        errorMessage = 'Database error. Please try again.'
-      } else if (error.message.includes('Unique constraint')) {
+      const msg = error.message
+
+      // Prisma specific errors
+      if (msg.includes('Unique constraint') || msg.includes('unique constraint')) {
         errorMessage = 'Duplicate order detected. Please try again.'
+        statusCode = 409
+      } else if (msg.includes('Foreign key constraint') || msg.includes('foreign key')) {
+        errorMessage = 'Invalid reference: related record not found. Please refresh and try again.'
+        statusCode = 400
+      } else if (msg.includes('Record not found') || msg.includes('does not exist')) {
+        errorMessage = 'Record not found. The stock or user data may have changed. Please refresh.'
+        statusCode = 404
+      } else if (msg.includes('Transaction failed') || msg.includes('transaction')) {
+        errorMessage = 'Transaction failed due to concurrent modification. Please try again.'
+        statusCode = 409
+      } else if (msg.includes('Interactive transactions are not supported') || msg.includes('interactive transaction')) {
+        errorMessage = 'Database transaction not supported. Please contact support.'
+        statusCode = 500
+      } else if (msg.includes('no such table') || msg.includes('no such column')) {
+        errorMessage = 'Database schema out of sync. Please contact support to run migration.'
+        statusCode = 500
+      } else if (msg.includes('SQLITE_CONSTRAINT')) {
+        errorMessage = `Database constraint error: ${msg.slice(0, 100)}`
+        statusCode = 400
+      } else if (msg.includes('LibsqlError') || msg.includes('HRANA') || msg.includes('SERVER_ERROR')) {
+        errorMessage = `Database connection error. Please try again in a moment.`
+        statusCode = 503
+      } else if (msg.includes('Insufficient') || msg.includes('insufficient')) {
+        errorMessage = msg
+        statusCode = 400
       } else {
-        // Include a sanitized version of the actual error for debugging
-        errorMessage = `Order failed: ${error.message.slice(0, 150)}`
+        // Show the actual error message so we can debug - truncate for safety
+        errorMessage = `Order failed: ${msg.slice(0, 200)}`
       }
     }
-    return NextResponse.json({ error: errorMessage }, { status: 500 })
+
+    return NextResponse.json({ error: errorMessage }, { status: statusCode })
   }
 }

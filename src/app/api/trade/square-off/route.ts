@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         currentPrice = cached.currentPrice
       } else {
         const stock = await db.stock.findFirst({
-          where: { symbol: { equals: position.symbol, mode: 'insensitive' }, isActive: true },
+          where: { symbol: position.symbol, isActive: true },
           select: { currentPrice: true, symbol: true },
         })
         if (stock) {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         currentPrice = cached.ltp
       } else {
         const future = await db.future.findFirst({
-          where: { underlying: { equals: position.symbol, mode: 'insensitive' }, isActive: true },
+          where: { underlying: position.symbol, isActive: true },
           orderBy: { expiryDate: 'asc' },
           select: { ltp: true, underlying: true },
         })
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       } else {
         const option = await db.option.findFirst({
           where: {
-            underlying: { equals: position.symbol, mode: 'insensitive' },
+            underlying: position.symbol,
             optionType: position.optionType,
             strikePrice: position.strikePrice,
             isActive: true,
@@ -221,9 +221,13 @@ export async function POST(request: NextRequest) {
       totalPnl: result.updatedUser?.totalPnl,
     })
   } catch (error) {
-    console.error('[POST /api/trade/square-off] Error:', error)
+    console.error('[POST /api/trade/square-off] FULL ERROR:', JSON.stringify(error, null, 2))
+    let errorMessage = 'Failed to square off position'
+    if (error instanceof Error) {
+      errorMessage = `Square-off failed: ${error.message.slice(0, 200)}`
+    }
     return NextResponse.json(
-      { error: 'Failed to square off position' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

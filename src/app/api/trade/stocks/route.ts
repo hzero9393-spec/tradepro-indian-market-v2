@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { symbol: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
+        { symbol: { contains: search } },
+        { name: { contains: search } },
       ]
     }
 
     if (sector) {
-      where.sector = { equals: sector, mode: 'insensitive' }
+      where.sector = sector
     }
 
     const stocks = await db.stock.findMany({
