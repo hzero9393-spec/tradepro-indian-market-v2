@@ -300,9 +300,23 @@ function generateMockPositions(count: number): Position[] {
   })
 }
 
-const allMockUsers = generateMockUsers(85)
-const allMockTrades = generateMockTrades(120)
-const allMockPositions = generateMockPositions(35)
+// Lazy mock data - only generate when accessed, not at module load time
+const allMockUsers: AdminUser[] = []
+const allMockTrades: Trade[] = []
+const allMockPositions: Position[] = []
+
+// Initialize mock data on first access
+let _mockDataInitialized = false
+function ensureMockData() {
+  if (_mockDataInitialized) return
+  _mockDataInitialized = true
+  const users = generateMockUsers(85)
+  allMockUsers.push(...users)
+  const trades = generateMockTrades(120)
+  allMockTrades.push(...trades)
+  const positions = generateMockPositions(35)
+  allMockPositions.push(...positions)
+}
 
 // ─── Sidebar Nav Items ───────────────────────────────────────────────────────
 const navItems: { key: PageKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -431,6 +445,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    ensureMockData()
     const fetchDashboard = async () => {
       try {
         const res = await adminApi('/dashboard')
@@ -654,6 +669,7 @@ function UsersPage({ subscriptionFilter }: { subscriptionFilter?: 'FREE' | 'PREM
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
+    ensureMockData()
     try {
       const subParam = subscriptionFilter || (filter === 'Premium' ? 'PREMIUM' : filter === 'Free' ? 'FREE' : '')
       const statusParam = filter === 'Active' ? 'true' : filter === 'Blocked' ? 'false' : ''
@@ -1038,6 +1054,7 @@ function TradesPage() {
 
   const fetchTrades = useCallback(async () => {
     setLoading(true)
+    ensureMockData()
     try {
       const segment = tab === 'index' ? 'INDEX' : tab === 'stock' ? 'STOCK' : ''
       const res = await adminApi(`/trades?page=${page}&limit=${limit}&search=${search}&segment=${segment}`)
@@ -1158,6 +1175,7 @@ function PositionsPage() {
 
   const fetchPositions = useCallback(async () => {
     setLoading(true)
+    ensureMockData()
     try {
       const res = await adminApi(`/positions?page=${page}&limit=${limit}&search=${search}`)
       const data = await res.json()
@@ -1274,6 +1292,7 @@ function PositionsPage() {
 // ANALYTICS PAGE
 // ═════════════════════════════════════════════════════════════════════════════
 function AnalyticsPage() {
+  ensureMockData()
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState<any>(null)
 
