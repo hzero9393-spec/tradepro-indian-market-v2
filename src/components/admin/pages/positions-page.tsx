@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import {
   type Position, adminApi, formatINR,
-  LoadingSkeleton, EmptyState, TablePagination, getAllMockPositions
+  LoadingSkeleton, EmptyState, SimplePagination, getAllMockPositions
 } from '@/components/admin/shared'
 
 function PositionsPage() {
@@ -129,7 +129,7 @@ function PositionsPage() {
                   </TableBody>
                 </Table>
               </div>
-              {totalPages > 1 && <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />}
+              {totalPages > 1 && <SimplePagination page={page} totalPages={totalPages} onPageChange={setPage} />}
             </>
           )}
         </CardContent>

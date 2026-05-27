@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table'
 import {
   type Trade, adminApi, formatINR, formatTimeAgo,
-  LoadingSkeleton, EmptyState, TablePagination, getAllMockTrades
+  LoadingSkeleton, EmptyState, SimplePagination, getAllMockTrades
 } from '@/components/admin/shared'
 
 function TradesPage() {
@@ -123,7 +123,7 @@ function TradesPage() {
                     </TableBody>
                   </Table>
                 </div>
-                {totalPages > 1 && <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />}
+                {totalPages > 1 && <SimplePagination page={page} totalPages={totalPages} onPageChange={setPage} />}
               </>
             )}
           </Tabs>

@@ -24,7 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner'
 import {
   type AdminUser, adminApi, formatINR, formatDate, formatTimeAgo,
-  StatCard, LoadingSkeleton, EmptyState, TablePagination, getAllMockUsers
+  StatCard, LoadingSkeleton, EmptyState, SimplePagination, getAllMockUsers
 } from '@/components/admin/shared'
 
 function UsersPage({ subscriptionFilter }: { subscriptionFilter?: 'FREE' | 'PREMIUM' }) {
@@ -295,7 +295,7 @@ function UsersPage({ subscriptionFilter }: { subscriptionFilter?: 'FREE' | 'PREM
                   </TableBody>
                 </Table>
               </div>
-              {totalPages > 1 && <TablePagination page={page} totalPages={totalPages} onPageChange={setPage} />}
+              {totalPages > 1 && <SimplePagination page={page} totalPages={totalPages} onPageChange={setPage} />}
             </>
           )}
         </CardContent>

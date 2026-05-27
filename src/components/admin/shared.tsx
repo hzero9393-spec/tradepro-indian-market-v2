@@ -1,11 +1,6 @@
 import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Pagination, PaginationContent, PaginationItem, PaginationLink,
-  PaginationPrevious, PaginationNext, PaginationEllipsis
-} from '@/components/ui/pagination'
-// Chart types are imported directly in pages that need them
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 export type PageKey = 'dashboard' | 'users' | 'paid-users' | 'free-users' | 'trades' | 'positions' | 'analytics' | 'reports' | 'profile' | 'settings'
@@ -169,9 +164,6 @@ export const mockConversionFunnel = [
   { stage: 'Premium Trial', value: 310 }, { stage: 'Paid', value: 234 },
 ]
 
-// Chart config is defined in pages that need charts
-// export const chartConfig - removed to avoid recharts import in shared module
-
 // ─── Mock Data Generators ────────────────────────────────────────────────────
 export function generateMockUsers(count: number): AdminUser[] {
   const names = ['Arjun Mehta', 'Priya Sharma', 'Rahul Verma', 'Sneha Patel', 'Vikram Singh', 'Ananya Iyer', 'Kavita Reddy', 'Amit Kumar', 'Deepa Nair', 'Sanjay Gupta', 'Meera Joshi', 'Rajesh Pillai', 'Pooja Agarwal', 'Karthik Iyer', 'Lakshmi Rao', 'Nitin Deshmukh', 'Swati Bhatt', 'Manish Tiwari', 'Ritu Saxena', 'Aditya Kapoor', 'Nisha Chauhan', 'Praveen Yadav', 'Shruti Mishra', 'Vivek Menon', 'Divya Iyengar']
@@ -294,10 +286,7 @@ export function StatCard({ icon: Icon, label, value, sub, color = '#00D09C' }: {
     <Card className="bg-white border-[#e5e7eb] rounded-xl hover:shadow-sm transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
-          <div
-            className="flex size-9 items-center justify-center rounded-lg"
-            style={{ backgroundColor: `${color}15`, color }}
-          >
+          <div className="flex size-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${color}15`, color }}>
             <Icon className="size-4" />
           </div>
         </div>
@@ -342,47 +331,32 @@ export function EmptyState({ icon: Icon, title, description }: {
   )
 }
 
-// ─── Pagination Helper ───────────────────────────────────────────────────────
-export function TablePagination({ page, totalPages, onPageChange }: {
+// ─── Simple Pagination (no external Pagination UI dependency) ─────────────────
+export function SimplePagination({ page, totalPages, onPageChange }: {
   page: number
   totalPages: number
   onPageChange: (p: number) => void
 }) {
-  const getPages = () => {
-    const pages: (number | 'ellipsis')[] = []
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i)
-    } else {
-      pages.push(1)
-      if (page > 3) pages.push('ellipsis')
-      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i)
-      if (page < totalPages - 2) pages.push('ellipsis')
-      pages.push(totalPages)
-    }
-    return pages
-  }
-
+  if (totalPages <= 1) return null
   return (
-    <Pagination className="mt-4">
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious onClick={() => page > 1 && onPageChange(page - 1)} className={page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
-        </PaginationItem>
-        {getPages().map((p, i) => (
-          <PaginationItem key={i}>
-            {p === 'ellipsis' ? (
-              <PaginationEllipsis />
-            ) : (
-              <PaginationLink isActive={p === page} onClick={() => onPageChange(p)} className="cursor-pointer">
-                {p}
-              </PaginationLink>
-            )}
-          </PaginationItem>
-        ))}
-        <PaginationItem>
-          <PaginationNext onClick={() => page < totalPages && onPageChange(page + 1)} className={page >= totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
+    <div className="flex items-center justify-center gap-2 mt-4">
+      <button
+        onClick={() => page > 1 && onPageChange(page - 1)}
+        disabled={page <= 1}
+        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f0f2f5] disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Previous
+      </button>
+      <span className="text-xs text-[#6b7280]">
+        Page {page} of {totalPages}
+      </span>
+      <button
+        onClick={() => page < totalPages && onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f0f2f5] disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Next
+      </button>
+    </div>
   )
 }
