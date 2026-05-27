@@ -1,13 +1,34 @@
 import { config } from 'dotenv'
 import { PrismaClient } from '@prisma/client'
+import { PrismaLibSql } from '@prisma/adapter-libsql'
 
 // Override env vars with .env file (shell env may have stale DATABASE_URL)
 config({ override: true })
 
-// Use DIRECT_URL for seeding to avoid prepared statement issues with PgBouncer
-const prisma = new PrismaClient({
-  datasourceUrl: process.env.DIRECT_URL,
-})
+// Create PrismaClient with Turso/libSQL adapter if available
+function createSeedClient() {
+  const tursoUrl = process.env.TURSO_DATABASE_URL
+  const tursoAuthToken = process.env.TURSO_AUTH_TOKEN
+
+  if (tursoUrl && tursoAuthToken) {
+    console.log('🔌 Using Turso/libSQL adapter for seeding...')
+    // Prisma v7 adapter factory pattern - pass config directly
+    const adapter = new PrismaLibSql({
+      url: tursoUrl,
+      authToken: tursoAuthToken,
+    })
+
+    return new PrismaClient({
+      adapter,
+    })
+  }
+
+  // Fallback to standard PrismaClient (for local SQLite)
+  console.log('🔌 Using standard PrismaClient for seeding...')
+  return new PrismaClient()
+}
+
+const prisma = createSeedClient()
 
 async function main() {
   console.log('🌱 Seeding TradePro database...')
