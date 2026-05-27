@@ -18,10 +18,11 @@ export async function POST(request: NextRequest) {
     // Auto-create default admin if no admin exists
     const adminCount = await db.admin.count()
     if (adminCount === 0) {
-      const hashedPassword = await hashPassword('admin000')
+      const defaultPassword = process.env.ADMIN_PASSWORD || 'admin@123'
+      const hashedPassword = await hashPassword(defaultPassword)
       await db.admin.create({
         data: {
-          username: 'admin',
+          username: process.env.ADMIN_USERNAME || 'admin',
           passwordHash: hashedPassword,
           name: 'Admin',
           email: 'admin@tradepro.com',
