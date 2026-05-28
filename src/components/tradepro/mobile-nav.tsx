@@ -8,23 +8,36 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
+import { usePathname } from 'next/navigation'
 
 interface MobileNavItem {
   id: PageId
   label: string
   icon: React.ComponentType<{ className?: string }>
+  url: string
 }
 
 const mobileNavItems: MobileNavItem[] = [
-  { id: 'dashboard', label: 'Home', icon: Home },
-  { id: 'trading', label: 'Stocks', icon: CandlestickChart },
-  { id: 'positions', label: 'Positions', icon: Crosshair },
-  { id: 'orders', label: 'Orders', icon: FileText },
-  { id: 'portfolio', label: 'Portfolio', icon: Wallet },
+  { id: 'dashboard', label: 'Home', icon: Home, url: '/' },
+  { id: 'trading', label: 'Stocks', icon: CandlestickChart, url: '/stocks' },
+  { id: 'positions', label: 'Positions', icon: Crosshair, url: '/positions' },
+  { id: 'orders', label: 'Orders', icon: FileText, url: '/orders' },
+  { id: 'portfolio', label: 'Portfolio', icon: Wallet, url: '/portfolio' },
 ]
 
 export function MobileNav() {
-  const { currentPage, setCurrentPage } = useAppStore()
+  const { setCurrentPage } = useAppStore()
+  const pathname = usePathname()
+
+  const isActive = (item: MobileNavItem) => {
+    if (item.id === 'dashboard') {
+      return pathname === '/'
+    }
+    if (item.id === 'trading' && (pathname.startsWith('/stock/') || pathname.startsWith('/index/'))) {
+      return true
+    }
+    return pathname === item.url
+  }
 
   return (
     <nav
@@ -33,36 +46,45 @@ export function MobileNav() {
       aria-label="Mobile navigation"
     >
       <div
-        className="flex h-14 w-full items-center justify-around px-2"
+        className="flex h-16 w-full items-center justify-around px-3"
         style={{
           background: '#ffffff',
-          borderTop: '1px solid #f0f0f0',
+          borderTop: '1px solid #e8ecf0',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          boxShadow: '0 -2px 12px rgba(0, 0, 0, 0.04)',
         }}
       >
         {mobileNavItems.map((item) => {
-          const isActive = currentPage === item.id
+          const active = isActive(item)
           const Icon = item.icon
           return (
             <button
               key={item.id}
               onClick={() => setCurrentPage(item.id)}
-              className="flex flex-col items-center justify-center gap-0.5 py-1 px-2 outline-none rounded-lg transition-colors"
+              className="flex flex-col items-center justify-center gap-1 py-1.5 px-3 outline-none rounded-xl transition-all duration-200"
               style={{
-                background: isActive ? 'rgba(0, 208, 156, 0.08)' : 'transparent',
+                background: active ? 'rgba(0, 208, 156, 0.08)' : 'transparent',
+                minWidth: '56px',
               }}
-              aria-current={isActive ? 'page' : undefined}
+              aria-current={active ? 'page' : undefined}
               aria-label={item.label}
             >
-              <Icon
-                className="size-5 transition-colors"
-                style={{ color: isActive ? '#00D09C' : '#9ca3af' }}
-              />
-              <span
-                className="text-[10px] leading-tight transition-colors"
+              <div
+                className="flex size-7 items-center justify-center rounded-lg transition-all duration-200"
                 style={{
-                  color: isActive ? '#00D09C' : '#9ca3af',
-                  fontWeight: isActive ? 600 : 500,
+                  background: active ? 'rgba(0, 208, 156, 0.12)' : 'transparent',
+                }}
+              >
+                <Icon
+                  className="size-[18px] transition-colors duration-200"
+                  style={{ color: active ? '#00D09C' : '#9ca3af' }}
+                />
+              </div>
+              <span
+                className="text-[10px] leading-tight transition-colors duration-200"
+                style={{
+                  color: active ? '#00A67E' : '#9ca3af',
+                  fontWeight: active ? 700 : 500,
                 }}
               >
                 {item.label}

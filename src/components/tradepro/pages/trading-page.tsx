@@ -29,6 +29,7 @@ import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatVolume, calculateBrokerage } from '@/lib/format'
+import { StockLogo } from '@/components/tradepro/ui/stock-logo'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -171,6 +172,7 @@ function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => vo
       whileTap={{ scale: 0.998 }}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
+        <StockLogo symbol={stock.symbol} name={stock.name} sector={stock.sector} size="md" />
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-bold text-sm text-[#1a1a1a] truncate">{stock.symbol}</span>
@@ -371,9 +373,11 @@ function OrderPanel({
       <CardContent className="p-6 space-y-5">
         {/* Stock Info */}
         <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-lg text-[#00D09C]">{selectedStock.symbol}</span>
+          <div className="flex items-center gap-2.5">
+            <StockLogo symbol={selectedStock.symbol} name={selectedStock.name} sector={selectedStock.sector} size="lg" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-lg text-[#00D09C]">{selectedStock.symbol}</span>
               <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
                 isPositive
                   ? 'bg-[#00B386]/10 text-[#00B386]'

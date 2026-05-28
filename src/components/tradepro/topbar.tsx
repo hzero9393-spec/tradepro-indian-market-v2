@@ -1,7 +1,8 @@
 'use client'
 
-import { Menu, Search, Bell, LogOut, User, FileBarChart, TrendingUp } from 'lucide-react'
+import { Menu, Search, Bell, LogOut, User, FileBarChart, Settings, TrendingUp } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
+import { useAuthStore } from '@/lib/auth-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,21 +17,20 @@ import {
 interface TopBarProps {
   userName?: string | null
   onLogout?: () => void
+  userAvatar?: string | null
 }
 
-export function TopBar({ userName, onLogout }: TopBarProps) {
+export function TopBar({ userName, onLogout, userAvatar }: TopBarProps) {
   const { setSidebarOpen, setCurrentPage } = useAppStore()
-
-  const initials = userName
-    ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : 'TP'
+  const { user } = useAuthStore()
+  const avatar = userAvatar || user?.avatar
 
   return (
     <header
       className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center"
       style={{
         background: '#ffffff',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: '1px solid #e8ecf0',
       }}
       role="banner"
     >
@@ -39,74 +39,64 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden shrink-0 text-[#4a4a4a] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] h-9 w-9"
+          className="md:hidden shrink-0 text-[#4b5563] hover:text-[#111827] hover:bg-[#f4f6f8] h-9 w-9 rounded-xl"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open navigation menu"
         >
           <Menu className="size-5" />
         </Button>
 
-        {/* Logo */}
+        {/* Logo - Mobile only (desktop has sidebar) */}
         <button
           onClick={() => setCurrentPage('dashboard')}
-          className="flex items-center gap-2 shrink-0"
+          className="flex items-center gap-2.5 shrink-0 md:hidden"
         >
           <div
-            className="flex size-8 items-center justify-center rounded-lg"
-            style={{ background: '#00D09C' }}
+            className="flex size-8 items-center justify-center rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, #00D09C 0%, #00A67E 100%)',
+              boxShadow: '0 2px 8px rgba(0, 208, 156, 0.25)',
+            }}
           >
             <TrendingUp className="size-4 text-white" />
           </div>
-          <span className="text-lg font-bold hidden sm:inline" style={{ color: '#1a1a1a' }}>
+          <span className="text-base font-bold" style={{ color: '#111827' }}>
             TradePro
           </span>
         </button>
 
-        {/* Desktop Nav Links - Groww style */}
-        <nav className="hidden lg:flex items-center gap-1 ml-4">
-          {[
-            { label: 'Home', page: 'dashboard' as const },
-            { label: 'Stocks', page: 'trading' as const },
-            { label: 'Options', page: 'optionChain' as const },
-            { label: 'Portfolio', page: 'portfolio' as const },
-            { label: 'Learn', page: 'learning' as const },
-          ].map((item) => (
-            <button
-              key={item.page}
-              onClick={() => setCurrentPage(item.page)}
-              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-[#f5f5f5]"
-              style={{ color: '#4a4a4a' }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
+        {/* Desktop: Page title area */}
+        <div className="hidden md:flex items-center">
+          <span className="text-sm font-medium" style={{ color: '#9ca3af' }}>
+            Paper Trading Platform
+          </span>
+        </div>
 
         {/* Spacer */}
         <div className="flex-1" />
 
         {/* Search */}
-        <div className="relative hidden md:flex max-w-[240px] flex-1">
+        <div className="relative hidden md:flex max-w-[260px] flex-1">
           <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#9ca3af]" />
           <Input
             type="search"
             placeholder="Search stocks, indices..."
-            className="pl-9 h-8 text-sm border-none focus-visible:ring-1 focus-visible:ring-[#00D09C]/30 placeholder:text-[#9ca3af]"
+            className="pl-9 h-9 text-sm border-none focus-visible:ring-1 focus-visible:ring-[#00D09C]/30 placeholder:text-[#9ca3af]"
             style={{
-              background: '#f5f5f5',
-              color: '#1a1a1a',
-              borderRadius: '8px',
+              background: '#f4f6f8',
+              color: '#111827',
+              borderRadius: '10px',
             }}
           />
         </div>
 
         {/* Right section */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Notification */}
           <Button
             variant="ghost"
             size="icon"
-            className="relative shrink-0 text-[#9ca3af] hover:text-[#1a1a1a] hover:bg-[#f5f5f5] h-9 w-9"
+            className="relative shrink-0 text-[#9ca3af] hover:text-[#111827] hover:bg-[#f4f6f8] h-9 w-9 rounded-xl"
             aria-label="Notifications"
           >
             <Bell className="size-[18px]" />
@@ -115,13 +105,23 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center justify-center rounded-full transition-colors hover:ring-2 hover:ring-[#00D09C]/20 outline-none">
+              <button
+                className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all duration-200 hover:bg-[#f4f6f8] outline-none focus-visible:ring-2 focus-visible:ring-[#00D09C]/20"
+                aria-label="User menu"
+              >
                 <div
-                  className="flex size-8 items-center justify-center rounded-full text-[11px] font-bold"
-                  style={{ background: '#00D09C', color: '#ffffff' }}
+                  className="size-8 rounded-lg overflow-hidden flex items-center justify-center"
+                  style={{ background: avatar ? 'transparent' : '#f4f6f8' }}
                 >
-                  {initials}
+                  {avatar ? (
+                    <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-lg" />
+                  ) : (
+                    <User className="size-4 text-[#6b7280]" />
+                  )}
                 </div>
+                <span className="hidden sm:inline text-sm font-medium" style={{ color: '#374151' }}>
+                  {userName || 'User'}
+                </span>
               </button>
             </DropdownMenuTrigger>
 
@@ -130,49 +130,41 @@ export function TopBar({ userName, onLogout }: TopBarProps) {
               className="w-56"
               style={{
                 background: '#ffffff',
-                border: '1px solid #f0f0f0',
-                color: '#1a1a1a',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08)',
+                border: '1px solid #e8ecf0',
+                color: '#111827',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
                 borderRadius: '12px',
               }}
             >
               <DropdownMenuLabel>
-                <div className="flex items-center gap-2.5 py-1">
-                  <div
-                    className="flex size-9 items-center justify-center rounded-full text-xs font-bold"
-                    style={{ background: '#00D09C', color: '#ffffff' }}
-                  >
-                    {initials}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm" style={{ color: '#1a1a1a' }}>
-                      {userName || 'User'}
-                    </span>
-                    <span className="text-[11px]" style={{ color: '#9ca3af' }}>
-                      Paper Trading Account
-                    </span>
-                  </div>
+                <div className="flex flex-col py-1">
+                  <span className="font-semibold text-sm" style={{ color: '#111827' }}>
+                    {userName || 'User'}
+                  </span>
+                  <span className="text-[11px]" style={{ color: '#9ca3af' }}>
+                    Paper Trading Account
+                  </span>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator style={{ background: '#f0f0f0' }} />
+              <DropdownMenuSeparator style={{ background: '#e8ecf0' }} />
               <DropdownMenuItem
                 onClick={() => setCurrentPage('profile')}
-                className="cursor-pointer text-sm py-2.5 text-[#4a4a4a] focus:text-[#1a1a1a] focus:bg-[#f5f5f5]"
+                className="cursor-pointer text-sm py-2.5 text-[#4b5563] focus:text-[#111827] focus:bg-[#f4f6f8] rounded-lg"
               >
-                <User className="size-4 mr-2.5 text-[#9ca3af]" />
-                Profile
+                <Settings className="size-4 mr-2.5 text-[#9ca3af]" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setCurrentPage('reports')}
-                className="cursor-pointer text-sm py-2.5 text-[#4a4a4a] focus:text-[#1a1a1a] focus:bg-[#f5f5f5]"
+                className="cursor-pointer text-sm py-2.5 text-[#4b5563] focus:text-[#111827] focus:bg-[#f4f6f8] rounded-lg"
               >
                 <FileBarChart className="size-4 mr-2.5 text-[#9ca3af]" />
                 Reports
               </DropdownMenuItem>
-              <DropdownMenuSeparator style={{ background: '#f0f0f0' }} />
+              <DropdownMenuSeparator style={{ background: '#e8ecf0' }} />
               <DropdownMenuItem
                 onClick={onLogout}
-                className="cursor-pointer text-sm py-2.5 text-[#eb5b3c] focus:text-[#eb5b3c] focus:bg-[rgba(235,91,60,0.06)]"
+                className="cursor-pointer text-sm py-2.5 text-[#ef4444] focus:text-[#ef4444] focus:bg-red-50/80 rounded-lg"
               >
                 <LogOut className="size-4 mr-2.5" />
                 Sign Out

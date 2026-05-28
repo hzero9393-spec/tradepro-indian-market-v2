@@ -38,6 +38,7 @@ import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole, formatLargeNumber, formatVolume, calculateBrokerage } from '@/lib/format'
+import { StockLogo } from '@/components/tradepro/ui/stock-logo'
 import {
   AreaChart,
   Area,
@@ -692,6 +693,7 @@ export function StockOverviewPage() {
               >
                 <ArrowLeft className="size-5" />
               </button>
+              <StockLogo symbol={stockDetail.symbol} name={stockDetail.name} sector={stockDetail.sector} size="lg" />
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-bold text-[#1a1a1a] truncate">{stockDetail.name}</h1>

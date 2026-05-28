@@ -9,12 +9,12 @@ export async function PATCH(request: NextRequest) {
     const userId = auth.userId
 
     const body = await request.json()
-    const { name, phone } = body
+    const { name, phone, avatar } = body
 
     // Validate
-    if (!name && !phone) {
+    if (!name && !phone && avatar === undefined) {
       return NextResponse.json(
-        { error: 'At least one field (name or phone) is required' },
+        { error: 'At least one field (name, phone, or avatar) is required' },
         { status: 400 }
       )
     }
@@ -34,17 +34,31 @@ export async function PATCH(request: NextRequest) {
       }
       updateData.phone = phone
     }
+    if (avatar !== undefined) {
+      // avatar can be a base64 string or null (to remove)
+      if (avatar !== null && typeof avatar === 'string') {
+        // Validate it's a proper base64 image (max 2MB after base64 encoding)
+        const MAX_AVATAR_SIZE = 2 * 1024 * 1024 // 2MB
+        if (avatar.length > MAX_AVATAR_SIZE * 1.37) { // base64 is ~37% larger
+          return NextResponse.json({ error: 'Avatar image too large. Maximum size is 2MB.' }, { status: 400 })
+        }
+        if (!avatar.startsWith('data:image/')) {
+          return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+        }
+      }
+      updateData.avatar = avatar
+    }
 
     const user = await db.user.update({
       where: { id: userId },
       data: updateData,
     })
 
-    const { passwordHash: _, ...userWithoutPassword } = user
+    const { passwordHash: _, twoFactorSecret: __, ...userWithoutSensitive } = user
 
     return NextResponse.json({
       message: 'Profile updated successfully',
-      user: userWithoutPassword,
+      user: userWithoutSensitive,
     })
   } catch (error) {
     console.error('Profile update error:', error)

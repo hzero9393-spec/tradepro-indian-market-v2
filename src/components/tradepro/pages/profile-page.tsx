@@ -70,6 +70,7 @@ import {
   Tablet,
   MapPin,
   Globe,
+  Camera,
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -174,6 +175,43 @@ const PREMIUM_FEATURES = [
   'Custom watchlists',
 ]
 
+// ─── Image Compression Helper ────────────────────────────────────
+
+function compressImage(file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        // Resize if larger than max dimensions
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height)
+          width = Math.round(width * ratio)
+          height = Math.round(height * ratio)
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { reject(new Error('Canvas context failed')); return }
+        ctx.drawImage(img, 0, 0, width, height)
+
+        const base64 = canvas.toDataURL('image/jpeg', quality)
+        resolve(base64)
+      }
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = e.target?.result as string
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
 // ─── Component ───────────────────────────────────────────────────
 
 export function ProfilePage() {
@@ -226,6 +264,9 @@ export function ProfilePage() {
     defaultOrderType: 'MARKET',
     notifications: true,
   })
+
+  // Avatar upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Sync edit form when dialog opens
   useEffect(() => {
@@ -341,6 +382,65 @@ export function ProfilePage() {
   const isOAuthUser = user?.oauthProvider === 'google'
 
   // ─── API Handlers ────────────────────────────────────────────
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB')
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      // Compress and convert to base64
+      const base64 = await compressImage(file, 200, 200, 0.85)
+
+      const res = await fetch('/api/profile/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatar: base64 }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to upload avatar')
+      setUser(data.user)
+      toast.success('Profile photo updated')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to upload photo')
+    } finally {
+      setUploadingAvatar(false)
+      // Reset input
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    if (!token) return
+    setUploadingAvatar(true)
+    try {
+      const res = await fetch('/api/profile/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ avatar: null }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to remove avatar')
+      setUser(data.user)
+      toast.success('Profile photo removed')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to remove photo')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const handleEditProfile = async () => {
     if (!token) { toast.error('Please login'); return }
@@ -647,11 +747,46 @@ export function ProfilePage() {
                 <div className="p-6">
                   {/* Avatar + Name */}
                   <div className="flex flex-col items-center text-center mb-5">
-                    <div className="size-20 rounded-full bg-[#00D09C] flex items-center justify-center mb-4 ring-4 ring-[#00D09C]/10">
-                      <span className="text-2xl font-bold text-white">
-                        {getInitials(user?.name)}
-                      </span>
+                    <div className="relative group mb-4">
+                      <div className="size-20 rounded-full bg-[#00D09C] flex items-center justify-center ring-4 ring-[#00D09C]/10 overflow-hidden">
+                        {user?.avatar ? (
+                          <img
+                            src={user.avatar}
+                            alt={user?.name || 'User'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-2xl font-bold text-white">
+                            {getInitials(user?.name)}
+                          </span>
+                        )}
+                      </div>
+                      {/* Camera overlay */}
+                      <label className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <Camera className="size-6 text-white" />
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={handleAvatarChange}
+                        />
+                      </label>
+                      {user?.avatar && (
+                        <button
+                          onClick={handleRemoveAvatar}
+                          className="absolute -top-1 -right-1 size-6 rounded-full bg-[#EB5B3C] flex items-center justify-center text-white shadow-sm hover:bg-[#d44f33] transition-colors"
+                          title="Remove photo"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      )}
                     </div>
+                    {uploadingAvatar && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <Loader2 className="size-3.5 animate-spin text-[#00D09C]" />
+                        <span className="text-xs text-[#00D09C] font-medium">Uploading...</span>
+                      </div>
+                    )}
                     <h2 className="text-lg font-bold text-[#1a1a2e]">{user?.name ?? 'User'}</h2>
                     <p className="text-sm text-[#6b7280] mt-0.5">{user?.email ?? '—'}</p>
                     <div className="flex items-center gap-2 mt-2">

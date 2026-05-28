@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -50,7 +51,6 @@ model User {
   positions       Position[]
   portfolios      Portfolio[]
   sessions        Session[]
-  supportTickets  SupportTicket[]
 
   @@index([email])
   @@unique([oauthProvider, oauthId])
@@ -61,41 +61,14 @@ model Session {
   id           String   @id @default(cuid())
   userId       String
   token        String   @unique
-  device       String?   // Full user-agent string (for fallback)
+  device       String?
   ipAddress    String?
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 
-  // Parsed device info for better display
-  browser      String?   // Chrome 120, Safari 17, Firefox 121
-  os           String?   // Windows 11, macOS 14, Android 14, iOS 17
-  deviceType   String?   // Desktop, Mobile, Tablet
-  location     String?   // City, Country (from IP)
-
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@map("sessions")
-}
-
-model SupportTicket {
-  id          String   @id @default(cuid())
-  userId      String
-  subject     String
-  message     String
-  category    String   @default("GENERAL") // GENERAL, BUG, FEATURE, ACCOUNT, TRADING
-  priority    String   @default("MEDIUM")  // LOW, MEDIUM, HIGH, URGENT
-  status      String   @default("OPEN")    // OPEN, IN_PROGRESS, RESOLVED, CLOSED
-  reply       String?
-  repliedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@map("support_tickets")
 }
 
 // ============================================================

@@ -208,27 +208,27 @@ export default function Home() {
     <TradeSuccessProvider>
       <div className="flex min-h-screen flex-col" style={{ background: '#f5f7fa' }}>
         {/* Desktop Sidebar */}
-        <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} />
+        <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} userAvatar={user?.avatar} />
 
         {/* Mobile Sidebar Sheet */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
             side="left"
-            className="w-[220px] p-0"
+            className="w-[240px] p-0"
             style={{ background: '#ffffff', borderRight: '1px solid #e5e7eb' }}
           >
-            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} />
+            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} userAvatar={user?.avatar} />
           </SheetContent>
         </Sheet>
 
         {/* Top Bar */}
-        <TopBar userName={user?.name} onLogout={handleLogout} />
+        <TopBar userName={user?.name} onLogout={handleLogout} userAvatar={user?.avatar} />
 
         {/* Indian Market Index Ticker */}
         {!isFooterPage && <IndexTicker />}
 
         {/* Main Content */}
-        <main className="flex-1 md:ml-[220px] mt-14 pb-16 md:pb-0">
+        <main className="flex-1 md:ml-[240px] mt-14 pb-16 md:pb-0">
           <PageContent page={currentPage} />
 
           {/* Footer */}
