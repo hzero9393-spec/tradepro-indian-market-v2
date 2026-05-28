@@ -378,16 +378,17 @@ function OrderPanel({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-lg text-[#00D09C]">{selectedStock.symbol}</span>
-              <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                isPositive
-                  ? 'bg-[#00B386]/10 text-[#00B386]'
-                  : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
-              }`}>
-                {isPositive ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
-                {isPositive ? '+' : ''}{selectedStock.changePercent.toFixed(2)}%
-              </span>
+                <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                  isPositive
+                    ? 'bg-[#00B386]/10 text-[#00B386]'
+                    : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
+                }`}>
+                  {isPositive ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
+                  {isPositive ? '+' : ''}{selectedStock.changePercent.toFixed(2)}%
+                </span>
+              </div>
+              <p className="text-xs text-[#6b7280] mt-0.5 truncate max-w-[180px]">{selectedStock.name}</p>
             </div>
-            <p className="text-xs text-[#6b7280] mt-0.5 truncate max-w-[180px]">{selectedStock.name}</p>
           </div>
           <div className="text-right">
             <span className="text-2xl font-bold font-mono font-tabular text-[#1a1a1a]">

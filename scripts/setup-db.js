@@ -39,14 +39,19 @@ if (isTurso) {
     console.error('❌ Prisma generate failed:', error.message);
   }
 
-  // Push schema to Turso database (only in CI/Vercel builds)
+  // Push schema to Turso database using @libsql/client directly
+  // (prisma db push doesn't work with libsql:// URLs in Prisma 7)
   if (isVercel || process.env.PUSH_SCHEMA === 'true') {
     try {
-      console.log('🚀 Pushing schema to Turso database...');
-      execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit', timeout: 90000 });
-      console.log('✅ Schema pushed to Turso database');
+      console.log('🚀 Running Turso migration script...');
+      execSync('node ' + path.join(__dirname, 'turso-migrate.js'), {
+        stdio: 'inherit',
+        timeout: 90000,
+        env: { ...process.env }
+      });
+      console.log('✅ Turso migration completed');
     } catch (error) {
-      console.error('⚠️ Schema push failed (tables may already exist):', error.message?.substring(0, 200));
+      console.error('⚠️ Turso migration failed:', error.message?.substring(0, 200));
     }
   }
 } else if (isPostgres) {
