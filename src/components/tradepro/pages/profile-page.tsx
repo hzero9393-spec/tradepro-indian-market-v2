@@ -50,6 +50,7 @@ import {
   Trophy,
   IndianRupee,
   Phone,
+  Check,
   X,
   Loader2,
   Eye,
