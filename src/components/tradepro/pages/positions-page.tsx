@@ -219,6 +219,29 @@ export function PositionsPage() {
     return null
   }, [liveStocks, liveIndices, liveOptionChains])
 
+  // ─── Overlay live prices on positions for real-time P&L ──────
+  const enrichedPositions = useMemo(() => {
+    return positions.map(pos => {
+      const livePrice = getLivePrice(pos)
+      if (livePrice !== null && pos.isOpen) {
+        const qty = pos.quantity || 1
+        const direction = pos.tradeDirection
+        const currentValue = livePrice * qty
+        const entryValue = pos.entryPrice * qty
+        const unrealizedPnl = direction === 'BUY' ? currentValue - entryValue : entryValue - currentValue
+        const unrealizedPnlPercent = entryValue > 0 ? (unrealizedPnl / entryValue) * 100 : 0
+        return {
+          ...pos,
+          currentPrice: livePrice,
+          currentValue,
+          unrealizedPnl,
+          unrealizedPnlPercent,
+        }
+      }
+      return pos
+    })
+  }, [positions, getLivePrice])
+
   useEffect(() => {
     fetchPositions()
     // If simulator is connected, it handles SL/TP server-side.
@@ -276,12 +299,12 @@ export function PositionsPage() {
 
   // ─── Client-side date + segment filtering ──────────────────
   const filteredPositions = useMemo(() => {
-    let result = filterByDateRange(positions, 'createdAt', dateFrom, dateTo)
+    let result = filterByDateRange(enrichedPositions, 'createdAt', dateFrom, dateTo)
     if (segmentFilter !== 'all') {
       result = result.filter(p => p.segment === segmentFilter)
     }
     return result
-  }, [positions, dateFrom, dateTo, segmentFilter])
+  }, [enrichedPositions, dateFrom, dateTo, segmentFilter])
 
   // ─── Split positions by open/closed ──────────────────────
   const openPositions = useMemo(() =>
@@ -299,6 +322,8 @@ export function PositionsPage() {
   const totalInvested = openPositions.reduce((s, p) => s + (p.totalInvested || 0), 0)
   const totalMargin = openPositions.reduce((s, p) => s + (p.marginUsed || 0), 0)
   const isProfit = totalPnl >= 0
+  // Show live indicator when connected
+  const showLiveIndicator = isSimulatorConnected && liveStocks.size > 0
 
   const stats = [
     { label: 'Open Positions', value: String(openPositions.length), icon: Crosshair, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
@@ -589,9 +614,20 @@ export function PositionsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
       >
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
-          Positions
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
+            Positions
+          </h1>
+          {showLiveIndicator && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00D09C]/10 text-[#00D09C] text-[10px] font-bold tracking-wider uppercase">
+              <span className="relative flex size-1.5">
+                <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-[#00D09C] opacity-75" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-[#00D09C]" />
+              </span>
+              LIVE
+            </span>
+          )}
+        </div>
         <p className="text-[#6b7280] mt-1 text-sm">
           Track and manage your open and closed trades with real-time P&amp;L updates.
         </p>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Card,
   CardContent,
@@ -21,9 +21,11 @@ import {
   CandlestickChart,
   GraduationCap,
   Briefcase,
+  Radio,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { motion } from 'framer-motion'
+import { useMarketData } from '@/lib/market-data'
+import { motion, AnimatePresence } from 'framer-motion'
 import { formatPrice } from '@/lib/format'
 import { NotificationBanner } from '@/components/tradepro/ui/notification-banner'
 
@@ -51,6 +53,34 @@ interface StockData {
   marketCap?: number
   isFuturesAvailable: boolean
   isOptionsAvailable: boolean
+}
+
+// Map to convert live engine data to display format
+function liveIndexToDisplay(live: { symbol: string; name: string; price: number; change: number; changePercent: number }): IndexData {
+  return {
+    id: live.symbol,
+    symbol: live.symbol,
+    name: live.name,
+    currentPrice: live.price,
+    change: live.change,
+    changePercent: live.changePercent,
+    isEnabled: true,
+  }
+}
+
+function liveStockToDisplay(live: { symbol: string; name: string; price: number; change: number; changePercent: number; sector: string; isFuturesAvailable: boolean; isOptionsAvailable: boolean; volume: number }): StockData {
+  return {
+    id: live.symbol,
+    symbol: live.symbol,
+    name: live.name,
+    sector: live.sector,
+    currentPrice: live.price,
+    change: live.change,
+    changePercent: live.changePercent,
+    volume: live.volume,
+    isFuturesAvailable: live.isFuturesAvailable,
+    isOptionsAvailable: live.isOptionsAvailable,
+  }
 }
 
 // ─── Fallback Data (ALWAYS shows something) ─────────────────────────────────
@@ -158,10 +188,13 @@ function StockRow({ stock, onClick }: { stock: StockData; onClick: () => void })
 export function DashboardPage() {
   const { navigateToStock, navigateToIndex, setCurrentPage } = useAppStore()
 
+  // ─── REAL-TIME MARKET DATA (primary source) ──────────────
+  const { indices: liveIndices, stocks: liveStocks, isConnected: isLiveConnected, dataSource } = useMarketData()
+
   // Active tab
   const [activeTab, setActiveTab] = useState<'stocks' | 'options' | 'portfolio' | 'learn'>('stocks')
 
-  // Data states
+  // Data states (fallback for when live data not available)
   const [apiIndices, setApiIndices] = useState<IndexData[]>([])
   const [apiStocks, setApiStocks] = useState<StockData[]>([])
   const [apiGainers, setApiGainers] = useState<StockData[]>([])
@@ -176,7 +209,7 @@ export function DashboardPage() {
   // Search
   const [searchQuery, setSearchQuery] = useState('')
 
-  // ─── Fetch Indices ───────────────────────────────────────────
+  // ─── Fetch Indices (fallback) ──────────────────────────────
   const fetchIndices = useCallback(async () => {
     try {
       setIndicesLoading(true)
@@ -189,7 +222,7 @@ export function DashboardPage() {
     finally { setIndicesLoading(false) }
   }, [])
 
-  // ─── Fetch Stocks ────────────────────────────────────────────
+  // ─── Fetch Stocks (fallback) ───────────────────────────────
   const fetchStocks = useCallback(async () => {
     try {
       setStocksLoading(true)
@@ -202,7 +235,7 @@ export function DashboardPage() {
     finally { setStocksLoading(false) }
   }, [])
 
-  // ─── Fetch Gainers ───────────────────────────────────────────
+  // ─── Fetch Gainers (fallback) ──────────────────────────────
   const fetchGainers = useCallback(async () => {
     try {
       setGainersLoading(true)
@@ -215,7 +248,7 @@ export function DashboardPage() {
     finally { setGainersLoading(false) }
   }, [])
 
-  // ─── Fetch Losers ────────────────────────────────────────────
+  // ─── Fetch Losers (fallback) ───────────────────────────────
   const fetchLosers = useCallback(async () => {
     try {
       setLosersLoading(true)
@@ -228,17 +261,48 @@ export function DashboardPage() {
     finally { setLosersLoading(false) }
   }, [])
 
-  // ─── Load all data ───────────────────────────────────────────
+  // ─── Load API data as fallback ────────────────────────────
   useEffect(() => {
-    fetchIndices()
-    fetchStocks()
-    fetchGainers()
-    fetchLosers()
-  }, [fetchIndices, fetchStocks, fetchGainers, fetchLosers])
+    // Only fetch from API if live engine is not connected
+    if (!isLiveConnected) {
+      fetchIndices()
+      fetchStocks()
+      fetchGainers()
+      fetchLosers()
+    } else {
+      // Mark as loaded since live data is available
+      setIndicesLoading(false)
+      setStocksLoading(false)
+      setGainersLoading(false)
+      setLosersLoading(false)
+    }
+  }, [fetchIndices, fetchStocks, fetchGainers, fetchLosers, isLiveConnected])
 
-  // ─── Display data ────────────────────────────────────────────
-  const displayIndices = (() => {
-    const source = apiIndices.length > 0 ? apiIndices : fallbackIndices
+  // ─── Convert live engine data to display format ───────────
+  const liveIndicesList = useMemo(() => {
+    if (!isLiveConnected || liveIndices.size === 0) return []
+    const result: IndexData[] = []
+    for (const [, idx] of liveIndices) {
+      result.push(liveIndexToDisplay(idx))
+    }
+    return result
+  }, [isLiveConnected, liveIndices])
+
+  const liveStocksList = useMemo(() => {
+    if (!isLiveConnected || liveStocks.size === 0) return []
+    const result: StockData[] = []
+    for (const [, stock] of liveStocks) {
+      result.push(liveStockToDisplay(stock))
+    }
+    return result
+  }, [isLiveConnected, liveStocks])
+
+  // ─── Display data (live > API > fallback) ──────────────────
+  const displayIndices = useMemo(() => {
+    // Prefer live data, then API data, then fallback
+    const source = liveIndicesList.length > 0 ? liveIndicesList
+      : apiIndices.length > 0 ? apiIndices
+      : fallbackIndices
     // Sort to always show 4 main indices in correct order
     const sorted = [...source].sort((a, b) => {
       const ai = MAIN_INDICES_ORDER.indexOf(a.symbol)
@@ -246,22 +310,46 @@ export function DashboardPage() {
       return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
     })
     return sorted.slice(0, 4)
-  })()
+  }, [liveIndicesList, apiIndices])
 
-  const displayGainers = apiGainers.length > 0
-    ? apiGainers
-    : apiStocks.length > 0
-      ? [...apiStocks].filter(s => s.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 8)
-      : fallbackGainers
+  const liveGainers = useMemo(() => {
+    if (liveStocksList.length === 0) return []
+    return [...liveStocksList]
+      .filter(s => s.changePercent > 0)
+      .sort((a, b) => b.changePercent - a.changePercent)
+      .slice(0, 8)
+  }, [liveStocksList])
 
-  const displayLosers = apiLosers.length > 0
-    ? apiLosers
-    : apiStocks.length > 0
-      ? [...apiStocks].filter(s => s.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, 8)
-      : fallbackLosers
+  const liveLosers = useMemo(() => {
+    if (liveStocksList.length === 0) return []
+    return [...liveStocksList]
+      .filter(s => s.changePercent < 0)
+      .sort((a, b) => a.changePercent - b.changePercent)
+      .slice(0, 8)
+  }, [liveStocksList])
 
-  const getOtherStocks = () => {
-    const allStocks = apiStocks.length > 0 ? apiStocks : fallbackOtherStocks
+  const displayGainers = useMemo(() => {
+    if (liveGainers.length > 0) return liveGainers
+    return apiGainers.length > 0
+      ? apiGainers
+      : apiStocks.length > 0
+        ? [...apiStocks].filter(s => s.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 8)
+        : fallbackGainers
+  }, [liveGainers, apiGainers, apiStocks])
+
+  const displayLosers = useMemo(() => {
+    if (liveLosers.length > 0) return liveLosers
+    return apiLosers.length > 0
+      ? apiLosers
+      : apiStocks.length > 0
+        ? [...apiStocks].filter(s => s.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, 8)
+        : fallbackLosers
+  }, [liveLosers, apiLosers, apiStocks])
+
+  const getOtherStocks = useMemo(() => {
+    const allStocks = liveStocksList.length > 0 ? liveStocksList
+      : apiStocks.length > 0 ? apiStocks
+      : fallbackOtherStocks
     const gainersSet = new Set(displayGainers.map(s => s.symbol))
     const losersSet = new Set(displayLosers.map(s => s.symbol))
     let others = allStocks.filter(s => !gainersSet.has(s.symbol) && !losersSet.has(s.symbol))
@@ -271,7 +359,7 @@ export function DashboardPage() {
       others = others.filter(s => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
     }
     return others.slice(0, 10)
-  }
+  }, [liveStocksList, apiStocks, displayGainers, displayLosers, searchQuery])
 
   // Tab config
   const tabs = [
@@ -298,6 +386,18 @@ export function DashboardPage() {
 
       {/* ═══ NOTIFICATION BANNER ═══════════════════════════════════════════ */}
       <NotificationBanner />
+
+      {/* ═══ LIVE INDICATOR ═══════════════════════════════════════════════ */}
+      {isLiveConnected && (
+        <div className="flex items-center justify-center gap-2 py-1.5 bg-[#00D09C]/5 border-b border-[#00D09C]/10">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex size-2 animate-ping rounded-full bg-[#00D09C] opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-[#00D09C]" />
+          </span>
+          <span className="text-[11px] font-bold text-[#00D09C] tracking-wider uppercase">Live Market Data</span>
+          <span className="text-[10px] text-[#6b7280]">• Prices update every second</span>
+        </div>
+      )}
 
       {/* ═══ TAB BAR ═══════════════════════════════════════════════════════ */}
       <div className="sticky top-[96px] md:top-[96px] z-30 bg-white border-b border-[#e5e7eb] px-4 sm:px-6 lg:px-8">
@@ -467,7 +567,7 @@ export function DashboardPage() {
                     </div>
                   ))}
                 </div>
-              ) : getOtherStocks().length === 0 ? (
+              ) : getOtherStocks.length === 0 ? (
                 <div className="px-5 pb-5 text-center py-6">
                   <p className="text-sm text-[#6b7280]">
                     {searchQuery ? `No stocks found for "${searchQuery}"` : 'No stocks available'}
@@ -475,7 +575,7 @@ export function DashboardPage() {
                 </div>
               ) : (
                 <div className="px-2 pb-2 divide-y divide-[#f0f0f0]">
-                  {getOtherStocks().map((stock) => (
+                  {getOtherStocks.map((stock) => (
                     <StockRow key={stock.id} stock={stock} onClick={() => navigateToStock(stock.symbol)} />
                   ))}
                 </div>

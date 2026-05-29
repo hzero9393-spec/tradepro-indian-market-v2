@@ -106,7 +106,7 @@ export function IndexTicker() {
         }}
       >
         <div className="flex items-center h-full px-3 gap-0 overflow-x-auto custom-scrollbar" style={{ scrollbarWidth: 'none' }}>
-          {/* Market Status */}
+          {/* Market Status + Live indicator */}
           <div className="flex items-center gap-2 shrink-0 pr-3 border-r mr-1" style={{ borderColor: '#e5e7eb' }}>
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
@@ -126,6 +126,15 @@ export function IndexTicker() {
               </span>
               {statusLabel}
             </span>
+            {isConnected && (
+              <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#00D09C]/10 text-[#00D09C]">
+                <span className="relative flex size-1">
+                  <span className="absolute inline-flex size-1 animate-ping rounded-full bg-[#00D09C] opacity-75" />
+                  <span className="relative inline-flex size-1 rounded-full bg-[#00D09C]" />
+                </span>
+                LIVE
+              </span>
+            )}
           </div>
 
           {/* 4 Main Index Cards - Clickable */}
