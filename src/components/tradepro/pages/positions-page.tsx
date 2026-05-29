@@ -143,7 +143,7 @@ export function PositionsPage() {
     }
   }, [token, buildQueryString])
 
-  // ─── Check Triggers (SL/TP polling) ────────────────────
+  // ─── Check Triggers (SL/TP + LIMIT order polling) ────────────────────
   const checkTriggers = useCallback(async () => {
     if (!token) return
     try {
@@ -153,13 +153,35 @@ export function PositionsPage() {
       })
       if (res.ok) {
         const data = await res.json()
+        let needsRefresh = false
+
+        // Show SL/TP trigger notifications
         if (data.slTpTriggers && data.slTpTriggers.length > 0) {
           for (const trigger of data.slTpTriggers) {
-            toast.warning(`SL/TP triggered for position ${trigger.positionId}`, {
-              description: `Reason: ${trigger.exitReason} @ ₹${trigger.currentPrice}`,
-            })
+            if (trigger.executed) {
+              const reasonLabel = trigger.exitReason === 'STOP_LOSS' ? 'Stop Loss' : 'Target'
+              const emoji = trigger.exitReason === 'STOP_LOSS' ? '🛑' : '🎯'
+              toast.success(`${emoji} ${reasonLabel} triggered! Position auto-squared off`, {
+                description: `Exit @ ₹${trigger.currentPrice.toLocaleString('en-IN')}`,
+              })
+            }
           }
-          // Refresh positions after triggers
+          needsRefresh = true
+        }
+
+        // Show LIMIT order fill notifications
+        if (data.triggeredOrders && data.triggeredOrders.length > 0) {
+          for (const trigger of data.triggeredOrders) {
+            if (trigger.executed) {
+              toast.success('📋 Pending order filled!', {
+                description: `Order executed @ ₹${trigger.currentPrice.toLocaleString('en-IN')}`,
+              })
+            }
+          }
+          needsRefresh = true
+        }
+
+        if (needsRefresh) {
           fetchPositions()
         }
       }

@@ -568,6 +568,14 @@ export function StockOverviewPage() {
       body.price = parseFloat(price)
     }
 
+    // Include Stop Loss & Target from confirm modal
+    if (confirmData?.stopLoss && confirmData.stopLoss > 0) {
+      body.stopLoss = confirmData.stopLoss
+    }
+    if (confirmData?.target && confirmData.target > 0) {
+      body.target = confirmData.target
+    }
+
     if (tradeSegment === 'FUTURES') {
       body.lotSize = stockDetail.lotSize
       body.lots = Math.max(1, Math.round(quantity / stockDetail.lotSize))
