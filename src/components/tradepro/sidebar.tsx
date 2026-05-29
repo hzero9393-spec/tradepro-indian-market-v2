@@ -14,6 +14,8 @@ import {
   Settings,
   ChevronRight,
   Star,
+  UserCircle,
+  X,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -25,20 +27,32 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>
   group: 'trade' | 'manage' | 'learn'
   url: string
+  mobileOnly?: boolean  // Only show in mobile sidebar
+  desktopOnly?: boolean // Only show in desktop sidebar
 }
 
 const navItems: NavItem[] = [
   // Trade group
-  { id: 'dashboard', label: 'Home', icon: LayoutDashboard, group: 'trade', url: '/' },
-  { id: 'trading', label: 'Stocks', icon: CandlestickChart, group: 'trade', url: '/stocks' },
+  { id: 'dashboard', label: 'Home', icon: LayoutDashboard, group: 'trade', url: '/', desktopOnly: true },
+  { id: 'trading', label: 'Stocks', icon: CandlestickChart, group: 'trade', url: '/stocks', desktopOnly: true },
+  { id: 'watchlist', label: 'Watchlist', icon: Star, group: 'trade', url: '/watchlist', desktopOnly: true },
   { id: 'optionChain', label: 'Option Chain', icon: GitBranch, group: 'trade', url: '/option-chain' },
-  { id: 'watchlist', label: 'Watchlist', icon: Star, group: 'trade', url: '/watchlist' },
   // Manage group
-  { id: 'positions', label: 'Positions', icon: Crosshair, group: 'manage', url: '/positions' },
+  { id: 'positions', label: 'Positions', icon: Crosshair, group: 'manage', url: '/positions', desktopOnly: true },
   { id: 'orders', label: 'Orders', icon: FileText, group: 'manage', url: '/orders' },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet, group: 'manage', url: '/portfolio' },
   { id: 'reports', label: 'Reports', icon: BarChart3, group: 'manage', url: '/reports' },
   // Learn group
+  { id: 'learning', label: 'Learn', icon: GraduationCap, group: 'learn', url: '/learning' },
+]
+
+// Mobile-specific items that appear in the hamburger sidebar but NOT in bottom nav
+const mobileSidebarItems: NavItem[] = [
+  // Secondary navigation (not in bottom nav)
+  { id: 'optionChain', label: 'Option Chain', icon: GitBranch, group: 'trade', url: '/option-chain' },
+  { id: 'orders', label: 'Orders', icon: FileText, group: 'manage', url: '/orders' },
+  { id: 'portfolio', label: 'Portfolio', icon: Wallet, group: 'manage', url: '/portfolio' },
+  { id: 'reports', label: 'Reports', icon: BarChart3, group: 'manage', url: '/reports' },
   { id: 'learning', label: 'Learn', icon: GraduationCap, group: 'learn', url: '/learning' },
 ]
 
@@ -54,10 +68,11 @@ interface SidebarProps {
   userEmail?: string | null
   userRole?: string | null
   userAvatar?: string | null
+  isMobile?: boolean
 }
 
-export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
-  const { setCurrentPage, currentPage } = useAppStore()
+export function Sidebar({ onLogout, userName, userAvatar, isMobile = false }: SidebarProps) {
+  const { setCurrentPage, currentPage, setSidebarOpen } = useAppStore()
 
   const avatar = userAvatar
   const initials = userName
@@ -75,11 +90,27 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
     if (item.id === 'optionChain' && currentPage === 'optionChain') {
       return true
     }
+    if (item.id === 'profile' && currentPage === 'profile') {
+      return true
+    }
     return currentPage === item.id
   }
 
+  // Choose which items to show based on mobile/desktop
+  const items = isMobile ? mobileSidebarItems : navItems
+
+  // Filter items based on mobile/desktop context
+  const filteredItems = items.filter((item) => {
+    if (isMobile) {
+      // On mobile sidebar, show mobile-specific items
+      return !item.desktopOnly
+    }
+    // On desktop, show all items
+    return !item.mobileOnly
+  })
+
   // Group items
-  const grouped = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
+  const grouped = filteredItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     if (!acc[item.group]) acc[item.group] = []
     acc[item.group].push(item)
     return acc
@@ -87,22 +118,34 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
 
   const isProfileActive = currentPage === 'profile'
 
+  const handleNavClick = (id: PageId) => {
+    setCurrentPage(id)
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }
+
   return (
     <aside
-      className="fixed left-0 top-0 z-40 hidden h-screen w-[240px] flex-col md:flex"
+      className={cn(
+        "flex h-full flex-col",
+        isMobile
+          ? "w-full"
+          : "fixed left-0 top-0 z-40 hidden h-screen w-[240px] md:flex"
+      )}
       role="navigation"
-      aria-label="Main navigation"
+      aria-label={isMobile ? "Mobile navigation menu" : "Main navigation"}
     >
       <div
         className="flex h-full flex-col"
         style={{
           background: '#ffffff',
-          borderRight: '1px solid #e8ecf0',
+          borderRight: isMobile ? 'none' : '1px solid #e8ecf0',
         }}
       >
         {/* Logo Area */}
-        <div className="flex items-center gap-3 px-6 py-5">
-          <button onClick={() => setCurrentPage('dashboard')} className="flex items-center gap-3 group">
+        <div className="flex items-center gap-3 px-5 py-4">
+          <button onClick={() => handleNavClick('dashboard')} className="flex items-center gap-3 group">
             <div
               className="flex size-9 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105"
               style={{
@@ -127,18 +170,29 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
               </p>
             </div>
           </button>
+
+          {/* Close button for mobile sidebar */}
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="ml-auto flex size-8 items-center justify-center rounded-lg hover:bg-[#f4f6f8] transition-colors"
+              aria-label="Close menu"
+            >
+              <X className="size-4 text-[#6b7280]" />
+            </button>
+          )}
         </div>
 
         {/* Separator */}
         <div className="mx-5 h-px" style={{ background: '#e8ecf0' }} />
 
         {/* Navigation */}
-        <ScrollArea className="flex-1 px-3 py-4 sidebar-scrollbar">
-          <nav className="flex flex-col gap-5">
+        <ScrollArea className="flex-1 px-3 py-3 sidebar-scrollbar">
+          <nav className="flex flex-col gap-4">
             {Object.entries(grouped).map(([group, items]) => (
               <div key={group}>
                 <p
-                  className="px-3 mb-2 text-[10px] font-bold uppercase tracking-[0.12em]"
+                  className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em]"
                   style={{ color: '#b0b8c4' }}
                 >
                   {groupLabels[group] || group}
@@ -151,9 +205,9 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
                     return (
                       <button
                         key={item.id}
-                        onClick={() => setCurrentPage(item.id)}
+                        onClick={() => handleNavClick(item.id)}
                         className={cn(
-                          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 outline-none',
+                          'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 outline-none w-full',
                           'focus-visible:ring-2 focus-visible:ring-[#00D09C]/20',
                           !active && 'hover:bg-[#f4f6f8]',
                         )}
@@ -204,7 +258,7 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
         {/* Bottom Section */}
         <div className="px-3 py-3" style={{ borderTop: '1px solid #e8ecf0' }}>
           <button
-            onClick={() => setCurrentPage('profile')}
+            onClick={() => handleNavClick('profile')}
             className={cn(
               'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 outline-none w-full',
               !isProfileActive && 'hover:bg-[#f4f6f8]',
@@ -228,10 +282,10 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
               {avatar ? (
                 <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-lg" />
               ) : (
-                <Settings className="size-[16px] shrink-0" style={{ color: isProfileActive ? '#00D09C' : '#9ca3af' }} />
+                <UserCircle className="size-[16px] shrink-0" style={{ color: isProfileActive ? '#00D09C' : '#9ca3af' }} />
               )}
             </div>
-            <span className={isProfileActive ? 'font-semibold' : ''}>Settings</span>
+            <span className={isProfileActive ? 'font-semibold' : ''}>My Profile</span>
             <ChevronRight className="ml-auto size-3 text-transparent group-hover:text-[#b0b8c4] transition-colors duration-200" />
           </button>
 

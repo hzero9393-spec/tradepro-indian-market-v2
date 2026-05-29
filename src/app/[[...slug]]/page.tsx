@@ -257,7 +257,7 @@ export default function CatchAllPage() {
             className="w-[240px] p-0"
             style={{ background: '#ffffff', borderRight: '1px solid #e5e7eb' }}
           >
-            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} userAvatar={user?.avatar} />
+            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} userAvatar={user?.avatar} isMobile />
           </SheetContent>
         </Sheet>
 
