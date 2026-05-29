@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
+import { useMarketData } from '@/lib/market-data'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole } from '@/lib/format'
@@ -190,17 +191,28 @@ export function PositionsPage() {
     }
   }, [token, fetchPositions])
 
+  // ─── Real-time market data for live position updates ────────
+  const { isConnected: isSimulatorConnected, stocks: liveStocks, indices: liveIndices, optionChains: liveOptionChains, recentTriggers } = useMarketData()
+
   useEffect(() => {
     fetchPositions()
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchPositions, 30000)
-    // Poll for SL/TP triggers every 30 seconds
-    const triggerInterval = setInterval(checkTriggers, 30000)
+    // If simulator is connected, it handles SL/TP server-side.
+    // We still poll positions for UI refresh (but less frequently).
+    // If simulator is NOT connected, fall back to polling check-triggers.
+    const positionInterval = setInterval(fetchPositions, isSimulatorConnected ? 10000 : 30000)
+    const triggerInterval = isSimulatorConnected ? null : setInterval(checkTriggers, 30000)
     return () => {
-      clearInterval(interval)
-      clearInterval(triggerInterval)
+      clearInterval(positionInterval)
+      if (triggerInterval) clearInterval(triggerInterval)
     }
-  }, [fetchPositions, checkTriggers])
+  }, [fetchPositions, checkTriggers, isSimulatorConnected])
+
+  // When simulator triggers a position close, refresh positions
+  useEffect(() => {
+    if (recentTriggers.length > 0) {
+      fetchPositions()
+    }
+  }, [recentTriggers.length, fetchPositions])
 
   // ─── Square Off ───────────────────────────────────────────
   const handleSquareOff = async (positionId: string, symbol: string) => {

@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { GlobalTriggerProvider } from "@/components/tradepro/global-trigger-provider";
+import { MarketDataProvider } from "@/components/tradepro/market-data-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,7 +41,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased bg-background text-foreground`}
       >
         <GlobalTriggerProvider>
-          {children}
+          <MarketDataProvider>
+            {children}
+          </MarketDataProvider>
         </GlobalTriggerProvider>
         <Toaster />
         <SonnerToaster />

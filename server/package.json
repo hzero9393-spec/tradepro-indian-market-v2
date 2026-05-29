@@ -1,0 +1,16 @@
+{
+  "name": "tradepro-market-simulator",
+  "version": "1.0.0",
+  "description": "TradePro Real-Time Demo Market Data Engine - Production-Grade Simulated Market Data",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "@libsql/client": "^0.17.3"
+  }
+}
