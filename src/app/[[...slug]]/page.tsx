@@ -148,7 +148,7 @@ function LoadingScreen() {
   )
 }
 
-export default function Home() {
+export default function CatchAllPage() {
   const { currentPage, sidebarOpen, setSidebarOpen } = useAppStore()
   const { isAuthenticated, isInitializing, initialize, logout, user, token, setAuth } = useAuthStore()
 
