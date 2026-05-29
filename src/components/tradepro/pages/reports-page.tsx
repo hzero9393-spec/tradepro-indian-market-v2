@@ -49,6 +49,7 @@ import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { formatINR, formatINRWhole } from '@/lib/format'
+import { DateFilter, DatePreset, filterByDateRange } from '@/components/tradepro/ui/date-filter'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -90,6 +91,13 @@ export function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [downloadingReport, setDownloadingReport] = useState<string | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'last' | 'monthly' | 'full' | null }>({ open: false, type: null })
+
+  // ─── Date Filter State ──────────────────────────────────────
+  const [datePreset, setDatePreset] = useState<DatePreset>('all')
+  const [dateFrom, setDateFrom] = useState<string | null>(null)
+  const [dateTo, setDateTo] = useState<string | null>(null)
+  const [customFromInput, setCustomFromInput] = useState<string | null>(null)
+  const [customToInput, setCustomToInput] = useState<string | null>(null)
 
   // ─── Download Report Handler ────────────────────────────────
   const handleDownloadReport = useCallback(async (type: 'last' | 'monthly' | 'full') => {
@@ -172,11 +180,20 @@ export function ReportsPage() {
     }
   }, [token])
 
+  // ─── Build query string with date params ────────────────────
+  const buildQueryString = useCallback((basePath: string) => {
+    const params = new URLSearchParams()
+    params.set('limit', '100')
+    if (dateFrom) params.set('from', dateFrom)
+    if (dateTo) params.set('to', dateTo)
+    return `${basePath}?${params.toString()}`
+  }, [dateFrom, dateTo])
+
   // ─── Fetch All Data ───────────────────────────────────────
   const fetchData = useCallback(async () => {
     if (!token) return
     try {
-      const tradesRes = await fetch('/api/trade/trades?limit=100', {
+      const tradesRes = await fetch(buildQueryString('/api/trade/trades'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (tradesRes.ok) {
@@ -188,17 +205,34 @@ export function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, buildQueryString])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
+  // ─── Date Filter Handler ────────────────────────────────────
+  const handleDateChange = useCallback((preset: DatePreset, from: string | null, to: string | null) => {
+    setDatePreset(preset)
+    setDateFrom(from)
+    setDateTo(to)
+    if (preset !== 'custom') {
+      setCustomFromInput(null)
+      setCustomToInput(null)
+    }
+  }, [])
+
+  // ─── Client-side date filtering ─────────────────────────────
+  const filteredTrades = useMemo(() =>
+    filterByDateRange(trades, 'executedAt', dateFrom, dateTo),
+    [trades, dateFrom, dateTo]
+  )
+
   // ─── Computed Metrics ─────────────────────────────────────
 
   const closedTrades = useMemo(() =>
-    trades.filter(t => t.pnl !== null && t.pnl !== undefined),
-    [trades]
+    filteredTrades.filter(t => t.pnl !== null && t.pnl !== undefined),
+    [filteredTrades]
   )
 
   const totalPnl = useMemo(() =>
@@ -207,13 +241,13 @@ export function ReportsPage() {
   )
 
   const winningTrades = useMemo(() =>
-    closedTrades.filter(t => (t.pnl || 0) > 0),
-    [closedTrades]
+    filteredTrades.filter(t => (t.pnl || 0) > 0),
+    [filteredTrades]
   )
 
   const losingTrades = useMemo(() =>
-    closedTrades.filter(t => (t.pnl || 0) < 0),
-    [closedTrades]
+    filteredTrades.filter(t => (t.pnl || 0) < 0),
+    [filteredTrades]
   )
 
   const winRate = useMemo(() => {
@@ -231,7 +265,7 @@ export function ReportsPage() {
   const stats = [
     {
       label: 'Total Trades',
-      value: String(trades.length),
+      value: String(filteredTrades.length),
       icon: Crosshair,
       borderColor: 'border-l-[#00D09C]',
       textColor: 'text-[#00D09C]',
@@ -303,6 +337,24 @@ export function ReportsPage() {
         </p>
       </div>
 
+      {/* ── Date Filter ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <CardContent className="p-4">
+            <DateFilter
+              value={datePreset}
+              customFrom={customFromInput}
+              customTo={customToInput}
+              onChange={handleDateChange}
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* ── Stats Grid ──────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => {
@@ -335,7 +387,7 @@ export function ReportsPage() {
       </div>
 
       {/* ── Empty State ─────────────────────────────────────────── */}
-      {trades.length === 0 ? (
+      {filteredTrades.length === 0 ? (
         <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
           <CardContent className="py-16">
             <div className="flex flex-col items-center justify-center text-center">
@@ -573,13 +625,13 @@ export function ReportsPage() {
                 <CardContent>
                   {(() => {
                     const segmentData = [
-                      { name: 'Equity', icon: Briefcase, color: '#00D09C', trades: trades.filter(t => t.segment === 'EQUITY' || t.segment === 'CASH') },
-                      { name: 'Futures', icon: TrendingUp, color: '#00d09c', trades: trades.filter(t => t.segment === 'FUTURES') },
-                      { name: 'Options', icon: Award, color: '#eb5b3c', trades: trades.filter(t => t.segment === 'OPTIONS') },
+                      { name: 'Equity', icon: Briefcase, color: '#00D09C', trades: filteredTrades.filter(t => t.segment === 'EQUITY' || t.segment === 'CASH') },
+                      { name: 'Futures', icon: TrendingUp, color: '#00d09c', trades: filteredTrades.filter(t => t.segment === 'FUTURES') },
+                      { name: 'Options', icon: Award, color: '#eb5b3c', trades: filteredTrades.filter(t => t.segment === 'OPTIONS') },
                     ]
                     // Always show all 3 segments, even with 0 trades
 
-                    if (trades.length === 0) {
+                    if (filteredTrades.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                           <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
@@ -684,7 +736,7 @@ export function ReportsPage() {
                     </div>
                   </div>
                   <Badge variant="secondary" className="bg-[#00D09C]/10 text-[#00D09C] border-0 text-xs font-semibold">
-                    {trades.length} Trade{trades.length !== 1 ? 's' : ''}
+                    {filteredTrades.length} Trade{filteredTrades.length !== 1 ? 's' : ''}
                   </Badge>
                 </div>
               </CardHeader>
@@ -704,7 +756,7 @@ export function ReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-[#e5e7eb]">
-                      {trades.map((trade) => {
+                      {filteredTrades.map((trade) => {
                         const isBuy = trade.tradeDirection === 'BUY'
                         const hasPnl = trade.pnl !== null && trade.pnl !== undefined
                         const isPositive = hasPnl && trade.pnl! >= 0
@@ -797,7 +849,7 @@ export function ReportsPage() {
                         Total Brokerage
                       </p>
                       <p className="font-mono-data font-tabular text-sm font-bold text-[#1a1a1a] mt-0.5">
-                        {formatINR(trades.reduce((s, t) => s + t.brokerage, 0))}
+                        {formatINR(filteredTrades.reduce((s, t) => s + t.brokerage, 0))}
                       </p>
                     </div>
                     <div>

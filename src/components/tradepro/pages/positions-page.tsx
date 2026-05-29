@@ -36,6 +36,7 @@ import { useAppStore } from '@/lib/store'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole } from '@/lib/format'
+import { DateFilter, DatePreset, filterByDateRange } from '@/components/tradepro/ui/date-filter'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -89,13 +90,31 @@ export function PositionsPage() {
   const [loading, setLoading] = useState(true)
   const [squaringOff, setSquaringOff] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('open')
+  const [segmentFilter, setSegmentFilter] = useState<string>('all')
+
+  // ─── Date Filter State ──────────────────────────────────────
+  const [datePreset, setDatePreset] = useState<DatePreset>('all')
+  const [dateFrom, setDateFrom] = useState<string | null>(null)
+  const [dateTo, setDateTo] = useState<string | null>(null)
+  const [customFromInput, setCustomFromInput] = useState<string | null>(null)
+  const [customToInput, setCustomToInput] = useState<string | null>(null)
+
+  // ─── Build query string with date params ────────────────────
+  const buildQueryString = useCallback((basePath: string) => {
+    const params = new URLSearchParams()
+    params.set('status', 'all')
+    if (dateFrom) params.set('from', dateFrom)
+    if (dateTo) params.set('to', dateTo)
+    const qs = params.toString()
+    return qs ? `${basePath}?${qs}` : basePath
+  }, [dateFrom, dateTo])
 
   // ─── Fetch Positions (all - open + closed) ───────────────
   const fetchPositions = useCallback(async () => {
     if (!token) { setLoading(false); return }
     try {
-      // Fetch ALL positions (open + closed)
-      const res = await fetch('/api/trade/positions?status=all', {
+      // Fetch ALL positions (open + closed) with date params
+      const res = await fetch(buildQueryString('/api/trade/positions'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -109,7 +128,7 @@ export function PositionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, buildQueryString])
 
   useEffect(() => {
     fetchPositions()
@@ -153,15 +172,24 @@ export function PositionsPage() {
     }
   }
 
+  // ─── Client-side date + segment filtering ──────────────────
+  const filteredPositions = useMemo(() => {
+    let result = filterByDateRange(positions, 'createdAt', dateFrom, dateTo)
+    if (segmentFilter !== 'all') {
+      result = result.filter(p => p.segment === segmentFilter)
+    }
+    return result
+  }, [positions, dateFrom, dateTo, segmentFilter])
+
   // ─── Split positions by open/closed ──────────────────────
   const openPositions = useMemo(() =>
-    positions.filter(p => p.isOpen !== false),
-    [positions]
+    filteredPositions.filter(p => p.isOpen !== false),
+    [filteredPositions]
   )
 
   const closedPositions = useMemo(() =>
-    positions.filter(p => p.isOpen === false),
-    [positions]
+    filteredPositions.filter(p => p.isOpen === false),
+    [filteredPositions]
   )
 
   // ─── Stats ────────────────────────────────────────────────
@@ -176,6 +204,17 @@ export function PositionsPage() {
     { label: 'Unrealized P&L', value: `${isProfit ? '+' : '-'}${formatINR(Math.abs(totalPnl))}`, icon: isProfit ? TrendingUp : AlertTriangle, borderColor: isProfit ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]', iconBg: isProfit ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10', iconColor: isProfit ? 'text-[#00B386]' : 'text-[#EB5B3C]' },
     { label: 'Margin Used', value: formatINRWhole(totalMargin), icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
   ]
+
+  // ─── Date Filter Handler ────────────────────────────────────
+  const handleDateChange = useCallback((preset: DatePreset, from: string | null, to: string | null) => {
+    setDatePreset(preset)
+    setDateFrom(from)
+    setDateTo(to)
+    if (preset !== 'custom') {
+      setCustomFromInput(null)
+      setCustomToInput(null)
+    }
+  }, [])
 
   // ─── Open Position Table ─────────────────────────────────
   const OpenPositionTable = () => {
@@ -408,6 +447,24 @@ export function PositionsPage() {
         </p>
       </motion.div>
 
+      {/* ── Date Filter ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <CardContent className="p-4">
+            <DateFilter
+              value={datePreset}
+              customFrom={customFromInput}
+              customTo={customToInput}
+              onChange={handleDateChange}
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* ── Stats Grid ─────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -446,7 +503,7 @@ export function PositionsPage() {
         <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
           <CardContent className="p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <TabsList className="bg-[#f5f7fa] border border-[#e5e7eb] p-1 rounded-lg">
                   <TabsTrigger
                     value="open"
@@ -463,6 +520,22 @@ export function PositionsPage() {
                     <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{closedPositions.length}</span>
                   </TabsTrigger>
                 </TabsList>
+                {/* Segment Filter */}
+                <div className="flex items-center gap-1.5">
+                  {['all', 'EQUITY', 'FUTURES', 'OPTIONS'].map((seg) => (
+                    <button
+                      key={seg}
+                      onClick={() => setSegmentFilter(seg)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                        segmentFilter === seg
+                          ? 'bg-[#00D09C] text-white shadow-sm'
+                          : 'bg-[#f5f7fa] text-[#6b7280] border border-[#e5e7eb] hover:border-[#00D09C] hover:text-[#1a1a1a]'
+                      }`}
+                    >
+                      {seg === 'all' ? 'All' : seg.charAt(0) + seg.slice(1).toLowerCase()}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {loading ? (

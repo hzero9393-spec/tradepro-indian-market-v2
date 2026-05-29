@@ -11,15 +11,28 @@ export async function GET(request: NextRequest) {
     const userId = auth.userId
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') // 'open', 'closed', or 'all' (default: 'all')
+    const from = searchParams.get('from')
+    const to = searchParams.get('to')
 
     // ─── Build where clause based on status filter ─────────────────
-    const where: { userId: string; isOpen?: boolean } = { userId }
+    const where: Record<string, unknown> = { userId }
     if (status === 'open') {
       where.isOpen = true
     } else if (status === 'closed') {
       where.isOpen = false
     }
     // 'all' or no filter → no isOpen filter, return everything
+
+    // Date range filter on createdAt
+    if (from || to) {
+      where.createdAt = {}
+      if (from) {
+        where.createdAt.gte = new Date(from)
+      }
+      if (to) {
+        where.createdAt.lte = new Date(to)
+      }
+    }
 
     // ─── Fetch positions ───────────────────────────────────────────
     const positions = await db.position.findMany({

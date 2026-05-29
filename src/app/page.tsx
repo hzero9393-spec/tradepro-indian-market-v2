@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import { useAppStore } from '@/lib/store'
+import { useAppStore, getPageFromUrl } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth-store'
 import { AuthPage } from '@/components/tradepro/auth-page'
 import { Sidebar } from '@/components/tradepro/sidebar'
@@ -179,6 +179,40 @@ export default function Home() {
     initialize()
   }, [initialize, handleOAuthCallback])
 
+  // Sync page from URL on first load & listen for popstate
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const { setCurrentPageFromUrl, selectedStockSymbol, selectedIndexSymbol } = useAppStore.getState()
+
+    // Initialize page from current URL
+    const pathPage = getPageFromUrl(window.location.pathname)
+    let stockSym: string | null = selectedStockSymbol
+    let indexSym: string | null = selectedIndexSymbol
+
+    // Parse symbol from URL if stock/index detail page
+    if (pathPage === 'stockOverview') {
+      const parts = window.location.pathname.split('/stock/')
+      if (parts[1]) stockSym = parts[1].split('/')[0]
+    } else if (pathPage === 'indexDetail') {
+      const parts = window.location.pathname.split('/index/')
+      if (parts[1]) indexSym = parts[1].split('/')[0]
+    }
+
+    setCurrentPageFromUrl(pathPage, stockSym, indexSym)
+
+    // Listen for browser back/forward
+    const handlePopState = (e: PopStateEvent) => {
+      const page = (e.state?.page as string) || getPageFromUrl(window.location.pathname)
+      const sym = e.state?.stockSymbol as string | null || null
+      const idx = e.state?.indexSymbol as string | null || null
+      useAppStore.getState().setCurrentPageFromUrl(page as any, sym, idx)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [isAuthenticated])
+
   // Show loading while checking auth
   if (isInitializing) {
     return <LoadingScreen />
@@ -227,8 +261,8 @@ export default function Home() {
         {/* Indian Market Index Ticker */}
         {!isFooterPage && <IndexTicker />}
 
-        {/* Main Content */}
-        <main className="flex-1 md:ml-[240px] mt-14 pb-16 md:pb-0">
+        {/* Main Content — extra top padding for index ticker (36px) */}
+        <main className="flex-1 md:ml-[240px] mt-[92px] pb-16 md:pb-0">
           <PageContent page={currentPage} />
 
           {/* Footer */}

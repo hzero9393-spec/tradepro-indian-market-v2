@@ -12,24 +12,17 @@ import {
   TrendingUp,
   GitBranch,
   Settings,
-  Crown,
-  Lock,
   ChevronRight,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
-import { useAuthStore } from '@/lib/auth-store'
-import { PLAN_LIMITS, type SubscriptionPlan } from '@/lib/subscription/constants'
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { usePathname } from 'next/navigation'
 
 interface NavItem {
   id: PageId
   label: string
   icon: React.ComponentType<{ className?: string }>
-  group: 'trade' | 'manage' | 'learn' | 'plan'
-  requiredFeature?: string
-  requiredPlan?: SubscriptionPlan
+  group: 'trade' | 'manage' | 'learn'
   url: string
 }
 
@@ -37,8 +30,8 @@ const navItems: NavItem[] = [
   // Trade group
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard, group: 'trade', url: '/' },
   { id: 'trading', label: 'Stocks', icon: CandlestickChart, group: 'trade', url: '/stocks' },
-  { id: 'optionChain', label: 'Option Chain', icon: GitBranch, group: 'trade', requiredFeature: 'optionsAccess', requiredPlan: 'PREMIUM', url: '/option-chain' },
-  { id: 'futures', label: 'Futures', icon: TrendingUp, group: 'trade', requiredFeature: 'futuresAccess', requiredPlan: 'PRO', url: '/futures' },
+  { id: 'optionChain', label: 'Option Chain', icon: GitBranch, group: 'trade', url: '/option-chain' },
+  { id: 'futures', label: 'Futures', icon: TrendingUp, group: 'trade', url: '/futures' },
   // Manage group
   { id: 'positions', label: 'Positions', icon: Crosshair, group: 'manage', url: '/positions' },
   { id: 'orders', label: 'Orders', icon: FileText, group: 'manage', url: '/orders' },
@@ -46,31 +39,12 @@ const navItems: NavItem[] = [
   { id: 'reports', label: 'Reports', icon: BarChart3, group: 'manage', url: '/reports' },
   // Learn group
   { id: 'learning', label: 'Learn', icon: GraduationCap, group: 'learn', url: '/learning' },
-  // Plan group
-  { id: 'pricing', label: 'Pricing', icon: Crown, group: 'plan', url: '/pricing' },
 ]
 
 const groupLabels: Record<string, string> = {
   trade: 'Trade',
   manage: 'Manage',
   learn: 'Learn',
-  plan: 'Plan',
-}
-
-function hasFeatureAccess(userPlan: SubscriptionPlan, feature?: string, requiredPlan?: SubscriptionPlan): boolean {
-  if (!feature && !requiredPlan) return true
-  if (requiredPlan) {
-    const planHierarchy: SubscriptionPlan[] = ['FREE', 'PRO', 'PREMIUM']
-    return planHierarchy.indexOf(userPlan) >= planHierarchy.indexOf(requiredPlan)
-  }
-  if (feature) {
-    const limits = PLAN_LIMITS[userPlan]
-    const value = (limits as Record<string, unknown>)[feature]
-    if (typeof value === 'boolean') return value
-    if (typeof value === 'number') return value !== 0
-    if (Array.isArray(value)) return value.length > 0
-  }
-  return true
 }
 
 interface SidebarProps {
@@ -82,25 +56,25 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
-  const { setCurrentPage } = useAppStore()
-  const { user } = useAuthStore()
-  const pathname = usePathname()
-  const userPlan = (user?.subscription as SubscriptionPlan) || 'FREE'
+  const { setCurrentPage, currentPage } = useAppStore()
 
-  const avatar = userAvatar || user?.avatar
+  const avatar = userAvatar
   const initials = userName
     ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : 'TP'
 
-  // Determine if a nav item is active based on URL
+  // Determine if a nav item is active based on currentPage state
   const isActive = (item: NavItem) => {
     if (item.id === 'dashboard') {
-      return pathname === '/'
+      return currentPage === 'dashboard'
     }
-    if (item.id === 'trading' && (pathname.startsWith('/stock/') || pathname.startsWith('/index/'))) {
+    if (item.id === 'trading' && (currentPage === 'stockOverview')) {
       return true
     }
-    return pathname === item.url
+    if (item.id === 'optionChain' && currentPage === 'optionChain') {
+      return true
+    }
+    return currentPage === item.id
   }
 
   // Group items
@@ -109,6 +83,8 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
     acc[item.group].push(item)
     return acc
   }, {})
+
+  const isProfileActive = currentPage === 'profile'
 
   return (
     <aside
@@ -170,8 +146,6 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
                   {items.map((item) => {
                     const active = isActive(item)
                     const Icon = item.icon
-                    const isLocked = !hasFeatureAccess(userPlan, item.requiredFeature, item.requiredPlan)
-                    const requiredPlanName = item.requiredPlan || (item.requiredFeature?.toLowerCase().includes('option') ? 'PREMIUM' : 'PRO')
 
                     return (
                       <button
@@ -180,7 +154,6 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
                         className={cn(
                           'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 outline-none',
                           'focus-visible:ring-2 focus-visible:ring-[#00D09C]/20',
-                          isLocked && !active && 'opacity-60',
                           !active && 'hover:bg-[#f4f6f8]',
                         )}
                         style={{
@@ -215,20 +188,7 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
                           {item.label}
                         </span>
 
-                        {isLocked && !active && (
-                          <span className="ml-auto text-[8px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-0.5">
-                            <Lock className="size-2.5" />
-                            {requiredPlanName}
-                          </span>
-                        )}
-
-                        {item.id === 'pricing' && userPlan === 'FREE' && !active && !isLocked && (
-                          <span className="ml-auto text-[8px] font-bold px-2 py-0.5 rounded-md text-white" style={{ background: 'linear-gradient(135deg, #00D09C, #00A67E)' }}>
-                            UPGRADE
-                          </span>
-                        )}
-
-                        {!active && !isLocked && item.id !== 'pricing' && (
+                        {!active && item.id !== 'pricing' && (
                           <ChevronRight className="ml-auto size-3 text-transparent group-hover:text-[#b0b8c4] transition-colors duration-200" />
                         )}
                       </button>
@@ -246,15 +206,15 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
             onClick={() => setCurrentPage('profile')}
             className={cn(
               'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200 outline-none w-full',
-              pathname === '/profile' ? '' : 'hover:bg-[#f4f6f8]',
+              !isProfileActive && 'hover:bg-[#f4f6f8]',
               'focus-visible:ring-2 focus-visible:ring-[#00D09C]/20',
             )}
             style={{
-              background: pathname === '/profile' ? 'linear-gradient(135deg, rgba(0,208,156,0.1) 0%, rgba(0,166,126,0.06) 100%)' : 'transparent',
-              color: pathname === '/profile' ? '#00A67E' : '#4b5563',
+              background: isProfileActive ? 'linear-gradient(135deg, rgba(0,208,156,0.1) 0%, rgba(0,166,126,0.06) 100%)' : 'transparent',
+              color: isProfileActive ? '#00A67E' : '#4b5563',
             }}
           >
-            {pathname === '/profile' && (
+            {isProfileActive && (
               <div
                 className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full"
                 style={{ background: 'linear-gradient(180deg, #00D09C, #00A67E)' }}
@@ -262,15 +222,15 @@ export function Sidebar({ onLogout, userName, userAvatar }: SidebarProps) {
             )}
             <div className={cn(
               'flex size-8 items-center justify-center rounded-lg overflow-hidden transition-all duration-200',
-              pathname === '/profile' ? 'bg-[#00D09C]/10' : 'group-hover:bg-[#e8ecf0]',
+              isProfileActive ? 'bg-[#00D09C]/10' : 'group-hover:bg-[#e8ecf0]',
             )}>
               {avatar ? (
                 <img src={avatar} alt="Profile" className="w-full h-full object-cover rounded-lg" />
               ) : (
-                <Settings className="size-[16px] shrink-0" style={{ color: pathname === '/profile' ? '#00D09C' : '#9ca3af' }} />
+                <Settings className="size-[16px] shrink-0" style={{ color: isProfileActive ? '#00D09C' : '#9ca3af' }} />
               )}
             </div>
-            <span className={pathname === '/profile' ? 'font-semibold' : ''}>Settings</span>
+            <span className={isProfileActive ? 'font-semibold' : ''}>Settings</span>
             <ChevronRight className="ml-auto size-3 text-transparent group-hover:text-[#b0b8c4] transition-colors duration-200" />
           </button>
 

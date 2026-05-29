@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Card,
   CardContent,
@@ -37,6 +37,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { formatINR, formatPnL } from '@/lib/format'
+import { DateFilter, DatePreset, filterByDateRange, getDateRange } from '@/components/tradepro/ui/date-filter'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -117,11 +118,27 @@ export function OrdersPage() {
   const [loadingTrades, setLoadingTrades] = useState(true)
   const [activeTab, setActiveTab] = useState('open')
 
+  // ─── Date Filter State ──────────────────────────────────────
+  const [datePreset, setDatePreset] = useState<DatePreset>('all')
+  const [dateFrom, setDateFrom] = useState<string | null>(null)
+  const [dateTo, setDateTo] = useState<string | null>(null)
+  const [customFromInput, setCustomFromInput] = useState<string | null>(null)
+  const [customToInput, setCustomToInput] = useState<string | null>(null)
+
+  // ─── Build query string with date params ────────────────────
+  const buildQueryString = useCallback((basePath: string) => {
+    const params = new URLSearchParams()
+    params.set('limit', '100')
+    if (dateFrom) params.set('from', dateFrom)
+    if (dateTo) params.set('to', dateTo)
+    return `${basePath}?${params.toString()}`
+  }, [dateFrom, dateTo])
+
   // ─── Fetch Orders ────────────────────────────────────────
   const fetchOrders = useCallback(async () => {
     if (!token) { setLoadingOrders(false); return }
     try {
-      const res = await fetch('/api/trade/orders?limit=100', {
+      const res = await fetch(buildQueryString('/api/trade/orders'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -133,13 +150,13 @@ export function OrdersPage() {
     } finally {
       setLoadingOrders(false)
     }
-  }, [token])
+  }, [token, buildQueryString])
 
   // ─── Fetch Trades ────────────────────────────────────────
   const fetchTrades = useCallback(async () => {
     if (!token) { setLoadingTrades(false); return }
     try {
-      const res = await fetch('/api/trade/trades?limit=50', {
+      const res = await fetch(buildQueryString('/api/trade/trades'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -151,19 +168,45 @@ export function OrdersPage() {
     } finally {
       setLoadingTrades(false)
     }
-  }, [token])
+  }, [token, buildQueryString])
 
   useEffect(() => {
     fetchOrders()
     fetchTrades()
   }, [fetchOrders, fetchTrades])
 
-  // ─── Split orders: All Orders and Trade History ──
-  const allOrders = orders // Show ALL orders (not just pending)
+  // ─── Client-side date filtering (for data already fetched) ──
+  const filteredOrders = useMemo(() =>
+    filterByDateRange(orders, 'placedAt', dateFrom, dateTo),
+    [orders, dateFrom, dateTo]
+  )
 
-  // Stats
-  const filledCount = orders.filter(o => o.status === 'FILLED').length
-  const totalVolume = trades.reduce((s, t) => s + t.totalValue, 0)
+  const filteredTrades = useMemo(() =>
+    filterByDateRange(trades, 'executedAt', dateFrom, dateTo),
+    [trades, dateFrom, dateTo]
+  )
+
+  // ─── Split orders: All Orders and Trade History ──
+  const allOrders = filteredOrders // Show ALL orders (not just pending)
+
+  // Stats (based on filtered data)
+  const filledCount = filteredOrders.filter(o => o.status === 'FILLED').length
+  const totalVolume = filteredTrades.reduce((s, t) => s + t.totalValue, 0)
+
+  // ─── Date Filter Handler ────────────────────────────────────
+  const handleDateChange = useCallback((preset: DatePreset, from: string | null, to: string | null) => {
+    setDatePreset(preset)
+    setDateFrom(from)
+    setDateTo(to)
+
+    // Store raw date inputs for custom mode
+    if (preset === 'custom') {
+      // customFromInput/customToInput are managed by the component directly
+    } else {
+      setCustomFromInput(null)
+      setCustomToInput(null)
+    }
+  }, [])
 
   // ─── All Orders Table ───────────────────────────────────
   const AllOrdersTable = () => {
@@ -264,7 +307,7 @@ export function OrdersPage() {
 
   // ─── Trade History Table ─────────────────────────────────
   const TradeHistoryTable = () => {
-    if (trades.length === 0) {
+    if (filteredTrades.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
@@ -292,7 +335,7 @@ export function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#e5e7eb]">
-            {trades.map((trade) => {
+            {filteredTrades.map((trade) => {
               const isPositive = (trade.pnl ?? 0) >= 0
               return (
                 <TableRow key={trade.id} className="hover:bg-[#f8f9fb] transition-colors">
@@ -368,6 +411,24 @@ export function OrdersPage() {
         </p>
       </motion.div>
 
+      {/* ── Date Filter ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <CardContent className="p-4">
+            <DateFilter
+              value={datePreset}
+              customFrom={customFromInput}
+              customTo={customToInput}
+              onChange={handleDateChange}
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* ── Stats Grid ─────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -376,9 +437,9 @@ export function OrdersPage() {
         className="grid grid-cols-2 lg:grid-cols-4 gap-4"
       >
         {[
-          { label: 'Total Orders', value: String(orders.length), icon: ClipboardList, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
+          { label: 'Total Orders', value: String(filteredOrders.length), icon: ClipboardList, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
           { label: 'Filled', value: String(filledCount), icon: CheckCircle2, borderColor: 'border-l-[#00B386]', iconBg: 'bg-[#00B386]/10', iconColor: 'text-[#00B386]' },
-          { label: 'Cancelled', value: String(orders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#EB5B3C]/10', iconColor: 'text-[#EB5B3C]' },
+          { label: 'Cancelled', value: String(filteredOrders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#EB5B3C]/10', iconColor: 'text-[#EB5B3C]' },
           { label: 'Total Volume', value: totalVolume >= 100000 ? `₹${(totalVolume / 100000).toFixed(1)}L` : `₹${totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
         ].map((stat) => {
           const Icon = stat.icon
@@ -425,7 +486,7 @@ export function OrdersPage() {
                     className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
                     Trade History
-                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{trades.length}</span>
+                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{filteredTrades.length}</span>
                   </TabsTrigger>
                 </TabsList>
               </div>

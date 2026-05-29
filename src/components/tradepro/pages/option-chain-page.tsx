@@ -195,7 +195,7 @@ function QuickTradeModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm bg-white border-[#e5e7eb] text-[#1a1a2e] p-0">
+      <DialogContent className="sm:max-w-sm bg-white border-[#e5e7eb] text-[#1a1a1a] p-0">
         {/* Header with CE/PE color */}
         <div className={cn(
           'px-6 py-4 rounded-t-lg',
@@ -282,7 +282,7 @@ function QuickTradeModal({
             </div>
             <div className="border-t border-[#e5e7eb] pt-2 flex justify-between">
               <span className="text-[#6b7280] font-medium">Approx. Margin</span>
-              <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{marginRequired.toLocaleString()}</span>
+              <span className="font-mono font-tabular font-bold text-[#1a1a1a]">₹{marginRequired.toLocaleString()}</span>
             </div>
           </div>
 
@@ -451,7 +451,7 @@ export function OptionChainPage() {
             <GitBranch className="size-4 text-[#00B386]" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-[#1a1a2e]">Options Chain</h1>
+            <h1 className="text-lg font-bold text-[#1a1a1a]">Options Chain</h1>
             <p className="text-xs text-[#6b7280]">{instrument} · Click on LTP to trade</p>
           </div>
         </div>
@@ -459,14 +459,14 @@ export function OptionChainPage() {
         <div className="hidden sm:flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1.5">
             <span className="text-[#6b7280]">Spot</span>
-            <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{spotPrice.toLocaleString()}</span>
+            <span className="font-mono font-tabular font-bold text-[#1a1a1a]">₹{spotPrice.toLocaleString()}</span>
           </div>
           <div className="h-4 w-px bg-[#e5e7eb]" />
           <div className="flex items-center gap-1.5">
             <span className="text-[#6b7280]">PCR</span>
             <span className={cn(
               'font-mono font-bold',
-              pcr > 1 ? 'text-[#00B386]' : pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#1a1a2e]'
+              pcr > 1 ? 'text-[#00B386]' : pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#1a1a1a]'
             )}>
               {pcr.toFixed(2)}
             </span>
@@ -474,7 +474,7 @@ export function OptionChainPage() {
           <div className="h-4 w-px bg-[#e5e7eb]" />
           <div className="flex items-center gap-1.5">
             <span className="text-[#6b7280]">Max Pain</span>
-            <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{apiMaxPain.toLocaleString()}</span>
+            <span className="font-mono font-tabular font-bold text-[#1a1a1a]">₹{apiMaxPain.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -488,8 +488,8 @@ export function OptionChainPage() {
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
               instrument === inst
-                ? 'bg-[#1a1a2e] text-white shadow-sm'
-                : 'bg-white text-[#6b7280] border border-[#e5e7eb] hover:border-[#1a1a2e] hover:text-[#1a1a2e]'
+                ? 'bg-[#00D09C] text-white shadow-sm'
+                : 'bg-white text-[#6b7280] border border-[#e5e7eb] hover:border-[#00D09C] hover:text-[#1a1a1a]'
             )}
           >
             {inst}
@@ -506,8 +506,8 @@ export function OptionChainPage() {
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
               expiryIdx === idx
-                ? 'bg-[#1a1a2e] text-white'
-                : 'bg-white text-[#6b7280] border border-[#e5e7eb] hover:border-[#1a1a2e]'
+                ? 'bg-[#00D09C] text-white'
+                : 'bg-white text-[#6b7280] border border-[#e5e7eb] hover:border-[#00D09C]'
             )}
           >
             {exp.label}
@@ -519,12 +519,12 @@ export function OptionChainPage() {
       <div className="sm:hidden flex items-center gap-4 text-xs bg-white border border-[#e5e7eb] rounded-lg p-3">
         <div className="flex items-center gap-1">
           <span className="text-[#6b7280]">Spot</span>
-          <span className="font-mono font-tabular font-bold text-[#1a1a2e]">₹{spotPrice.toLocaleString()}</span>
+          <span className="font-mono font-tabular font-bold text-[#1a1a1a]">₹{spotPrice.toLocaleString()}</span>
         </div>
         <div className="h-3 w-px bg-[#e5e7eb]" />
         <div className="flex items-center gap-1">
           <span className="text-[#6b7280]">PCR</span>
-          <span className={cn('font-mono font-bold', pcr > 1 ? 'text-[#00B386]' : pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#1a1a2e]')}>
+          <span className={cn('font-mono font-bold', pcr > 1 ? 'text-[#00B386]' : pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#1a1a1a]')}>
             {pcr.toFixed(2)}
           </span>
         </div>
@@ -534,14 +534,14 @@ export function OptionChainPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="size-6 animate-spin text-[#1a1a2e]" />
+            <Loader2 className="size-6 animate-spin text-[#1a1a1a]" />
             <span className="text-sm text-[#6b7280]">Loading options data...</span>
           </div>
         </div>
       ) : data.length === 0 ? (
         <div className="bg-white border border-[#e5e7eb] rounded-xl py-16 flex flex-col items-center justify-center">
           <GitBranch className="size-8 text-[#d1d5db] mb-3" />
-          <p className="text-[#1a1a2e] font-semibold">No options data</p>
+          <p className="text-[#1a1a1a] font-semibold">No options data</p>
           <p className="text-[#6b7280] text-xs mt-1">Data for {instrument} will appear here</p>
         </div>
       ) : (
@@ -550,11 +550,11 @@ export function OptionChainPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10">
                 {/* CE Header */}
-                <tr className="bg-[#1a1a2e] text-white">
+                <tr className="bg-[#00D09C] text-white">
                   <th colSpan={4} className="text-center py-2.5 font-semibold text-xs tracking-wider">
                     CALLS
                   </th>
-                  <th className="text-center py-2.5 bg-[#374151] font-bold text-xs border-x border-[#4b5563]">
+                  <th className="text-center py-2.5 bg-[#00A67E] font-bold text-xs border-x border-[#009670]">
                     STRIKE
                   </th>
                   <th colSpan={4} className="text-center py-2.5 font-semibold text-xs tracking-wider">
@@ -566,7 +566,7 @@ export function OptionChainPage() {
                   <th className="px-2 py-2 text-right font-medium">Vol</th>
                   <th className="px-2 py-2 text-right font-medium">LTP</th>
                   <th className="px-2 py-2 text-right font-medium">Chg%</th>
-                  <th className="px-2 py-2 text-center font-bold bg-[#f3f4f6] border-x border-[#e5e7eb] text-[#1a1a2e]">₹</th>
+                  <th className="px-2 py-2 text-center font-bold bg-[#f3f4f6] border-x border-[#e5e7eb] text-[#1a1a1a]">₹</th>
                   <th className="px-2 py-2 text-left font-medium">Chg%</th>
                   <th className="px-2 py-2 text-left font-medium">LTP</th>
                   <th className="px-2 py-2 text-left font-medium">Vol</th>
@@ -586,7 +586,7 @@ export function OptionChainPage() {
                       ref={isATM ? atmRef : undefined}
                       className={cn(
                         'border-b border-[#f3f4f6] transition-colors',
-                        isATM && 'bg-[#1a1a2e]/5'
+                        isATM && 'bg-[#00D09C]/8'
                       )}
                     >
                       {/* CE Side */}
@@ -598,7 +598,7 @@ export function OptionChainPage() {
                       </td>
                       <td
                         className={cn(
-                          'px-2 py-1.5 text-right font-mono font-tabular font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#00B386] hover:underline',
+                          'px-2 py-1.5 text-right font-mono font-tabular font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#00B386] hover:underline',
                           ceITM && 'bg-[#00B386]/6'
                         )}
                         onClick={() => handleRowClick(row, 'CE')}
@@ -616,7 +616,7 @@ export function OptionChainPage() {
                       {/* Strike */}
                       <td className={cn(
                         'px-2 py-1.5 text-center font-mono font-tabular font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
-                        isATM ? 'text-[#1a1a2e] bg-[#1a1a2e]/10' : 'text-[#1a1a2e]'
+                        isATM ? 'text-[#00A67E] bg-[#00D09C]/10' : 'text-[#1a1a1a]'
                       )}>
                         {row.strike.toLocaleString()}
                       </td>
@@ -631,7 +631,7 @@ export function OptionChainPage() {
                       </td>
                       <td
                         className={cn(
-                          'px-2 py-1.5 text-left font-mono font-tabular font-semibold text-[#1a1a2e] cursor-pointer hover:text-[#EB5B3C] hover:underline',
+                          'px-2 py-1.5 text-left font-mono font-tabular font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#EB5B3C] hover:underline',
                           peITM && 'bg-[#EB5B3C]/6'
                         )}
                         onClick={() => handleRowClick(row, 'PE')}

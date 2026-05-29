@@ -8,35 +8,28 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
-import { usePathname } from 'next/navigation'
 
 interface MobileNavItem {
   id: PageId
   label: string
   icon: React.ComponentType<{ className?: string }>
-  url: string
 }
 
 const mobileNavItems: MobileNavItem[] = [
-  { id: 'dashboard', label: 'Home', icon: Home, url: '/' },
-  { id: 'trading', label: 'Stocks', icon: CandlestickChart, url: '/stocks' },
-  { id: 'positions', label: 'Positions', icon: Crosshair, url: '/positions' },
-  { id: 'orders', label: 'Orders', icon: FileText, url: '/orders' },
-  { id: 'portfolio', label: 'Portfolio', icon: Wallet, url: '/portfolio' },
+  { id: 'dashboard', label: 'Home', icon: Home },
+  { id: 'trading', label: 'Stocks', icon: CandlestickChart },
+  { id: 'positions', label: 'Positions', icon: Crosshair },
+  { id: 'orders', label: 'Orders', icon: FileText },
+  { id: 'portfolio', label: 'Portfolio', icon: Wallet },
 ]
 
 export function MobileNav() {
-  const { setCurrentPage } = useAppStore()
-  const pathname = usePathname()
+  const { setCurrentPage, currentPage } = useAppStore()
 
   const isActive = (item: MobileNavItem) => {
-    if (item.id === 'dashboard') {
-      return pathname === '/'
-    }
-    if (item.id === 'trading' && (pathname.startsWith('/stock/') || pathname.startsWith('/index/'))) {
-      return true
-    }
-    return pathname === item.url
+    if (item.id === 'dashboard') return currentPage === 'dashboard'
+    if (item.id === 'trading' && currentPage === 'stockOverview') return true
+    return currentPage === item.id
   }
 
   return (
