@@ -4,14 +4,7 @@ import { useState, useEffect } from 'react'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { formatPercent } from '@/lib/format'
 import { useAppStore } from '@/lib/store'
-
-interface IndexData {
-  symbol: string
-  name: string
-  currentPrice: number
-  change: number
-  changePercent: number
-}
+import { useMarketData } from '@/lib/market-data'
 
 interface MarketStatus {
   status: string
@@ -30,7 +23,7 @@ const INDEX_NAMES: Record<string, string> = {
 }
 
 // Fallback data for 4 main indices
-const FALLBACK_INDICES: IndexData[] = [
+const FALLBACK_INDICES = [
   { symbol: 'NIFTY', name: 'NIFTY 50', currentPrice: 22356.10, change: 142.30, changePercent: 0.64 },
   { symbol: 'BANKNIFTY', name: 'BANK NIFTY', currentPrice: 47210.45, change: -82.10, changePercent: -0.17 },
   { symbol: 'FINNIFTY', name: 'FIN NIFTY', currentPrice: 23450.80, change: 95.60, changePercent: 0.41 },
@@ -38,65 +31,64 @@ const FALLBACK_INDICES: IndexData[] = [
 ]
 
 export function IndexTicker() {
-  const [indices, setIndices] = useState<IndexData[]>(FALLBACK_INDICES)
+  const [indices, setIndices] = useState(FALLBACK_INDICES)
   const [marketStatus, setMarketStatus] = useState<MarketStatus | null>(null)
   const { navigateToIndex } = useAppStore()
 
+  // ─── Real-time market data from client engine ────────────────
+  const { indices: liveIndices, isConnected } = useMarketData()
+
+  // Update indices from live data every tick
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [indicesRes, statusRes] = await Promise.all([
-          fetch('/api/indices'),
-          fetch('/api/market/status'),
-        ])
-        const indicesData = await indicesRes.json()
-        const statusData = await statusRes.json()
+    if (!isConnected || liveIndices.size === 0) return
 
-        if (indicesData.success && indicesData.data?.length > 0) {
-          // Sort indices to always show 4 main ones in the correct order
-          const allIndices: IndexData[] = indicesData.data
-          const ordered: IndexData[] = []
+    const ordered: typeof FALLBACK_INDICES = []
 
-          for (const symbol of MAIN_INDICES_ORDER) {
-            const found = allIndices.find(
-              (idx: IndexData) => idx.symbol === symbol || idx.symbol === symbol.toUpperCase()
-            )
-            if (found) {
-              ordered.push({
-                ...found,
-                name: INDEX_NAMES[found.symbol] || found.name,
-              })
-            }
-          }
+    for (const symbol of MAIN_INDICES_ORDER) {
+      const liveIdx = liveIndices.get(symbol)
+      if (liveIdx) {
+        ordered.push({
+          symbol: liveIdx.symbol,
+          name: INDEX_NAMES[liveIdx.symbol] || liveIdx.name,
+          currentPrice: liveIdx.price,
+          change: liveIdx.change,
+          changePercent: liveIdx.changePercent,
+        })
+      }
+    }
 
-          // If we have less than 4 from API, fill from fallback
-          if (ordered.length < 4) {
-            for (const fb of FALLBACK_INDICES) {
-              if (!ordered.find(o => o.symbol === fb.symbol)) {
-                ordered.push(fb)
-              }
-            }
-          }
-
-          // Re-sort to match MAIN_INDICES_ORDER
-          ordered.sort((a, b) => {
-            const ai = MAIN_INDICES_ORDER.indexOf(a.symbol)
-            const bi = MAIN_INDICES_ORDER.indexOf(b.symbol)
-            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
-          })
-
-          setIndices(ordered.slice(0, 4))
+    // If we have less than 4 from live data, fill from fallback
+    if (ordered.length < 4) {
+      for (const fb of FALLBACK_INDICES) {
+        if (!ordered.find(o => o.symbol === fb.symbol)) {
+          ordered.push(fb)
         }
+      }
+    }
 
+    // Re-sort to match MAIN_INDICES_ORDER
+    ordered.sort((a, b) => {
+      const ai = MAIN_INDICES_ORDER.indexOf(a.symbol)
+      const bi = MAIN_INDICES_ORDER.indexOf(b.symbol)
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+    })
+
+    setIndices(ordered.slice(0, 4))
+  }, [liveIndices, isConnected])
+
+  // Fetch market status (open/closed) separately
+  useEffect(() => {
+    async function fetchStatus() {
+      try {
+        const statusRes = await fetch('/api/market/status')
+        const statusData = await statusRes.json()
         if (statusData.success) setMarketStatus(statusData.data)
       } catch {
-        // Keep fallback indices
-        setIndices(FALLBACK_INDICES)
         setMarketStatus({ status: 'CLOSED', message: 'Market closed', istTime: new Date().toISOString() })
       }
     }
-    fetchData()
-    const interval = setInterval(fetchData, 30000)
+    fetchStatus()
+    const interval = setInterval(fetchStatus, 30000)
     return () => clearInterval(interval)
   }, [])
 

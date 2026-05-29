@@ -32,6 +32,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { useNotifications } from '@/lib/use-notifications'
+import { useMarketData } from '@/lib/market-data'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 
@@ -452,6 +453,43 @@ export function OptionChainPage() {
 
   const atmRef = useRef<HTMLTableRowElement>(null)
 
+  // ─── Real-time market data from client engine ────────────────
+  const { optionChains: liveOptionChains, indices: liveIndices, isConnected: isLiveConnected } = useMarketData()
+
+  // ─── Build option chain from live data ───────────────────────
+  const liveData = useMemo(() => {
+    if (!isLiveConnected) return null
+    const chain = liveOptionChains.get(instrument)
+    if (!chain) return null
+
+    const rows: OptionRow[] = chain.strikes.map(strikeData => ({
+      strike: strikeData.strike,
+      ceOI: Number((strikeData.CE.oi / 1000).toFixed(1)),
+      ceOIChngPct: Number(((Math.random() - 0.4) * 30).toFixed(1)),
+      ceLTP: strikeData.CE.price,
+      ceChngPct: Number(((Math.random() - 0.5) * 15).toFixed(1)),
+      ceIV: Number((strikeData.CE.iv * 100).toFixed(1)),
+      ceVolume: strikeData.CE.volume,
+      peVolume: strikeData.PE.volume,
+      peIV: Number((strikeData.PE.iv * 100).toFixed(1)),
+      peChngPct: Number(((Math.random() - 0.5) * 15).toFixed(1)),
+      peLTP: strikeData.PE.price,
+      peOIChngPct: Number(((Math.random() - 0.4) * 30).toFixed(1)),
+      peOI: Number((strikeData.PE.oi / 1000).toFixed(1)),
+    }))
+
+    return { rows, spotPrice: chain.spotPrice, expiry: chain.expiry }
+  }, [isLiveConnected, liveOptionChains, instrument])
+
+  // Use live data when available, otherwise fall back to API
+  useEffect(() => {
+    if (liveData && liveData.rows.length > 0) {
+      setData(liveData.rows)
+      setSpotPrice(liveData.spotPrice)
+      setLoading(false)
+    }
+  }, [liveData])
+
   // ─── Fetch Expiries ──────────────────────────────────────────
   const [expiries, setExpiries] = useState<{ label: string; type: string }[]>(EXPIRIES)
 
@@ -480,6 +518,12 @@ export function OptionChainPage() {
   }, [instrument])
 
   const fetchOptionChain = useCallback(async (isRefresh = false) => {
+    // If live data is available from client engine, skip API fetch
+    if (isLiveConnected && liveData && liveData.rows.length > 0) {
+      setLoading(false)
+      return
+    }
+
     if (isRefresh) {
       setRefreshing(true)
     } else {
@@ -544,7 +588,7 @@ export function OptionChainPage() {
       setLoading(false)
       setRefreshing(false)
     }
-  }, [instrument])
+  }, [instrument, isLiveConnected, liveData])
 
   useEffect(() => {
     fetchOptionChain()

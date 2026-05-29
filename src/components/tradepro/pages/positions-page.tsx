@@ -194,6 +194,31 @@ export function PositionsPage() {
   // ─── Real-time market data for live position updates ────────
   const { isConnected: isSimulatorConnected, stocks: liveStocks, indices: liveIndices, optionChains: liveOptionChains, recentTriggers } = useMarketData()
 
+  // Helper: Get live price for a position
+  const getLivePrice = useCallback((pos: PositionData): number | null => {
+    // Check stocks first
+    const liveStock = liveStocks.get(pos.symbol)
+    if (liveStock) return liveStock.price
+
+    // Check indices
+    const liveIndex = liveIndices.get(pos.symbol)
+    if (liveIndex) return liveIndex.price
+
+    // Check option chains for options positions
+    if (pos.segment === 'OPTIONS' && pos.strikePrice && pos.optionType) {
+      for (const [, chain] of liveOptionChains) {
+        if (chain.underlying === pos.symbol) {
+          const strikeData = chain.strikes.find(s => s.strike === pos.strikePrice)
+          if (strikeData) {
+            return pos.optionType === 'CE' ? strikeData.CE.price : strikeData.PE.price
+          }
+        }
+      }
+    }
+
+    return null
+  }, [liveStocks, liveIndices, liveOptionChains])
+
   useEffect(() => {
     fetchPositions()
     // If simulator is connected, it handles SL/TP server-side.

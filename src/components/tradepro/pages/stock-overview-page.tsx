@@ -35,6 +35,7 @@ import {
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
+import { useMarketData } from '@/lib/market-data'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
 import { useNotifications } from '@/lib/use-notifications'
@@ -339,6 +340,9 @@ export function StockOverviewPage() {
   const { showTradeSuccess } = useTradeSuccess()
   const { notify } = useNotifications()
 
+  // ── Real-time market data ────────────────────────────────────────
+  const { stocks: liveStocks, isConnected: isLiveConnected } = useMarketData()
+
   // State
   const [stockDetail, setStockDetail] = useState<StockDetail | null>(null)
   const [similarStocks, setSimilarStocks] = useState<SimilarStock[]>([])
@@ -462,6 +466,21 @@ export function StockOverviewPage() {
       setPrice(stockDetail.currentPrice.toFixed(2))
     }
   }, [stockDetail?.currentPrice])
+
+  // ─── Update stock detail with live prices from client engine ────
+  useEffect(() => {
+    if (!isLiveConnected || !selectedStockSymbol || !stockDetail) return
+    const live = liveStocks.get(selectedStockSymbol)
+    if (live) {
+      setStockDetail(prev => prev ? {
+        ...prev,
+        currentPrice: live.price,
+        change: live.change,
+        changePercent: live.changePercent,
+        volume: live.volume,
+      } : prev)
+    }
+  }, [isLiveConnected, liveStocks, selectedStockSymbol])
 
   // ─── Derived values ─────────────────────────────────────────────
   const isPositive = stockDetail ? stockDetail.change >= 0 : true

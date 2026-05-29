@@ -1,7 +1,10 @@
 /**
  * TradePro - Market Data Provider Component
- * Initializes Socket.IO connection on app mount and cleans up on unmount.
+ * Initializes the client-side market engine on app mount and cleans up on unmount.
  * Place this at the root of the app layout.
+ * 
+ * The engine runs in the browser and provides real-time 1-second tick updates.
+ * No external server needed - works on Vercel, Netlify, or any hosting.
  */
 
 'use client';

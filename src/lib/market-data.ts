@@ -1,70 +1,29 @@
 /**
- * TradePro - Real-Time Market Data Provider
- * Socket.IO connection manager + Zustand store for live market data.
+ * TradePro - Real-Time Market Data Store
  * 
- * Connects to the Market Simulator Engine (server/) and provides
- * real-time price updates to all components.
+ * Uses ClientMarketEngine as PRIMARY data source (runs in browser, no server needed).
+ * Falls back to Socket.IO if the simulator server is running (local dev).
  * 
- * Features:
- * - Auto-reconnect with exponential backoff
- * - Initial snapshot on connect
- * - Per-stock/index/option subscription
- * - SL/TP and order fill notifications
- * - Fallback to REST API when simulator is not running
+ * This ensures real-time 1-second updates work EVERYWHERE:
+ * - Vercel deployment (client engine only)
+ * - Local dev with simulator (Socket.IO preferred, client engine fallback)
  */
 
 'use client';
 
 import { create } from 'zustand';
-import { io as socketIO } from 'socket.io-client';
+import { getClientMarketEngine, destroyClientMarketEngine, type IndexData, type StockData, type OptionChainData, type MarketTickData } from './client-market-engine';
 
-// ─── Socket Configuration ──────────────────────────────────────
+// ─── Socket.IO (optional, for when server is running) ──────────
+let socketImport: typeof import('socket.io-client') | null = null;
+let socket: ReturnType<typeof import('socket.io-client').io> | null = null;
+
 const SIMULATOR_URL = process.env.NEXT_PUBLIC_SIMULATOR_URL || 'http://localhost:3001';
-const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]; // Exponential backoff
 
-// ─── Types ─────────────────────────────────────────────────────
-
-interface StockData {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  trend: 'UP' | 'DOWN';
-  volume: number;
-  sector: string;
-  isFuturesAvailable: boolean;
-  isOptionsAvailable: boolean;
-  lotSize: number;
-  strikeInterval: number;
-}
-
-interface IndexData {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  trend: 'UP' | 'DOWN';
-  volume: number;
-  lotSize: number;
-  strikeInterval: number;
-}
-
-interface OptionStrikeData {
-  strike: number;
-  CE: { price: number; oi: number; volume: number; iv: number };
-  PE: { price: number; oi: number; volume: number; iv: number };
-}
-
-interface OptionChainData {
-  underlying: string;
-  spotPrice: number;
-  expiry: string;
-  strikes: OptionStrikeData[];
-}
+// ─── Trigger Event Types ───────────────────────────────────────
 
 interface TriggerEvent {
+  type: 'positionClosed' | 'orderFilled';
   positionId?: string;
   orderId?: string;
   symbol: string;
@@ -81,6 +40,7 @@ interface MarketDataState {
   // Connection
   isConnected: boolean;
   isSimulatorRunning: boolean;
+  dataSource: 'client-engine' | 'socket-io' | 'none';
   reconnectAttempts: number;
 
   // Market Data
@@ -105,11 +65,10 @@ interface MarketDataState {
 
 // ─── Create Store ──────────────────────────────────────────────
 
-let socket: ReturnType<typeof socketIO> | null = null;
-
 export const useMarketData = create<MarketDataState>((set, get) => ({
   isConnected: false,
   isSimulatorRunning: false,
+  dataSource: 'none',
   reconnectAttempts: 0,
 
   indices: new Map(),
@@ -122,139 +81,135 @@ export const useMarketData = create<MarketDataState>((set, get) => ({
   recentTriggers: [],
 
   connect: () => {
-    if (socket?.connected) return;
     if (typeof window === 'undefined') return;
 
-    console.log('[MarketData] Connecting to simulator at', SIMULATOR_URL);
+    // ─── Strategy: Try Socket.IO first, fall back to client engine ───
+    // This gives us the best of both worlds:
+    // - Local dev: Socket.IO server handles SL/TP and DB updates
+    // - Vercel: Client engine provides real-time prices without a server
 
-    socket = socketIO(SIMULATOR_URL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 16000,
-      timeout: 10000,
-    });
+    let socketConnected = false;
+    let clientEngineStarted = false;
 
-    // ─── Connection Events ───────────────────────────────────
-    socket.on('connect', () => {
-      console.log('[MarketData] Connected to simulator');
-      set({ isConnected: true, isSimulatorRunning: true, reconnectAttempts: 0 });
-    });
+    // Try Socket.IO connection
+    const trySocketIO = async () => {
+      try {
+        const { io: socketIO } = await import('socket.io-client');
+        socketImport = await import('socket.io-client');
 
-    socket.on('disconnect', (reason) => {
-      console.log('[MarketData] Disconnected:', reason);
-      set({ isConnected: false, isSimulatorRunning: false });
-    });
+        socket = socketIO(SIMULATOR_URL, {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionAttempts: 3,
+          reconnectionDelay: 1000,
+          timeout: 5000,
+        });
 
-    socket.on('connect_error', (error) => {
-      console.warn('[MarketData] Connection error:', error.message);
-      const attempts = get().reconnectAttempts + 1;
-      set({ isConnected: false, isSimulatorRunning: attempts < 3, reconnectAttempts: attempts });
-    });
+        socket.on('connect', () => {
+          console.log('[MarketData] Connected to simulator via Socket.IO');
+          socketConnected = true;
+          set({ isConnected: true, isSimulatorRunning: true, dataSource: 'socket-io', reconnectAttempts: 0 });
 
-    // ─── Initial Snapshot ───────────────────────────────────
-    socket.on('initMarket', (data) => {
-      console.log('[MarketData] Received initial snapshot:', {
-        indices: data.indices?.length || 0,
-        stocks: data.stocks?.length || 0,
-        optionChains: data.optionChains?.length || 0,
+          // If client engine was running, stop it (Socket.IO takes over)
+          if (clientEngineStarted) {
+            const engine = getClientMarketEngine();
+            engine.stop();
+            clientEngineStarted = false;
+            console.log('[MarketData] Stopped client engine, using Socket.IO');
+          }
+        });
+
+        socket.on('initMarket', (data) => {
+          console.log('[MarketData] Socket.IO init snapshot:', {
+            indices: data.indices?.length || 0,
+            stocks: data.stocks?.length || 0,
+          });
+          applyMarketData(data);
+        });
+
+        socket.on('marketTick', (data) => {
+          applyMarketData(data);
+        });
+
+        socket.on('positionClosed', (data: TriggerEvent) => {
+          set(state => ({
+            recentTriggers: [...state.recentTriggers.slice(-19), { ...data, type: 'positionClosed' }],
+          }));
+        });
+
+        socket.on('orderFilled', (data: TriggerEvent) => {
+          set(state => ({
+            recentTriggers: [...state.recentTriggers.slice(-19), { ...data, type: 'orderFilled' }],
+          }));
+        });
+
+        socket.on('disconnect', () => {
+          console.log('[MarketData] Socket.IO disconnected');
+          socketConnected = false;
+          set({ isConnected: false, dataSource: 'none' });
+
+          // Start client engine as fallback
+          if (!clientEngineStarted) {
+            startClientEngine();
+          }
+        });
+
+        socket.on('connect_error', () => {
+          // Socket.IO failed - use client engine
+          if (!socketConnected && !clientEngineStarted) {
+            console.log('[MarketData] Socket.IO unavailable, starting client engine');
+            startClientEngine();
+          }
+        });
+      } catch {
+        // socket.io-client import failed - use client engine
+        if (!clientEngineStarted) {
+          console.log('[MarketData] Socket.IO import failed, starting client engine');
+          startClientEngine();
+        }
+      }
+    };
+
+    // Start client-side engine
+    const startClientEngine = () => {
+      clientEngineStarted = true;
+      const engine = getClientMarketEngine();
+
+      engine.setOnTick((data: MarketTickData) => {
+        applyMarketData(data);
+        if (!socketConnected) {
+          set({
+            isConnected: true,
+            isSimulatorRunning: true,
+            dataSource: 'client-engine',
+          });
+        }
       });
 
-      const indicesMap = new Map<string, IndexData>();
-      const stocksMap = new Map<string, StockData>();
-      const optionsMap = new Map<string, OptionChainData>();
+      engine.start();
+      console.log('[MarketData] Client market engine started');
+    };
 
-      if (data.indices) {
-        for (const idx of data.indices) {
-          indicesMap.set(idx.symbol, idx);
-        }
-      }
+    // Always start client engine immediately for instant data
+    // If Socket.IO connects, it will stop the client engine
+    startClientEngine();
 
-      if (data.stocks) {
-        for (const stock of data.stocks) {
-          stocksMap.set(stock.symbol, stock);
-        }
-      }
-
-      if (data.optionChains) {
-        for (const chain of data.optionChains) {
-          optionsMap.set(chain.underlying, chain);
-        }
-      }
-
-      set({
-        indices: indicesMap,
-        stocks: stocksMap,
-        optionChains: optionsMap,
-        marketTrend: data.marketTrend || 'UP',
-        tickCount: data.tick || 0,
-        lastTickTime: data.timestamp || Date.now(),
-      });
-    });
-
-    // ─── Market Tick (every 1 second) ───────────────────────
-    socket.on('marketTick', (data) => {
-      const indicesMap = new Map(get().indices);
-      const stocksMap = new Map(get().stocks);
-      const optionsMap = new Map(get().optionChains);
-
-      if (data.indices) {
-        for (const idx of data.indices) {
-          indicesMap.set(idx.symbol, idx);
-        }
-      }
-
-      if (data.stocks) {
-        for (const stock of data.stocks) {
-          stocksMap.set(stock.symbol, stock);
-        }
-      }
-
-      if (data.optionChains) {
-        for (const chain of data.optionChains) {
-          optionsMap.set(chain.underlying, chain);
-        }
-      }
-
-      set({
-        indices: indicesMap,
-        stocks: stocksMap,
-        optionChains: optionsMap,
-        marketTrend: data.marketTrend || get().marketTrend,
-        tickCount: data.tick || get().tickCount + 1,
-        lastTickTime: data.timestamp || Date.now(),
-      });
-    });
-
-    // ─── SL/TP and Order Fill Events ────────────────────────
-    socket.on('positionClosed', (data: TriggerEvent) => {
-      console.log('[MarketData] Position closed:', data.exitReason, data.symbol, 'P&L:', data.realizedPnl);
-      set(state => ({
-        recentTriggers: [
-          ...state.recentTriggers.slice(-19), // Keep last 20
-          { ...data, type: 'positionClosed' },
-        ],
-      }));
-    });
-
-    socket.on('orderFilled', (data: TriggerEvent) => {
-      console.log('[MarketData] Order filled:', data.symbol, 'Price:', data.fillPrice);
-      set(state => ({
-        recentTriggers: [
-          ...state.recentTriggers.slice(-19),
-          { ...data, type: 'orderFilled' },
-        ],
-      }));
-    });
+    // Then try Socket.IO in the background
+    trySocketIO();
   },
 
   disconnect: () => {
+    // Stop client engine
+    const engine = getClientMarketEngine();
+    engine.stop();
+
+    // Disconnect socket
     if (socket) {
       socket.disconnect();
       socket = null;
     }
-    set({ isConnected: false, isSimulatorRunning: false });
+
+    set({ isConnected: false, isSimulatorRunning: false, dataSource: 'none' });
   },
 
   getStockPrice: (symbol: string) => {
@@ -275,3 +230,46 @@ export const useMarketData = create<MarketDataState>((set, get) => ({
     set({ recentTriggers: [] });
   },
 }));
+
+// ─── Helper: Apply market data from any source ────────────────
+
+function applyMarketData(data: {
+  indices?: IndexData[];
+  stocks?: StockData[];
+  optionChains?: OptionChainData[];
+  marketTrend?: 'UP' | 'DOWN';
+  tick?: number;
+  timestamp?: number;
+}) {
+  const state = useMarketData.getState();
+  const indicesMap = new Map(state.indices);
+  const stocksMap = new Map(state.stocks);
+  const optionsMap = new Map(state.optionChains);
+
+  if (data.indices) {
+    for (const idx of data.indices) {
+      indicesMap.set(idx.symbol, idx);
+    }
+  }
+
+  if (data.stocks) {
+    for (const stock of data.stocks) {
+      stocksMap.set(stock.symbol, stock);
+    }
+  }
+
+  if (data.optionChains) {
+    for (const chain of data.optionChains) {
+      optionsMap.set(chain.underlying, chain);
+    }
+  }
+
+  useMarketData.setState({
+    indices: indicesMap,
+    stocks: stocksMap,
+    optionChains: optionsMap,
+    marketTrend: data.marketTrend || state.marketTrend,
+    tickCount: data.tick || state.tickCount + 1,
+    lastTickTime: data.timestamp || Date.now(),
+  });
+}

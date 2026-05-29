@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
+import { useMarketData } from '@/lib/market-data'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -734,6 +735,9 @@ export function TradingPage() {
   const { setCurrentPage, navigateToStock } = useAppStore()
   const { showTradeSuccess } = useTradeSuccess()
 
+  // ── Real-time market data ────────────────────────────────────────
+  const { stocks: liveStocks, isConnected: isLiveConnected } = useMarketData()
+
   // ── State ─────────────────────────────────────────────────────────────
   const [stocks, setStocks] = useState<TradeableStock[]>([])
   const [gainers, setGainers] = useState<TradeableStock[]>([])
@@ -874,7 +878,7 @@ export function TradingPage() {
     fetchPortfolio()
   }, [fetchPortfolio])
 
-  // ── Filtered Stocks ──────────────────────────────────────────────────
+  // ── Filtered Stocks (with live prices from client engine) ────────
   const displayStocks = useMemo(() => {
     let list: TradeableStock[]
 
@@ -908,8 +912,25 @@ export function TradingPage() {
       )
     }
 
+    // Overlay live prices from client market engine
+    if (isLiveConnected && liveStocks.size > 0) {
+      list = list.map(stock => {
+        const live = liveStocks.get(stock.symbol)
+        if (live) {
+          return {
+            ...stock,
+            currentPrice: live.price,
+            change: live.change,
+            changePercent: live.changePercent,
+            volume: live.volume,
+          }
+        }
+        return stock
+      })
+    }
+
     return list
-  }, [stocks, gainers, losers, activeTab, searchQuery])
+  }, [stocks, gainers, losers, activeTab, searchQuery, isLiveConnected, liveStocks])
 
   // ── Loading state for current tab ────────────────────────────────────
   const isCurrentTabLoading = useMemo(() => {
@@ -923,13 +944,19 @@ export function TradingPage() {
     }
   }, [activeTab, loadingStocks, loadingGainers, loadingLosers])
 
-  // ── Market summary stats ─────────────────────────────────────────────
+  // ── Market summary stats (use live data when available) ───────────
   const marketStats = useMemo(() => {
-    const advancing = stocks.filter((s) => s.changePercent > 0).length
-    const declining = stocks.filter((s) => s.changePercent < 0).length
-    const unchanged = stocks.filter((s) => s.changePercent === 0).length
-    return { advancing, declining, unchanged, total: stocks.length }
-  }, [stocks])
+    const sourceList = isLiveConnected && liveStocks.size > 0
+      ? stocks.map(stock => {
+          const live = liveStocks.get(stock.symbol)
+          return live ? { ...stock, changePercent: live.changePercent } : stock
+        })
+      : stocks
+    const advancing = sourceList.filter((s) => s.changePercent > 0).length
+    const declining = sourceList.filter((s) => s.changePercent < 0).length
+    const unchanged = sourceList.filter((s) => s.changePercent === 0).length
+    return { advancing, declining, unchanged, total: sourceList.length }
+  }, [stocks, isLiveConnected, liveStocks])
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">

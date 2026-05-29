@@ -7,6 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -305,8 +306,6 @@ model Order {
   price           Float       // Order price
   triggerPrice    Float?      // For SL orders
   fillPrice       Float?      // Actual execution price
-  stopLoss        Float?      // Stop Loss price
-  target          Float?      // Target / Take Profit price
   
   // Calculated
   totalValue      Float       @default(0)
@@ -409,11 +408,6 @@ model Position {
   
   // Margin
   marginUsed      Float       @default(0)
-  
-  // Stop Loss / Target
-  stopLoss        Float?      // Stop Loss price
-  target          Float?      // Target / Take Profit price
-  exitReason      String?     // Exit reason: MANUAL, STOP_LOSS, TARGET, EXPIRY
   
   // Status
   isOpen          Boolean     @default(true)
