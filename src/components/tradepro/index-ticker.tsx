@@ -19,8 +19,26 @@ interface MarketStatus {
   istTime: string
 }
 
+// 4 main indices — always shown in this order
+const MAIN_INDICES_ORDER = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'SENSEX']
+
+const INDEX_NAMES: Record<string, string> = {
+  NIFTY: 'NIFTY 50',
+  BANKNIFTY: 'BANK NIFTY',
+  FINNIFTY: 'FIN NIFTY',
+  SENSEX: 'SENSEX',
+}
+
+// Fallback data for 4 main indices
+const FALLBACK_INDICES: IndexData[] = [
+  { symbol: 'NIFTY', name: 'NIFTY 50', currentPrice: 22356.10, change: 142.30, changePercent: 0.64 },
+  { symbol: 'BANKNIFTY', name: 'BANK NIFTY', currentPrice: 47210.45, change: -82.10, changePercent: -0.17 },
+  { symbol: 'FINNIFTY', name: 'FIN NIFTY', currentPrice: 23450.80, change: 95.60, changePercent: 0.41 },
+  { symbol: 'SENSEX', name: 'SENSEX', currentPrice: 73645.25, change: 450.15, changePercent: 0.61 },
+]
+
 export function IndexTicker() {
-  const [indices, setIndices] = useState<IndexData[]>([])
+  const [indices, setIndices] = useState<IndexData[]>(FALLBACK_INDICES)
   const [marketStatus, setMarketStatus] = useState<MarketStatus | null>(null)
   const { navigateToIndex } = useAppStore()
 
@@ -33,14 +51,47 @@ export function IndexTicker() {
         ])
         const indicesData = await indicesRes.json()
         const statusData = await statusRes.json()
-        if (indicesData.success) setIndices(indicesData.data)
+
+        if (indicesData.success && indicesData.data?.length > 0) {
+          // Sort indices to always show 4 main ones in the correct order
+          const allIndices: IndexData[] = indicesData.data
+          const ordered: IndexData[] = []
+
+          for (const symbol of MAIN_INDICES_ORDER) {
+            const found = allIndices.find(
+              (idx: IndexData) => idx.symbol === symbol || idx.symbol === symbol.toUpperCase()
+            )
+            if (found) {
+              ordered.push({
+                ...found,
+                name: INDEX_NAMES[found.symbol] || found.name,
+              })
+            }
+          }
+
+          // If we have less than 4 from API, fill from fallback
+          if (ordered.length < 4) {
+            for (const fb of FALLBACK_INDICES) {
+              if (!ordered.find(o => o.symbol === fb.symbol)) {
+                ordered.push(fb)
+              }
+            }
+          }
+
+          // Re-sort to match MAIN_INDICES_ORDER
+          ordered.sort((a, b) => {
+            const ai = MAIN_INDICES_ORDER.indexOf(a.symbol)
+            const bi = MAIN_INDICES_ORDER.indexOf(b.symbol)
+            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+          })
+
+          setIndices(ordered.slice(0, 4))
+        }
+
         if (statusData.success) setMarketStatus(statusData.data)
       } catch {
-        setIndices([
-          { symbol: 'NIFTY', name: 'NIFTY 50', currentPrice: 19500, change: 125.30, changePercent: 0.65 },
-          { symbol: 'BANKNIFTY', name: 'BANK NIFTY', currentPrice: 44250, change: -210.45, changePercent: -0.47 },
-          { symbol: 'SENSEX', name: 'SENSEX', currentPrice: 65200, change: 340.20, changePercent: 0.52 },
-        ])
+        // Keep fallback indices
+        setIndices(FALLBACK_INDICES)
         setMarketStatus({ status: 'CLOSED', message: 'Market closed', istTime: new Date().toISOString() })
       }
     }
@@ -85,7 +136,7 @@ export function IndexTicker() {
             </span>
           </div>
 
-          {/* Index Ticker - Clickable items */}
+          {/* 4 Main Index Cards - Clickable */}
           <div className="flex items-center gap-0.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {indices.map((idx) => {
               const isPositive = idx.change >= 0

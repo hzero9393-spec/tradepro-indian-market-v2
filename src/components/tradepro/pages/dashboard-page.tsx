@@ -55,11 +55,13 @@ interface StockData {
 
 // ─── Fallback Data (ALWAYS shows something) ─────────────────────────────────
 
+const MAIN_INDICES_ORDER = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'SENSEX']
+
 const fallbackIndices: IndexData[] = [
   { id: '1', symbol: 'NIFTY', name: 'NIFTY 50', currentPrice: 22356.10, change: 142.30, changePercent: 0.64, isEnabled: true },
   { id: '2', symbol: 'BANKNIFTY', name: 'BANK NIFTY', currentPrice: 47210.45, change: -82.10, changePercent: -0.17, isEnabled: true },
-  { id: '3', symbol: 'SENSEX', name: 'SENSEX', currentPrice: 73645.25, change: 450.15, changePercent: 0.61, isEnabled: true },
-  { id: '4', symbol: 'FINNIFTY', name: 'FIN NIFTY', currentPrice: 23450.80, change: 95.60, changePercent: 0.41, isEnabled: true },
+  { id: '3', symbol: 'FINNIFTY', name: 'FIN NIFTY', currentPrice: 23450.80, change: 95.60, changePercent: 0.41, isEnabled: true },
+  { id: '4', symbol: 'SENSEX', name: 'SENSEX', currentPrice: 73645.25, change: 450.15, changePercent: 0.61, isEnabled: true },
 ]
 
 const fallbackGainers: StockData[] = [
@@ -235,7 +237,16 @@ export function DashboardPage() {
   }, [fetchIndices, fetchStocks, fetchGainers, fetchLosers])
 
   // ─── Display data ────────────────────────────────────────────
-  const displayIndices = apiIndices.length > 0 ? apiIndices : fallbackIndices
+  const displayIndices = (() => {
+    const source = apiIndices.length > 0 ? apiIndices : fallbackIndices
+    // Sort to always show 4 main indices in correct order
+    const sorted = [...source].sort((a, b) => {
+      const ai = MAIN_INDICES_ORDER.indexOf(a.symbol)
+      const bi = MAIN_INDICES_ORDER.indexOf(b.symbol)
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+    })
+    return sorted.slice(0, 4)
+  })()
 
   const displayGainers = apiGainers.length > 0
     ? apiGainers
