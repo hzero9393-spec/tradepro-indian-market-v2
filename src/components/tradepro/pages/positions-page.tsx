@@ -90,11 +90,12 @@ export function PositionsPage() {
   const [squaringOff, setSquaringOff] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('open')
 
-  // ─── Fetch Positions ──────────────────────────────────────
+  // ─── Fetch Positions (all - open + closed) ───────────────
   const fetchPositions = useCallback(async () => {
     if (!token) { setLoading(false); return }
     try {
-      const res = await fetch('/api/trade/positions', {
+      // Fetch ALL positions (open + closed)
+      const res = await fetch('/api/trade/positions?status=all', {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {

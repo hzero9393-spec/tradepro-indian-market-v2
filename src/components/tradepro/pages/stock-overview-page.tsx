@@ -621,10 +621,13 @@ export function StockOverviewPage() {
           brokerage: data.order?.brokerage,
         }
       } else {
+        console.error('[Trade] Order failed:', res.status, data.error)
+        toast.error(data.error || 'Order failed', { duration: 5000 })
         return { success: false, error: data.error || 'Failed to place order' }
       }
-    } catch {
-      return { success: false, error: 'Network error placing order' }
+    } catch (err) {
+      console.error('[Trade] Network error:', err)
+      return { success: false, error: 'Network error placing order. Check your connection.' }
     }
   }
 

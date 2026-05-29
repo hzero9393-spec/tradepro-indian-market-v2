@@ -121,7 +121,7 @@ export function OrdersPage() {
   const fetchOrders = useCallback(async () => {
     if (!token) { setLoadingOrders(false); return }
     try {
-      const res = await fetch('/api/trade/orders', {
+      const res = await fetch('/api/trade/orders?limit=100', {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -158,18 +158,16 @@ export function OrdersPage() {
     fetchTrades()
   }, [fetchOrders, fetchTrades])
 
-  // ─── Split orders into open (non-filled/active) and trade history ──
-  const openOrders = orders.filter(o =>
-    o.status === 'PENDING' || o.status === 'PARTIALLY_FILLED'
-  )
+  // ─── Split orders: All Orders and Trade History ──
+  const allOrders = orders // Show ALL orders (not just pending)
 
   // Stats
   const filledCount = orders.filter(o => o.status === 'FILLED').length
   const totalVolume = trades.reduce((s, t) => s + t.totalValue, 0)
 
-  // ─── Open Orders Table ───────────────────────────────────
-  const OpenOrdersTable = () => {
-    if (openOrders.length === 0) {
+  // ─── All Orders Table ───────────────────────────────────
+  const AllOrdersTable = () => {
+    if (allOrders.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
@@ -177,7 +175,7 @@ export function OrdersPage() {
           </div>
           <p className="text-[#1a1a1a] font-semibold text-sm">No orders yet</p>
           <p className="text-[#6b7280] text-xs mt-1.5">
-            Your pending orders will appear here
+            Your orders will appear here after you place a trade
           </p>
           <Button
             size="sm"
@@ -198,14 +196,16 @@ export function OrdersPage() {
             <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Symbol</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Type</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Price</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Segment</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Fill Price</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Value</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Status</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#e5e7eb]">
-            {openOrders.map((order) => {
+            {allOrders.map((order) => {
               const isBuy = order.tradeDirection === 'BUY'
               return (
                 <TableRow
@@ -234,11 +234,15 @@ export function OrdersPage() {
                       {order.tradeDirection}
                     </span>
                   </TableCell>
+                  <TableCell className="text-xs text-[#6b7280] py-4">{order.segment}</TableCell>
                   <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
-                    {formatINR(order.price)}
+                    {formatINR(order.fillPrice || order.price)}
                   </TableCell>
                   <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                     {order.quantity}
+                  </TableCell>
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
+                    {formatINR(order.totalValue)}
                   </TableCell>
                   <TableCell className="py-4">
                     <StatusBadge status={order.status} />
@@ -413,8 +417,8 @@ export function OrdersPage() {
                     value="open"
                     className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
-                    Open Orders
-                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{openOrders.length}</span>
+                    All Orders
+                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{allOrders.length}</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="history"
@@ -442,7 +446,7 @@ export function OrdersPage() {
               ) : (
                 <>
                   <TabsContent value="open" className="mt-0">
-                    <OpenOrdersTable />
+                    <AllOrdersTable />
                   </TabsContent>
                   <TabsContent value="history" className="mt-0">
                     <TradeHistoryTable />

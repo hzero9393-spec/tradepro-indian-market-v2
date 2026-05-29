@@ -1,5 +1,5 @@
 // TradePro - Indian Stock Market Paper Trading Platform
-// Prisma Schema for SQLite
+// Prisma Schema for Turso (libSQL)
 
 generator client {
   provider = "prisma-client-js"
@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -93,7 +92,7 @@ model Index {
   change          Float    @default(0)
   changePercent   Float    @default(0)
   volume          Float?
-  
+
   // Status
   isEnabled       Boolean  @default(true)
   lastUpdated     DateTime @default(now())
@@ -135,7 +134,7 @@ model Stock {
   sector              String   // "Energy", "IT", "Banking"
   industry            String?
   exchange            String   @default("NSE") // NSE, BSE
-  
+
   // Fundamentals
   faceValue           Float?
   marketCap           Float?
@@ -158,7 +157,7 @@ model Stock {
   change              Float    @default(0)
   changePercent       Float    @default(0)
   volume              Float?
-  
+
   // 52 Week
   week52High          Float?
   week52Low           Float?
@@ -216,16 +215,16 @@ model Future {
   previousClose   Float?
   change          Float    @default(0)
   changePercent   Float    @default(0)
-  
+
   // Futures Specific
   openInterest    Float    @default(0)
   oiChange        Float    @default(0)
   volume          Float    @default(0)
   basis           Float    @default(0) // Future Price - Spot Price
-  
+
   // Margin
   marginPercent   Float    @default(10) // SPAN + Exposure margin %
-  
+
   isActive        Boolean  @default(true)
   lastUpdated     DateTime @default(now())
   createdAt       DateTime @default(now())
@@ -248,29 +247,29 @@ model Option {
   expiryType      String   @default("WEEKLY") // ExpiryType: WEEKLY, MONTHLY
   strikePrice     Float
   optionType      String   // OptionType: CE, PE
-  
+
   // Price Data
   ltp             Float
   previousClose   Float?
   change          Float    @default(0)
   changePercent   Float    @default(0)
-  
+
   // Option Chain Data (Indian Market Standard)
   openInterest    Float    @default(0) // In Lakhs
   oiChange        Float    @default(0)
   oiChangePercent Float    @default(0)
   volume          Float    @default(0)
   impliedVolatility Float  @default(0)
-  
+
   // Greeks
   delta           Float?
   gamma           Float?
   theta           Float?
   vega            Float?
-  
+
   // Classification
   inTheMoney      Boolean  @default(false)
-  
+
   isActive        Boolean  @default(true)
   lastUpdated     DateTime @default(now())
   createdAt       DateTime @default(now())
@@ -291,7 +290,7 @@ model Order {
   tradeDirection  String      // TradeDirection: BUY, SELL
   segment         String      // Segment: EQUITY, FUTURES, OPTIONS
   productType     String      // ProductType: INTRADAY, DELIVERY, CARRY_FORWARD
-  
+
   // Instrument Details
   symbol          String      // NIFTY, RELIANCE etc
   instrumentId    String?     // Future/Option ID if applicable
@@ -300,22 +299,22 @@ model Order {
   expiryDate      DateTime?   // For derivatives
   lotSize         Int         @default(1)
   lots            Int         @default(1)
-  
+
   // Price & Quantity
   quantity        Int
   price           Float       // Order price
   triggerPrice    Float?      // For SL orders
   fillPrice       Float?      // Actual execution price
-  
+
   // Calculated
   totalValue      Float       @default(0)
   brokerage       Float       @default(0)
   marginRequired  Float       @default(0)
-  
+
   // Status
   status          String      @default("PENDING") // OrderStatus: PENDING, PARTIALLY_FILLED, FILLED, CANCELLED, REJECTED, EXPIRED
   rejectReason    String?
-  
+
   // Timestamps
   placedAt        DateTime    @default(now())
   filledAt        DateTime?
@@ -343,24 +342,24 @@ model Trade {
   segment         String      // Segment: EQUITY, FUTURES, OPTIONS
   productType     String      // ProductType: INTRADAY, DELIVERY, CARRY_FORWARD
   tradeDirection  String      // TradeDirection: BUY, SELL
-  
+
   // Instrument
   symbol          String
   instrumentId    String?
   optionType      String?     // OptionType: CE, PE
   strikePrice     Float?
   expiryDate      DateTime?
-  
+
   // Execution
   quantity        Int
   fillPrice       Float
   totalValue      Float
   brokerage       Float       @default(0)
-  
+
   // P&L
   pnl             Float?
   pnlPercent      Float?
-  
+
   // Timestamps
   executedAt      DateTime    @default(now())
   squaredOffAt    DateTime?
@@ -385,7 +384,7 @@ model Position {
   segment         String      // Segment: EQUITY, FUTURES, OPTIONS
   productType     String      // ProductType: INTRADAY, DELIVERY, CARRY_FORWARD
   tradeDirection  String      // TradeDirection: BUY, SELL
-  
+
   // Instrument
   symbol          String
   instrumentId    String?
@@ -395,20 +394,20 @@ model Position {
   lotSize         Int         @default(1)
   lots            Int         @default(1)
   quantity        Int
-  
+
   // Cost
   entryPrice      Float       // Average entry price
   currentPrice    Float       @default(0)
   totalInvested   Float
   currentValue    Float       @default(0)
-  
+
   // P&L
   unrealizedPnl   Float       @default(0)
   realizedPnl     Float       @default(0)
-  
+
   // Margin
   marginUsed      Float       @default(0)
-  
+
   // Status
   isOpen          Boolean     @default(true)
   squaredOffAt    DateTime?
@@ -432,20 +431,20 @@ model Portfolio {
   id              String   @id @default(cuid())
   userId          String
   date            DateTime @default(now())
-  
+
   // Snapshot
   totalValue      Float    @default(0)
   equityValue     Float    @default(0)
   futuresValue    Float    @default(0)
   optionsValue    Float    @default(0)
   cashBalance     Float    @default(0)
-  
+
   // Returns
   dayPnl          Float    @default(0)
   totalPnl        Float    @default(0)
   dayReturn       Float    @default(0)
   totalReturn     Float    @default(0)
-  
+
   createdAt       DateTime @default(now())
 
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
