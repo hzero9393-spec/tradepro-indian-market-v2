@@ -30,6 +30,7 @@ import {
   Gauge,
   Zap,
   Eye,
+  Maximize2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
@@ -686,7 +687,7 @@ export function StockOverviewPage() {
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       {/* ═══ Sticky Header ═════════════════════════════════════════════ */}
-      <div className="sticky top-14 z-30 bg-white border-b border-[#e5e7eb]">
+      <div className="sticky top-[96px] z-30 bg-white border-b border-[#e5e7eb]">
         <div className="px-4 sm:px-6 lg:px-8 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
@@ -863,6 +864,20 @@ export function StockOverviewPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* ─── TradingView Open Button ──────────────────────────── */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[11px] text-[#9ca3af] font-medium">Chart powered by TradingView</span>
+                <a
+                  href={`https://www.tradingview.com/chart/?symbol=NSE:${selectedStockSymbol}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#00D09C]/30 text-[12px] font-semibold text-[#00D09C] hover:bg-[#00D09C]/5 hover:border-[#00D09C]/50 transition-all duration-200"
+                >
+                  <Maximize2 className="size-3.5" />
+                  Open in TradingView
+                </a>
+              </div>
 
               {/* ─── Performance Section ──────────────────────────────── */}
               <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">

@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, X, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { notifyTradeExecuted } from '@/lib/notifications'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -43,6 +44,41 @@ export function TradeSuccessProvider({ children }: { children: React.ReactNode }
   const showTradeSuccess = useCallback((data: TradeSuccessData) => {
     setTradeData(data)
     setIsVisible(true)
+
+    // Fire browser notification in background
+    try {
+      notifyTradeExecuted(
+        data.symbol,
+        data.type,
+        data.qty,
+        data.price
+      ).catch(() => {}) // Silently ignore errors
+    } catch {
+      // Ignore notification errors
+    }
+
+    // Also create notification in DB
+    try {
+      const token = localStorage.getItem('tradepro_token')
+      if (token) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title: `Trade Executed: ${data.symbol}`,
+            body: `${data.type} ${data.qty} x ${data.symbol} at ₹${data.price.toLocaleString('en-IN')}`,
+            type: 'TRADE_EXECUTED',
+            category: 'trade',
+            link: '/positions',
+          }),
+        }).catch(() => {}) // Silently ignore
+      }
+    } catch {
+      // Ignore
+    }
   }, [])
 
   const handleClose = useCallback(() => {

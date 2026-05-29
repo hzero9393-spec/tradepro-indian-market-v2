@@ -233,16 +233,6 @@ export function DashboardPage() {
     fetchLosers()
   }, [fetchIndices, fetchStocks, fetchGainers, fetchLosers])
 
-  // ─── Listen for index detail events from ticker ────────────
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail
-      if (detail?.symbol) navigateToIndex(detail.symbol)
-    }
-    window.addEventListener('openIndexDetail', handler)
-    return () => window.removeEventListener('openIndexDetail', handler)
-  }, [])
-
   // ─── Display data ────────────────────────────────────────────
   const displayIndices = apiIndices.length > 0 ? apiIndices : fallbackIndices
 
@@ -295,7 +285,7 @@ export function DashboardPage() {
     <div className="min-h-screen bg-[#fafafa]">
 
       {/* ═══ TAB BAR ═══════════════════════════════════════════════════════ */}
-      <div className="sticky top-14 md:top-14 z-30 bg-white border-b border-[#e5e7eb] px-4 sm:px-6 lg:px-8">
+      <div className="sticky top-[96px] md:top-[96px] z-30 bg-white border-b border-[#e5e7eb] px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon

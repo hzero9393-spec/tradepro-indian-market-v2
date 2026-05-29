@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,6 +37,7 @@ import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { formatINR, formatINRWhole } from '@/lib/format'
+import { DateFilter, DatePreset, filterByDateRange, getDateRange } from '@/components/tradepro/ui/date-filter'
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -92,6 +93,24 @@ export default function PortfolioPage() {
   const [positions, setPositions] = useState<PositionData[]>([])
   const [loading, setLoading] = useState(true)
   const [squaringOff, setSquaringOff] = useState<string | null>(null)
+
+  // ─── Date Filter State ──────────────────────────────────────
+  const todayRange = getDateRange('today')
+  const [datePreset, setDatePreset] = useState<DatePreset>('today')
+  const [dateFrom, setDateFrom] = useState<string | null>(todayRange.from)
+  const [dateTo, setDateTo] = useState<string | null>(todayRange.to)
+  const [customFromInput, setCustomFromInput] = useState<string | null>(null)
+  const [customToInput, setCustomToInput] = useState<string | null>(null)
+
+  const handleDateChange = useCallback((preset: DatePreset, from: string | null, to: string | null) => {
+    setDatePreset(preset)
+    setDateFrom(from)
+    setDateTo(to)
+    if (preset !== 'custom') {
+      setCustomFromInput(null)
+      setCustomToInput(null)
+    }
+  }, [])
 
   // ─── Single API call that returns BOTH portfolio + positions ──
   const fetchPortfolio = useCallback(async () => {
@@ -175,6 +194,12 @@ export default function PortfolioPage() {
   const allocationTotal = allocationData.reduce((s, d) => s + d.value, 0)
 
   // Summary cards data
+  // ─── Client-side date filtering for positions ──────────────────
+  const filteredPositions = useMemo(() =>
+    filterByDateRange(positions, 'createdAt', dateFrom, dateTo),
+    [positions, dateFrom, dateTo]
+  )
+
   const totalValue = portfolio?.totalPortfolioValue ?? 0
   const investedAmount = portfolio?.totalInvested ?? 0
   const currentvalue = portfolio?.totalCurrentValue ?? 0
@@ -236,6 +261,18 @@ export default function PortfolioPage() {
           New Trade
         </Button>
       </div>
+
+      {/* ── Date Filter ─────────────────────────────────────────────── */}
+      <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+        <CardContent className="p-4">
+          <DateFilter
+            value={datePreset}
+            customFrom={customFromInput}
+            customTo={customToInput}
+            onChange={handleDateChange}
+          />
+        </CardContent>
+      </Card>
 
       {loading ? (
         <div className="space-y-6">
@@ -426,11 +463,11 @@ export default function PortfolioPage() {
               <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-4">
                 <h4 className="text-lg font-semibold text-[#1a1a1a]">Holdings</h4>
                 <Badge variant="secondary" className="bg-[#00D09C]/10 text-[#00D09C] border-0 text-xs font-semibold">
-                  {positions.length} Active
+                  {filteredPositions.length} Active
                 </Badge>
               </div>
 
-              {positions.length === 0 ? (
+              {filteredPositions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
                     <Briefcase className="size-7 text-[#6b7280]/40" />
@@ -463,7 +500,7 @@ export default function PortfolioPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-[#e5e7eb]">
-                      {positions.map((pos) => {
+                      {filteredPositions.map((pos) => {
                         const isLong = pos.tradeDirection === 'BUY'
                         const pnlValue = pos.unrealizedPnl
                         const pnlPercent = pos.unrealizedPnlPercent

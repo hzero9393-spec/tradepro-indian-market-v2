@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   BarChart3,
   GitBranch,
+  Maximize2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatINR, formatNumber } from '@/lib/format'
@@ -57,6 +58,19 @@ interface CandleData {
 }
 
 type RangeOption = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '5Y'
+
+// ─── TradingView Symbol Mapper ─────────────────────────────────────────────
+
+function getTradingViewSymbol(symbol: string): string {
+  const symbolMap: Record<string, string> = {
+    NIFTY: 'NSE:NIFTY',
+    BANKNIFTY: 'NSE:BANKNIFTY',
+    SENSEX: 'BSE:SENSEX',
+    FINNIFTY: 'NSE:FINNIFTY',
+    MIDCPNIFTY: 'NSE:MIDCPNIFTY',
+  }
+  return symbolMap[symbol] || `NSE:${symbol}`
+}
 
 function formatDate(dateStr: string, range: RangeOption): string {
   const d = new Date(dateStr)
@@ -246,7 +260,7 @@ export function IndexDetailPage() {
   return (
     <div className="min-h-screen bg-[#fafafa]">
       {/* ═══ Header ═════════════════════════════════════════════════════════ */}
-      <div className="sticky top-14 md:top-14 z-20 bg-white border-b border-[#e5e7eb]">
+      <div className="sticky top-[96px] md:top-[96px] z-20 bg-white border-b border-[#e5e7eb]">
         <div className="px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Left: Back button + Index info */}
@@ -457,6 +471,20 @@ export function IndexDetailPage() {
                 No chart data available
               </div>
             )}
+          </div>
+
+          {/* ── TradingView Open Button ──────────────────────────────────── */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[11px] text-[#9ca3af] font-medium">Chart powered by TradingView</span>
+            <a
+              href={`https://www.tradingview.com/chart/?symbol=${getTradingViewSymbol(symbol)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#00D09C]/30 text-[12px] font-semibold text-[#00D09C] hover:bg-[#00D09C]/5 hover:border-[#00D09C]/50 transition-all duration-200"
+            >
+              <Maximize2 className="size-3.5" />
+              Open in TradingView
+            </a>
           </div>
         </div>
 

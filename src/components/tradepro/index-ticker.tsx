@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { formatPercent } from '@/lib/format'
+import { useAppStore } from '@/lib/store'
 
 interface IndexData {
   symbol: string
@@ -21,6 +22,7 @@ interface MarketStatus {
 export function IndexTicker() {
   const [indices, setIndices] = useState<IndexData[]>([])
   const [marketStatus, setMarketStatus] = useState<MarketStatus | null>(null)
+  const { navigateToIndex } = useAppStore()
 
   useEffect(() => {
     async function fetchData() {
@@ -53,16 +55,16 @@ export function IndexTicker() {
   return (
     <div className="fixed left-0 right-0 top-[56px] z-20 md:left-[220px]">
       <div
-        className="border-b"
+        className="border-b shadow-sm"
         style={{
-          background: '#fafafa',
-          borderColor: '#f0f0f0',
-          height: '36px',
+          background: '#ffffff',
+          borderColor: '#e5e7eb',
+          height: '40px',
         }}
       >
-        <div className="flex items-center h-full px-3 gap-0 overflow-x-auto custom-scrollbar">
+        <div className="flex items-center h-full px-3 gap-0 overflow-x-auto custom-scrollbar" style={{ scrollbarWidth: 'none' }}>
           {/* Market Status */}
-          <div className="flex items-center gap-2 shrink-0 pr-3 border-r mr-2" style={{ borderColor: '#f0f0f0' }}>
+          <div className="flex items-center gap-2 shrink-0 pr-3 border-r mr-1" style={{ borderColor: '#e5e7eb' }}>
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
               style={{
@@ -83,24 +85,19 @@ export function IndexTicker() {
             </span>
           </div>
 
-          {/* Index Ticker - Groww style minimal */}
-          <div className="flex items-center gap-1 overflow-x-auto">
+          {/* Index Ticker - Clickable items */}
+          <div className="flex items-center gap-0.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
             {indices.map((idx) => {
               const isPositive = idx.change >= 0
               return (
                 <button
                   key={idx.symbol}
                   type="button"
-                  className="flex items-center gap-1.5 shrink-0 cursor-pointer hover:bg-white px-2.5 py-1 rounded-md transition-colors"
-                  onClick={() => {
-                    window.dispatchEvent(
-                      new CustomEvent('openIndexDetail', {
-                        detail: { symbol: idx.symbol },
-                      })
-                    )
-                  }}
+                  className="flex items-center gap-1.5 shrink-0 cursor-pointer hover:bg-[#f0f2f5] active:bg-[#e5e7eb] px-3 py-1.5 rounded-lg transition-all duration-150 group"
+                  onClick={() => navigateToIndex(idx.symbol)}
+                  title={`View ${idx.name} details`}
                 >
-                  <span className="text-[11px] font-semibold" style={{ color: '#4a4a4a' }}>
+                  <span className="text-[11px] font-semibold tracking-wide group-hover:text-[#1a1a1a]" style={{ color: '#4a4a4a' }}>
                     {idx.symbol}
                   </span>
                   <span className="text-[12px] font-semibold font-tabular" style={{ color: '#1a1a1a' }}>

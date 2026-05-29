@@ -2,7 +2,7 @@
 
 import { Calendar } from 'lucide-react'
 
-export type DatePreset = 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom'
+export type DatePreset = 'all' | 'today' | 'tomorrow' | 'yesterday' | 'week' | 'month' | 'custom'
 
 export interface DateFilterProps {
   value: DatePreset
@@ -23,6 +23,13 @@ export function getDateRange(preset: DatePreset, customFrom?: string | null, cus
     case 'today': {
       const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
       const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+      return { from: start.toISOString(), to: end.toISOString() }
+    }
+
+    case 'tomorrow': {
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+      const start = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 0, 0, 0, 0)
+      const end = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59, 999)
       return { from: start.toISOString(), to: end.toISOString() }
     }
 
@@ -97,6 +104,7 @@ export function filterByDateRange<T>(
 const presets: { key: DatePreset; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'today', label: 'Today' },
+  { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'yesterday', label: 'Yesterday' },
   { key: 'week', label: 'This Week' },
   { key: 'month', label: 'This Month' },

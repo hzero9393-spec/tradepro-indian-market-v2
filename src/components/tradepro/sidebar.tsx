@@ -31,7 +31,6 @@ const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard, group: 'trade', url: '/' },
   { id: 'trading', label: 'Stocks', icon: CandlestickChart, group: 'trade', url: '/stocks' },
   { id: 'optionChain', label: 'Option Chain', icon: GitBranch, group: 'trade', url: '/option-chain' },
-  { id: 'futures', label: 'Futures', icon: TrendingUp, group: 'trade', url: '/futures' },
   // Manage group
   { id: 'positions', label: 'Positions', icon: Crosshair, group: 'manage', url: '/positions' },
   { id: 'orders', label: 'Orders', icon: FileText, group: 'manage', url: '/orders' },

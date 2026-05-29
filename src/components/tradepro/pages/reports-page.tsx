@@ -49,7 +49,10 @@ import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { formatINR, formatINRWhole } from '@/lib/format'
-import { DateFilter, DatePreset, filterByDateRange } from '@/components/tradepro/ui/date-filter'
+import { DateFilter, DatePreset, filterByDateRange, getDateRange } from '@/components/tradepro/ui/date-filter'
+
+// ─── Initialize today's date range ─────────────────────────────────
+const todayRange = getDateRange('today')
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -90,17 +93,17 @@ export function ReportsPage() {
   const [trades, setTrades] = useState<TradeData[]>([])
   const [loading, setLoading] = useState(true)
   const [downloadingReport, setDownloadingReport] = useState<string | null>(null)
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'last' | 'monthly' | 'full' | null }>({ open: false, type: null })
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'last' | 'monthly' | 'full' | 'daterange' | null }>({ open: false, type: null })
 
   // ─── Date Filter State ──────────────────────────────────────
-  const [datePreset, setDatePreset] = useState<DatePreset>('all')
-  const [dateFrom, setDateFrom] = useState<string | null>(null)
-  const [dateTo, setDateTo] = useState<string | null>(null)
+  const [datePreset, setDatePreset] = useState<DatePreset>('today')
+  const [dateFrom, setDateFrom] = useState<string | null>(todayRange.from)
+  const [dateTo, setDateTo] = useState<string | null>(todayRange.to)
   const [customFromInput, setCustomFromInput] = useState<string | null>(null)
   const [customToInput, setCustomToInput] = useState<string | null>(null)
 
   // ─── Download Report Handler ────────────────────────────────
-  const handleDownloadReport = useCallback(async (type: 'last' | 'monthly' | 'full') => {
+  const handleDownloadReport = useCallback(async (type: 'last' | 'monthly' | 'full' | 'daterange') => {
     if (!token) {
       toast.error('Please login to download reports')
       setConfirmDialog({ open: false, type: null })
@@ -109,12 +112,20 @@ export function ReportsPage() {
     setDownloadingReport(type)
     setConfirmDialog({ open: false, type: null })
 
-    const reportLabel = type === 'last' ? 'Last Trade' : type === 'monthly' ? 'Monthly' : 'Full Trading'
+    const reportLabel = type === 'last' ? 'Last Trade' : type === 'monthly' ? 'Monthly' : type === 'daterange' ? 'Date Range' : 'Full Trading'
 
     try {
       toast.loading(`Generating ${reportLabel} report...`, { id: 'pdf-download' })
 
-      const res = await fetch(`/api/profile/report?type=${type}`, {
+      // Build URL with date range params
+      let reportUrl = `/api/profile/report?type=${type}`
+      if (type === 'daterange' && dateFrom && dateTo) {
+        reportUrl += `&from=${encodeURIComponent(dateFrom)}&to=${encodeURIComponent(dateTo)}`
+      } else if (type === 'daterange' && dateFrom) {
+        reportUrl += `&from=${encodeURIComponent(dateFrom)}`
+      }
+
+      const res = await fetch(reportUrl, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -153,6 +164,7 @@ export function ReportsPage() {
         last: `tradepro-last-trade-${new Date().toISOString().split('T')[0]}.pdf`,
         monthly: `tradepro-monthly-report-${new Date().toISOString().split('T')[0]}.pdf`,
         full: `tradepro-full-report-${new Date().toISOString().split('T')[0]}.pdf`,
+        daterange: `tradepro-report-${dateFrom ? new Date(dateFrom).toISOString().split('T')[0] : 'all'}-to-${dateTo ? new Date(dateTo).toISOString().split('T')[0] : 'now'}-${new Date().toISOString().split('T')[0]}.pdf`,
       }
       a.download = filenameMap[type]
       a.style.display = 'none'
@@ -178,7 +190,7 @@ export function ReportsPage() {
     } finally {
       setDownloadingReport(null)
     }
-  }, [token])
+  }, [token, dateFrom, dateTo])
 
   // ─── Build query string with date params ────────────────────
   const buildQueryString = useCallback((basePath: string) => {
@@ -887,7 +899,7 @@ export function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Last Trade Report */}
                   <div className="rounded-xl border border-[#e5e7eb] bg-[#f8f9fb] p-5 hover:border-[#00D09C]/30 hover:bg-[#e6faf4]/30 transition-all group">
                     <div className="flex items-center gap-3 mb-3">
@@ -965,6 +977,37 @@ export function ReportsPage() {
                       {downloadingReport === 'full' ? 'Downloading...' : 'Download PDF'}
                     </Button>
                   </div>
+
+                  {/* Date Range Report */}
+                  <div className="rounded-xl border border-[#00D09C]/40 bg-[#e6faf4]/30 p-5 hover:border-[#00D09C]/60 hover:bg-[#e6faf4]/50 transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="size-10 rounded-lg bg-[#00D09C]/15 flex items-center justify-center shrink-0 group-hover:bg-[#00D09C]/25 transition-colors">
+                        <Calendar className="size-5 text-[#00D09C]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#1a1a1a]">Custom Date Range</p>
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">
+                          {dateFrom && dateTo
+                            ? `${new Date(dateFrom).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(dateTo).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}`
+                            : 'Select dates from filter above'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full gap-2 bg-[#00A67E] hover:bg-[#008f6e] text-white font-semibold rounded-lg"
+                      onClick={() => setConfirmDialog({ open: true, type: 'daterange' })}
+                      disabled={downloadingReport !== null || (!dateFrom && !dateTo)}
+                    >
+                      {downloadingReport === 'daterange' ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Download className="size-4" />
+                      )}
+                      {downloadingReport === 'daterange' ? 'Downloading...' : 'Download PDF'}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -983,13 +1026,15 @@ export function ReportsPage() {
               <div className="size-8 rounded-lg bg-[#00D09C]/10 flex items-center justify-center">
                 <FileText className="size-4 text-[#00D09C]" />
               </div>
-              Download {confirmDialog.type === 'last' ? 'Last Trade' : confirmDialog.type === 'monthly' ? 'Monthly' : 'Full Trading'} Report
+              Download {confirmDialog.type === 'last' ? 'Last Trade' : confirmDialog.type === 'monthly' ? 'Monthly' : confirmDialog.type === 'daterange' ? 'Custom Date Range' : 'Full Trading'} Report
             </DialogTitle>
             <DialogDescription className="text-[#6b7280]">
               {confirmDialog.type === 'last'
                 ? 'Generate a PDF report of your most recent trade.'
                 : confirmDialog.type === 'monthly'
                 ? 'Generate a PDF report of all trades from the last 30 days.'
+                : confirmDialog.type === 'daterange'
+                ? `Generate a PDF report for trades from ${dateFrom ? new Date(dateFrom).toLocaleDateString('en-IN') : 'start'} to ${dateTo ? new Date(dateTo).toLocaleDateString('en-IN') : 'now'}.`
                 : 'Generate a comprehensive PDF of all your trading data.'}
             </DialogDescription>
           </DialogHeader>
@@ -1023,7 +1068,7 @@ export function ReportsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#6b7280]">Trade count:</span>
                   <span className="font-semibold text-[#1a1a1a]">
-                    {confirmDialog.type === 'last' ? '1 trade' : confirmDialog.type === 'monthly' ? `Last 30 days` : `All trades`}
+                    {confirmDialog.type === 'last' ? '1 trade' : confirmDialog.type === 'monthly' ? 'Last 30 days' : confirmDialog.type === 'daterange' ? 'Selected date range' : 'All trades'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs mt-1">

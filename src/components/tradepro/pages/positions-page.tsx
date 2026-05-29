@@ -36,7 +36,10 @@ import { useAppStore } from '@/lib/store'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole } from '@/lib/format'
-import { DateFilter, DatePreset, filterByDateRange } from '@/components/tradepro/ui/date-filter'
+import { DateFilter, DatePreset, filterByDateRange, getDateRange } from '@/components/tradepro/ui/date-filter'
+
+// ─── Initialize today's date range ─────────────────────────────────
+const todayRange = getDateRange('today')
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -93,9 +96,9 @@ export function PositionsPage() {
   const [segmentFilter, setSegmentFilter] = useState<string>('all')
 
   // ─── Date Filter State ──────────────────────────────────────
-  const [datePreset, setDatePreset] = useState<DatePreset>('all')
-  const [dateFrom, setDateFrom] = useState<string | null>(null)
-  const [dateTo, setDateTo] = useState<string | null>(null)
+  const [datePreset, setDatePreset] = useState<DatePreset>('today')
+  const [dateFrom, setDateFrom] = useState<string | null>(todayRange.from)
+  const [dateTo, setDateTo] = useState<string | null>(todayRange.to)
   const [customFromInput, setCustomFromInput] = useState<string | null>(null)
   const [customToInput, setCustomToInput] = useState<string | null>(null)
 

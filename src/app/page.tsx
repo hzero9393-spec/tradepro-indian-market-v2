@@ -49,6 +49,9 @@ const FOOTER_PAGES = new Set([
   'refund-policy',
 ])
 
+// Pages where the Footer component should be visible
+const FOOTER_VISIBLE_PAGES = new Set(['dashboard', 'profile', 'helpSupport'])
+
 function PageContent({ page }: { page: string }) {
   switch (page) {
     case 'dashboard':
@@ -261,12 +264,12 @@ export default function Home() {
         {/* Indian Market Index Ticker */}
         {!isFooterPage && <IndexTicker />}
 
-        {/* Main Content — extra top padding for index ticker (36px) */}
-        <main className="flex-1 md:ml-[240px] mt-[92px] pb-16 md:pb-0">
+        {/* Main Content — extra top padding for index ticker (40px) */}
+        <main className="flex-1 md:ml-[240px] mt-[96px] pb-16 md:pb-0">
           <PageContent page={currentPage} />
 
-          {/* Footer */}
-          <Footer />
+          {/* Footer — only on specific pages */}
+          {FOOTER_VISIBLE_PAGES.has(currentPage) && <Footer />}
         </main>
 
         {/* Mobile Bottom Nav */}

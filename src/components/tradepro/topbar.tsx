@@ -1,6 +1,7 @@
 'use client'
 
-import { Menu, Search, Bell, LogOut, User, FileBarChart, Settings, TrendingUp } from 'lucide-react'
+import { Menu, Search, LogOut, User, FileBarChart, Settings, TrendingUp } from 'lucide-react'
+import { NotificationBell } from '@/components/tradepro/notification-bell'
 import { useAppStore } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth-store'
 import { Button } from '@/components/ui/button'
@@ -92,15 +93,8 @@ export function TopBar({ userName, onLogout, userAvatar }: TopBarProps) {
 
         {/* Right section */}
         <div className="flex items-center gap-1.5">
-          {/* Notification */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative shrink-0 text-[#9ca3af] hover:text-[#111827] hover:bg-[#f4f6f8] h-9 w-9 rounded-xl"
-            aria-label="Notifications"
-          >
-            <Bell className="size-[18px]" />
-          </Button>
+          {/* Notification Bell */}
+          <NotificationBell />
 
           {/* User Menu */}
           <DropdownMenu>
