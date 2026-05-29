@@ -27,7 +27,6 @@ import {
   User,
   Mail,
   Shield,
-  Crown,
   Wallet,
   TrendingUp,
   TrendingDown,
@@ -46,13 +45,11 @@ import {
   AlertTriangle,
   FileText,
   RotateCcw,
-  Zap,
   Bell,
   Settings,
   Trophy,
   IndianRupee,
   Phone,
-  Check,
   X,
   Loader2,
   Eye,
@@ -156,24 +153,6 @@ const fadeInUp = {
     transition: { delay: i * 0.05, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
   }),
 }
-
-// ─── Plan Features ───────────────────────────────────────────────
-
-const FREE_FEATURES = [
-  'Virtual balance of ₹1,00,000',
-  'Paper trading on NSE/BSE',
-  'Basic portfolio analytics',
-  'Up to 50 trades per month',
-]
-
-const PREMIUM_FEATURES = [
-  'Virtual balance of ₹10,00,000',
-  'Unlimited paper trades',
-  'Advanced analytics & reports',
-  'Options & futures trading',
-  'Priority support',
-  'Custom watchlists',
-]
 
 // ─── Image Compression Helper ────────────────────────────────────
 
@@ -803,9 +782,9 @@ export function ProfilePage() {
                         <p className="text-[10px] font-semibold uppercase tracking-widest text-[#6b7280]">Wallet Balance</p>
                         <p className="text-2xl font-bold text-[#00D09C] mt-1">{formatINRWhole(availableBalance)}</p>
                       </div>
-                      <Badge className="border-0 text-[10px] font-bold px-2.5 py-1 bg-[#f0f2f5] text-[#6b7280]">
-                        <Crown className="size-3 mr-1" />
-                        {user?.subscription ?? 'FREE'}
+                      <Badge className="border-0 text-[10px] font-bold px-2.5 py-1 bg-[#e6faf4] text-[#00D09C]">
+                        <TrendingUp className="size-3 mr-1" />
+                        Paper Trading
                       </Badge>
                     </div>
                   </div>
@@ -976,51 +955,7 @@ export function ProfilePage() {
             </div>
           </motion.div>
 
-          {/* ── 3. SUBSCRIPTION SECTION ──────────────────────────── */}
-          <motion.div custom={si++} variants={fadeInUp} initial="hidden" animate="visible">
-            <div className="bg-white border border-[#e8eaf0] rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-5 pb-3">
-                <div className="flex items-center gap-2">
-                  <Crown className="size-5 text-[#00D09C]" />
-                  <h3 className="text-base font-semibold text-[#1a1a2e]">Subscription</h3>
-                </div>
-              </div>
-              <div className="px-5 pb-5">
-                <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-8">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-[#6b7280]">Current Plan:</span>
-                      <Badge className={cn(
-                        'border-0 text-xs font-bold px-3 py-1',
-                        user?.subscription === 'PREMIUM' ? 'bg-[#e6faf4] text-[#00D09C]' : 'bg-[#f0f2f5] text-[#6b7280]'
-                      )}>
-                        <Crown className="size-3 mr-1" />
-                        {user?.subscription ?? 'FREE'}
-                      </Badge>
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {(user?.subscription === 'PREMIUM' ? PREMIUM_FEATURES : FREE_FEATURES).map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <Check className="size-3.5 shrink-0 text-[#00D09C]" />
-                          <span className="text-sm text-[#374151]">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-3 shrink-0">
-                    <Button
-                      className="gap-2 text-sm font-semibold h-10 px-5 bg-[#00D09C] hover:bg-[#00b888] text-white border-0 shadow-sm"
-                      onClick={() => toast.info('Premium Features', { description: 'Unlock unlimited trades, advanced analytics & more!' })}
-                    >
-                      <Zap className="size-4" /> Upgrade Plan
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* ── 4. SETTINGS SECTION ──────────────────────────────── */}
+          {/* ── 3. SETTINGS SECTION ──────────────────────────────── */}
           <motion.div custom={si++} variants={fadeInUp} initial="hidden" animate="visible">
             <div className="bg-white border border-[#e8eaf0] rounded-2xl shadow-sm overflow-hidden">
               <div className="p-5 pb-3">
