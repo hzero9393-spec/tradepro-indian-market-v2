@@ -46,7 +46,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Step 3: Market Status Check ───────────────────────────────
-    const enforceMarketHours = process.env.ENFORCE_MARKET_HOURS === 'true'
+    // Only enforce market hours block if explicitly set to 'strict'
+    // 'true' gives a warning but still allows the trade (paper trading friendly)
+    const enforceMarketHours = process.env.ENFORCE_MARKET_HOURS === 'strict'
     if (enforceMarketHours) {
       const marketStatus = await checkMarketStatus()
       if (!marketStatus.isOpen) {
@@ -56,6 +58,10 @@ export async function POST(request: NextRequest) {
         }, { status: 403 })
       }
     }
+    // Optional: Add market status as a warning in the response (when ENFORCE_MARKET_HOURS='true')
+    const marketWarning = process.env.ENFORCE_MARKET_HOURS === 'true'
+      ? await checkMarketStatus().then(s => !s.isOpen ? 'Market is currently closed. This is a paper trade.' : null).catch(() => null)
+      : null
 
     // ─── Step 4: Get user ──────────────────────────────────────────
     const user = await db.user.findUnique({ where: { id: userId } })
@@ -116,6 +122,7 @@ export async function POST(request: NextRequest) {
             message: `${orderType} order placed: BUY ${quantity} ${stock.symbol} @ ₹${price || stock.currentPrice}`,
             order,
             isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -230,6 +237,7 @@ export async function POST(request: NextRequest) {
           trade: result.trade,
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
@@ -263,6 +271,7 @@ export async function POST(request: NextRequest) {
             message: `${orderType} order placed: SELL ${quantity} ${stock.symbol} @ ₹${price || stock.currentPrice}`,
             order,
             isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -369,6 +378,7 @@ export async function POST(request: NextRequest) {
           realizedPnl: result.realizedPnl,
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
@@ -454,6 +464,7 @@ export async function POST(request: NextRequest) {
             message: `${orderType} order placed: BUY ${lots} lots (${totalQty} qty) ${symbol} FUT @ ₹${price || fillPrice}`,
             order,
             isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -582,6 +593,7 @@ export async function POST(request: NextRequest) {
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
           marginRequired,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
@@ -619,6 +631,7 @@ export async function POST(request: NextRequest) {
             message: `${orderType} order placed: SELL ${lots} lots (${totalQty} qty) ${symbol} FUT @ ₹${price || fillPrice}`,
             order,
             isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -747,6 +760,7 @@ export async function POST(request: NextRequest) {
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
           marginRequired,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
@@ -840,6 +854,7 @@ export async function POST(request: NextRequest) {
             message: `${orderType} order placed: BUY ${lots} lots (${totalQty} qty) ${symbol} ${strikePrice} ${optionType} @ ₹${price || fillPrice}`,
             order,
             isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -972,6 +987,7 @@ export async function POST(request: NextRequest) {
           trade: result.trade,
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
@@ -1010,6 +1026,7 @@ export async function POST(request: NextRequest) {
             message: `${orderType} order placed: SELL ${lots} lots (${totalQty} qty) ${symbol} ${strikePrice} ${optionType} @ ₹${price || fillPrice}`,
             order,
             isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -1130,6 +1147,7 @@ export async function POST(request: NextRequest) {
             realizedPnl: result.realizedPnl,
             balance: result.updatedUser.virtualBalance,
             totalPnl: result.updatedUser.totalPnl,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -1271,6 +1289,7 @@ export async function POST(request: NextRequest) {
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
           marginRequired,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 

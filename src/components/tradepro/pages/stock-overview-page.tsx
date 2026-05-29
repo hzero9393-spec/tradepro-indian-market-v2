@@ -362,6 +362,8 @@ export function StockOverviewPage() {
   const [quantity, setQuantity] = useState(10)
   const [price, setPrice] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
+  const [stopLoss, setStopLoss] = useState('')
+  const [target, setTarget] = useState('')
   const [tradeSegment, setTradeSegment] = useState<'EQUITY' | 'FUTURES' | 'OPTIONS'>('EQUITY')
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [confirmData, setConfirmData] = useState<TradeConfirmData | null>(null)
@@ -536,6 +538,30 @@ export function StockOverviewPage() {
     // Open confirmation modal
     const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
     const fillPrice = orderType === 'MARKET' ? stockDetail.currentPrice : parseFloat(price)
+
+    // SL/TP validation
+    const entryPrice = fillPrice
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      if (direction === 'BUY' && parseFloat(stopLoss) >= entryPrice) {
+        toast.error('Stop Loss should be below entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(stopLoss) <= entryPrice) {
+        toast.error('Stop Loss should be above entry price for SELL orders')
+        return
+      }
+    }
+    if (target && parseFloat(target) > 0) {
+      if (direction === 'BUY' && parseFloat(target) <= entryPrice) {
+        toast.error('Target should be above entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(target) >= entryPrice) {
+        toast.error('Target should be below entry price for SELL orders')
+        return
+      }
+    }
+
     setConfirmData({
       symbol: stockDetail.symbol,
       direction: direction as 'BUY' | 'SELL',
@@ -547,6 +573,8 @@ export function StockOverviewPage() {
       totalValue: estimatedTotal,
       brokerage: estimatedBrokerage,
       availableBalance,
+      stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+      target: target ? parseFloat(target) : undefined,
     })
     setConfirmModalOpen(true)
   }
@@ -568,11 +596,15 @@ export function StockOverviewPage() {
       body.price = parseFloat(price)
     }
 
-    // Include Stop Loss & Target from confirm modal
-    if (confirmData?.stopLoss && confirmData.stopLoss > 0) {
+    // Include Stop Loss & Target from OrderPanel inputs and confirm modal
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      body.stopLoss = parseFloat(stopLoss)
+    } else if (confirmData?.stopLoss && confirmData.stopLoss > 0) {
       body.stopLoss = confirmData.stopLoss
     }
-    if (confirmData?.target && confirmData.target > 0) {
+    if (target && parseFloat(target) > 0) {
+      body.target = parseFloat(target)
+    } else if (confirmData?.target && confirmData.target > 0) {
       body.target = confirmData.target
     }
 
@@ -1785,6 +1817,40 @@ export function StockOverviewPage() {
                     </div>
                   )}
 
+                  {/* Stop Loss & Target */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-[#EB5B3C]" />
+                        Stop Loss
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="Optional"
+                        step="0.05"
+                        min="0"
+                        value={stopLoss}
+                        onChange={(e) => setStopLoss(e.target.value)}
+                        className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C]"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-[#00B386]" />
+                        Target
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="Optional"
+                        step="0.05"
+                        min="0"
+                        value={target}
+                        onChange={(e) => setTarget(e.target.value)}
+                        className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#00B386]/20 focus:border-[#00B386]"
+                      />
+                    </div>
+                  </div>
+
                   {/* Order Summary */}
                   <div className="bg-[#f8f9fb] rounded-xl p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
@@ -1853,7 +1919,14 @@ export function StockOverviewPage() {
         onClose={() => setConfirmModalOpen(false)}
         tradeData={confirmData}
         onConfirm={executeTrade}
-        onSuccess={handleTradeConfirmSuccess}
+        onSuccess={() => {
+          setStopLoss('')
+          setTarget('')
+          handleTradeConfirmSuccess()
+        }}
+        onDataChange={(data) => {
+          setConfirmData(prev => prev ? { ...prev, ...data } : null)
+        }}
       />
     </div>
   )

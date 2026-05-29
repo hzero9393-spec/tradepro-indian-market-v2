@@ -4,8 +4,95 @@ import { calculateBrokerage } from '@/lib/trade-auth'
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache'
 import { Prisma } from '@prisma/client'
 
+// Helper: batch-fetch prices for a list of items (orders or positions) by segment
+async function batchFetchPrices(
+  items: { symbol: string; segment: string; optionType?: string | null; strikePrice?: number | null }[]
+): Promise<Map<string, number>> {
+  const priceMap = new Map<string, number>()
+
+  const equitySymbols = new Set<string>()
+  const futureSymbols = new Set<string>()
+  const optionKeys = new Set<string>()
+
+  for (const item of items) {
+    if (item.segment === 'EQUITY') equitySymbols.add(item.symbol)
+    else if (item.segment === 'FUTURES') futureSymbols.add(item.symbol)
+    else if (item.segment === 'OPTIONS') optionKeys.add(`${item.symbol}:${item.optionType}:${item.strikePrice}`)
+  }
+
+  // Batch fetch equity prices
+  if (equitySymbols.size > 0) {
+    try {
+      const stocks = await db.stock.findMany({
+        where: { symbol: { in: [...equitySymbols] } },
+        select: { symbol: true, currentPrice: true },
+      })
+      for (const s of stocks) priceMap.set(`EQUITY:${s.symbol}`, s.currentPrice)
+    } catch (err) {
+      console.error('[Check Triggers] Batch equity price fetch error:', err)
+    }
+  }
+
+  // Batch fetch future prices
+  if (futureSymbols.size > 0) {
+    try {
+      const futures = await db.future.findMany({
+        where: { underlying: { in: [...futureSymbols] } },
+        select: { underlying: true, ltp: true, expiryDate: true },
+        orderBy: { expiryDate: 'asc' },
+      })
+      for (const f of futures) {
+        if (!priceMap.has(`FUTURES:${f.underlying}`)) priceMap.set(`FUTURES:${f.underlying}`, f.ltp)
+      }
+    } catch (err) {
+      console.error('[Check Triggers] Batch future price fetch error:', err)
+    }
+  }
+
+  // Batch fetch option prices
+  if (optionKeys.size > 0) {
+    try {
+      const optionWhere: { underlying: string; optionType: 'CE' | 'PE'; strikePrice: number }[] = []
+      for (const key of optionKeys) {
+        const [symbol, optType, strike] = key.split(':')
+        if (symbol && optType && strike) {
+          optionWhere.push({ underlying: symbol, optionType: optType as 'CE' | 'PE', strikePrice: parseFloat(strike) })
+        }
+      }
+      if (optionWhere.length > 0) {
+        const options = await db.option.findMany({
+          where: { OR: optionWhere, isActive: true },
+          select: { underlying: true, optionType: true, strikePrice: true, ltp: true, expiryDate: true },
+          orderBy: { expiryDate: 'asc' },
+        })
+        for (const o of options) {
+          const key = `OPTIONS:${o.underlying}:${o.optionType}:${o.strikePrice}`
+          if (!priceMap.has(key)) priceMap.set(key, o.ltp)
+        }
+      }
+    } catch (err) {
+      console.error('[Check Triggers] Batch option price fetch error:', err)
+    }
+  }
+
+  return priceMap
+}
+
+function getItemPrice(
+  item: { symbol: string; segment: string; optionType?: string | null; strikePrice?: number | null },
+  priceMap: Map<string, number>
+): number {
+  if (item.segment === 'EQUITY') return priceMap.get(`EQUITY:${item.symbol}`) || 0
+  if (item.segment === 'FUTURES') return priceMap.get(`FUTURES:${item.symbol}`) || 0
+  if (item.segment === 'OPTIONS') return priceMap.get(`OPTIONS:${item.symbol}:${item.optionType}:${item.strikePrice}`) || 0
+  return 0
+}
+
 export async function POST() {
   try {
+    console.log('[Check Triggers] Starting trigger check...')
+    const startTime = Date.now()
+
     const triggeredOrders: { orderId: string; currentPrice: number; executed: boolean }[] = []
     const slTpTriggers: { positionId: string; currentPrice: number; exitReason: string; executed: boolean }[] = []
 
@@ -17,21 +104,19 @@ export async function POST() {
       take: 50,
     })
 
+    console.log(`[Check Triggers] Found ${pendingOrders.length} pending orders`)
+
+    // Batch fetch all prices for pending orders
+    const orderPriceMap = await batchFetchPrices(pendingOrders)
+
     for (const order of pendingOrders) {
-      // Get current price
-      let currentPrice = 0
-      if (order.segment === 'EQUITY') {
-        const stock = await db.stock.findFirst({ where: { symbol: order.symbol } })
-        currentPrice = stock?.currentPrice || 0
-      } else if (order.segment === 'FUTURES') {
-        const future = await db.future.findFirst({ where: { underlying: order.symbol }, orderBy: { expiryDate: 'asc' } })
-        currentPrice = future?.ltp || 0
-      } else if (order.segment === 'OPTIONS') {
-        const option = await db.option.findFirst({
-          where: { underlying: order.symbol, optionType: order.optionType as 'CE' | 'PE', strikePrice: order.strikePrice || 0 },
-          orderBy: { expiryDate: 'asc' }
-        })
-        currentPrice = option?.ltp || 0
+      // Get current price from batch-fetched map
+      let currentPrice = getItemPrice(order, orderPriceMap)
+
+      // Fallback: try cache for equity (in case batch missed due to timing)
+      if (!currentPrice && order.segment === 'EQUITY') {
+        const cached = cache.get<{ currentPrice: number }>(CacheKeys.stockPrice(order.symbol))
+        if (cached) currentPrice = cached.currentPrice
       }
 
       if (!currentPrice) continue
@@ -48,6 +133,8 @@ export async function POST() {
       }
 
       if (!shouldTrigger) continue
+
+      console.log(`[Check Triggers] Order ${order.id} triggered at price ${currentPrice}`)
 
       // ═══ AUTO-EXECUTE the triggered LIMIT order ═══
       try {
@@ -332,6 +419,7 @@ export async function POST() {
         })
 
         triggeredOrders.push({ orderId: order.id, currentPrice, executed: true })
+        console.log(`[Check Triggers] Order ${order.id} executed successfully at ${currentPrice}`)
       } catch (execError) {
         console.error('[Check Triggers] Failed to execute order:', order.id, execError)
         triggeredOrders.push({ orderId: order.id, currentPrice, executed: false })
@@ -341,37 +429,31 @@ export async function POST() {
     // ═══════════════════════════════════════════════════════════════
     // 2. Check SL/TP on open positions and auto square-off
     // ═══════════════════════════════════════════════════════════════
-    const openPositions = await db.position.findMany({
-      where: {
-        isOpen: true,
-        OR: [
-          { stopLoss: { not: null } },
-          { target: { not: null } },
-        ],
-      },
-      take: 50,
+    // Fetch ALL open positions and filter in JS (more reliable with SQLite/Turso)
+    // The Prisma `not: null` filter doesn't work reliably with SQLite for nullable Float fields
+    const allOpenPositions = await db.position.findMany({
+      where: { isOpen: true },
+      take: 100,
     })
+    // Filter to only those with SL or TP set
+    const openPositions = allOpenPositions.filter(p =>
+      (p.stopLoss !== null && p.stopLoss !== undefined && p.stopLoss > 0) ||
+      (p.target !== null && p.target !== undefined && p.target > 0)
+    )
+
+    console.log(`[Check Triggers] Found ${allOpenPositions.length} open positions, ${openPositions.length} with SL/TP`)
+
+    // Batch fetch prices for open positions
+    const positionPriceMap = await batchFetchPrices(openPositions)
 
     for (const position of openPositions) {
-      let currentPrice = 0
-      if (position.segment === 'EQUITY') {
+      // Get current price from batch-fetched map
+      let currentPrice = getItemPrice(position, positionPriceMap)
+
+      // Fallback: try cache for equity
+      if (!currentPrice && position.segment === 'EQUITY') {
         const cached = cache.get<{ currentPrice: number }>(CacheKeys.stockPrice(position.symbol))
-        if (cached) {
-          currentPrice = cached.currentPrice
-        } else {
-          const stock = await db.stock.findFirst({ where: { symbol: position.symbol } })
-          currentPrice = stock?.currentPrice || 0
-          if (stock) cache.set(CacheKeys.stockPrice(stock.symbol), { currentPrice: stock.currentPrice }, CacheTTL.STOCK_PRICE)
-        }
-      } else if (position.segment === 'FUTURES') {
-        const future = await db.future.findFirst({ where: { underlying: position.symbol }, orderBy: { expiryDate: 'asc' } })
-        currentPrice = future?.ltp || 0
-      } else if (position.segment === 'OPTIONS') {
-        const option = await db.option.findFirst({
-          where: { underlying: position.symbol, optionType: position.optionType as 'CE' | 'PE', strikePrice: position.strikePrice || 0 },
-          orderBy: { expiryDate: 'asc' }
-        })
-        currentPrice = option?.ltp || 0
+        if (cached) currentPrice = cached.currentPrice
       }
 
       if (!currentPrice) continue
@@ -404,6 +486,8 @@ export async function POST() {
       }
 
       if (!shouldExit) continue
+
+      console.log(`[Check Triggers] Position ${position.id} triggered ${exitReason} at price ${currentPrice} (SL: ${position.stopLoss}, TP: ${position.target})`)
 
       // ═══ AUTO-SQUARE-OFF the position ═══
       try {
@@ -517,11 +601,15 @@ export async function POST() {
         })
 
         slTpTriggers.push({ positionId: position.id, currentPrice, exitReason, executed: true })
+        console.log(`[Check Triggers] Position ${position.id} squared off (${exitReason}) at ${currentPrice}`)
       } catch (execError) {
         console.error('[Check Triggers] Failed to square-off position:', position.id, execError)
         slTpTriggers.push({ positionId: position.id, currentPrice, exitReason, executed: false })
       }
     }
+
+    const elapsed = Date.now() - startTime
+    console.log(`[Check Triggers] Completed in ${elapsed}ms. Orders triggered: ${triggeredOrders.filter(o => o.executed).length}, SL/TP triggered: ${slTpTriggers.filter(t => t.executed).length}`)
 
     return NextResponse.json({
       success: true,

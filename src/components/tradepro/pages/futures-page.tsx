@@ -116,6 +116,8 @@ export function FuturesPage() {
   const [orderType, setOrderType] = useState<OrderType>('MARKET')
   const [lots, setLots] = useState(1)
   const [price, setPrice] = useState('')
+  const [stopLoss, setStopLoss] = useState('')
+  const [target, setTarget] = useState('')
 
   // Real data states
   const [contracts, setContracts] = useState<FuturesContract[]>([])
@@ -256,6 +258,8 @@ export function FuturesPage() {
           lots,
           price: orderType === 'MARKET' ? undefined : Number(price),
           expiryDate: selectedContract.expiryDate,
+          ...(stopLoss && parseFloat(stopLoss) > 0 ? { stopLoss: parseFloat(stopLoss) } : {}),
+          ...(target && parseFloat(target) > 0 ? { target: parseFloat(target) } : {}),
         }),
       })
       const data = await res.json()
@@ -614,6 +618,40 @@ export function FuturesPage() {
                     />
                   </div>
                 )}
+
+                {/* Stop Loss & Target */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] flex items-center gap-1">
+                      <span className="size-1.5 rounded-full bg-[#EB5B3C]" />
+                      Stop Loss
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="Optional"
+                      step="0.05"
+                      min="0"
+                      value={stopLoss}
+                      onChange={(e) => setStopLoss(e.target.value)}
+                      className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C]"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] flex items-center gap-1">
+                      <span className="size-1.5 rounded-full bg-[#00B386]" />
+                      Target
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="Optional"
+                      step="0.05"
+                      min="0"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#00B386]/20 focus:border-[#00B386]"
+                    />
+                  </div>
+                </div>
 
                 {/* Calculated Fields */}
                 <div className="bg-[#f5f7fa] border border-[#e5e7eb] p-3 rounded-xl space-y-2 text-sm">

@@ -311,6 +311,8 @@ function OrderPanel({
   const [productType, setProductType] = useState('INTRADAY')
   const [quantity, setQuantity] = useState(10)
   const [price, setPrice] = useState('')
+  const [stopLoss, setStopLoss] = useState('')
+  const [target, setTarget] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [confirmData, setConfirmData] = useState<TradeConfirmData | null>(null)
@@ -351,6 +353,29 @@ function OrderPanel({
     // Open confirmation modal instead of directly placing order
     const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
     const fillPrice = orderType === 'MARKET' ? selectedStock.currentPrice : parseFloat(price)
+    // SL/TP validation
+    const entryPrice = fillPrice
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      if (direction === 'BUY' && parseFloat(stopLoss) >= entryPrice) {
+        toast.error('Stop Loss should be below entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(stopLoss) <= entryPrice) {
+        toast.error('Stop Loss should be above entry price for SELL orders')
+        return
+      }
+    }
+    if (target && parseFloat(target) > 0) {
+      if (direction === 'BUY' && parseFloat(target) <= entryPrice) {
+        toast.error('Target should be above entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(target) >= entryPrice) {
+        toast.error('Target should be below entry price for SELL orders')
+        return
+      }
+    }
+
     setConfirmData({
       symbol: selectedStock.symbol,
       direction: direction as 'BUY' | 'SELL',
@@ -362,6 +387,8 @@ function OrderPanel({
       totalValue: estimatedTotal,
       brokerage: estimatedBrokerage,
       availableBalance,
+      stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+      target: target ? parseFloat(target) : undefined,
     })
     setConfirmModalOpen(true)
   }
@@ -383,11 +410,15 @@ function OrderPanel({
       body.price = parseFloat(price)
     }
 
-    // Include Stop Loss & Target from confirm modal
-    if (confirmData?.stopLoss && confirmData.stopLoss > 0) {
+    // Include Stop Loss & Target from OrderPanel inputs and confirm modal
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      body.stopLoss = parseFloat(stopLoss)
+    } else if (confirmData?.stopLoss && confirmData.stopLoss > 0) {
       body.stopLoss = confirmData.stopLoss
     }
-    if (confirmData?.target && confirmData.target > 0) {
+    if (target && parseFloat(target) > 0) {
+      body.target = parseFloat(target)
+    } else if (confirmData?.target && confirmData.target > 0) {
       body.target = confirmData.target
     }
 
@@ -584,6 +615,40 @@ function OrderPanel({
           </div>
         )}
 
+        {/* Stop Loss & Target */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-[#EB5B3C]" />
+              Stop Loss
+            </label>
+            <Input
+              type="number"
+              placeholder="Optional"
+              step="0.05"
+              min="0"
+              value={stopLoss}
+              onChange={(e) => setStopLoss(e.target.value)}
+              className="h-9 font-mono font-tabular border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-[#00B386]" />
+              Target
+            </label>
+            <Input
+              type="number"
+              placeholder="Optional"
+              step="0.05"
+              min="0"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="h-9 font-mono font-tabular border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00B386]/20 focus:border-[#00B386]"
+            />
+          </div>
+        </div>
+
         {/* Order Summary */}
         <div className="rounded-xl bg-[#f5f7fa] p-4 space-y-2">
           <div className="flex items-center justify-between">
@@ -650,7 +715,12 @@ function OrderPanel({
         tradeData={confirmData}
         onConfirm={executeTrade}
         onSuccess={() => {
+          setStopLoss('')
+          setTarget('')
           useAppStore.getState().setCurrentPage('positions')
+        }}
+        onDataChange={(data) => {
+          setConfirmData(prev => prev ? { ...prev, ...data } : null)
         }}
       />
     </Card>

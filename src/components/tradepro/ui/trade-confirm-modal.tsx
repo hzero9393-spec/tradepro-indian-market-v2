@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion'
 import {
   CheckCircle2,
@@ -49,6 +49,7 @@ interface TradeConfirmModalProps {
   tradeData: TradeConfirmData | null
   onConfirm: () => Promise<{ success: boolean; message?: string; error?: string; orderId?: string; balance?: number; totalValue?: number; brokerage?: number }>
   onSuccess?: () => void
+  onDataChange?: (data: Partial<TradeConfirmData>) => void
 }
 
 // ─── Swipe to Confirm Component ──────────────────────────────
@@ -180,6 +181,7 @@ export function TradeConfirmModal({
   tradeData,
   onConfirm,
   onSuccess,
+  onDataChange,
 }: TradeConfirmModalProps) {
   const [state, setState] = useState<ModalState>('confirming')
   const [errorMsg, setErrorMsg] = useState('')
@@ -189,6 +191,16 @@ export function TradeConfirmModal({
     totalValue?: number
     brokerage?: number
   }>({})
+  const [localStopLoss, setLocalStopLoss] = useState<string>('')
+  const [localTarget, setLocalTarget] = useState<string>('')
+
+  // Initialize from tradeData when modal opens
+  useEffect(() => {
+    if (open && tradeData) {
+      setLocalStopLoss(tradeData.stopLoss ? String(tradeData.stopLoss) : '')
+      setLocalTarget(tradeData.target ? String(tradeData.target) : '')
+    }
+  }, [open, tradeData])
 
   const isBuy = tradeData?.direction === 'BUY'
   const sufficientBalance = tradeData
@@ -390,92 +402,50 @@ export function TradeConfirmModal({
                   </div>
 
                   {/* Stop Loss & Target Inputs */}
-                  {tradeData.orderType !== 'MARKET' && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Stop Loss</label>
-                        <input
-                          type="number"
-                          placeholder="₹0.00"
-                          step="0.05"
-                          min="0"
-                          value={tradeData.stopLoss || ''}
-                          onChange={(e) => {
-                            const val = e.target.value ? parseFloat(e.target.value) : undefined
-                            if (val !== undefined && val > 0) {
-                              tradeData.stopLoss = val
-                            } else {
-                              tradeData.stopLoss = undefined
-                            }
-                          }}
-                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Target</label>
-                        <input
-                          type="number"
-                          placeholder="₹0.00"
-                          step="0.05"
-                          min="0"
-                          value={tradeData.target || ''}
-                          onChange={(e) => {
-                            const val = e.target.value ? parseFloat(e.target.value) : undefined
-                            if (val !== undefined && val > 0) {
-                              tradeData.target = val
-                            } else {
-                              tradeData.target = undefined
-                            }
-                          }}
-                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
-                        />
-                      </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-[#EB5B3C]" />
+                        Stop Loss {tradeData.orderType === 'MARKET' ? '(optional)' : ''}
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="₹0.00"
+                        step="0.05"
+                        min="0"
+                        value={localStopLoss}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setLocalStopLoss(val)
+                          if (onDataChange) {
+                            onDataChange({ stopLoss: val && parseFloat(val) > 0 ? parseFloat(val) : undefined })
+                          }
+                        }}
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
+                      />
                     </div>
-                  )}
-
-                  {/* SL/Target Summary for MARKET orders */}
-                  {tradeData.orderType === 'MARKET' && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Stop Loss (optional)</label>
-                        <input
-                          type="number"
-                          placeholder="₹0.00"
-                          step="0.05"
-                          min="0"
-                          value={tradeData.stopLoss || ''}
-                          onChange={(e) => {
-                            const val = e.target.value ? parseFloat(e.target.value) : undefined
-                            if (val !== undefined && val > 0) {
-                              tradeData.stopLoss = val
-                            } else {
-                              tradeData.stopLoss = undefined
-                            }
-                          }}
-                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Target (optional)</label>
-                        <input
-                          type="number"
-                          placeholder="₹0.00"
-                          step="0.05"
-                          min="0"
-                          value={tradeData.target || ''}
-                          onChange={(e) => {
-                            const val = e.target.value ? parseFloat(e.target.value) : undefined
-                            if (val !== undefined && val > 0) {
-                              tradeData.target = val
-                            } else {
-                              tradeData.target = undefined
-                            }
-                          }}
-                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
-                        />
-                      </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-[#00B386]" />
+                        Target {tradeData.orderType === 'MARKET' ? '(optional)' : ''}
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="₹0.00"
+                        step="0.05"
+                        min="0"
+                        value={localTarget}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setLocalTarget(val)
+                          if (onDataChange) {
+                            onDataChange({ target: val && parseFloat(val) > 0 ? parseFloat(val) : undefined })
+                          }
+                        }}
+                        className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                      />
                     </div>
-                  )}
+                  </div>
 
                   {/* Cost Breakdown */}
                   <div className="border border-[#e5e7eb] rounded-xl p-4 space-y-2.5">
@@ -533,20 +503,20 @@ export function TradeConfirmModal({
                   )}
 
                   {/* SL/TP Summary */}
-                  {(tradeData.stopLoss || tradeData.target) && (
+                  {(localStopLoss && parseFloat(localStopLoss) > 0 || localTarget && parseFloat(localTarget) > 0) && (
                     <div className="flex items-center gap-4 p-3 rounded-xl bg-[#f5f7fa] border border-[#e5e7eb]">
-                      {tradeData.stopLoss && (
+                      {localStopLoss && parseFloat(localStopLoss) > 0 && (
                         <div className="flex items-center gap-1.5">
                           <div className="size-2 rounded-full bg-[#EB5B3C]" />
                           <span className="text-[10px] uppercase tracking-wider text-[#6b7280]">SL</span>
-                          <span className="text-xs font-mono font-semibold text-[#EB5B3C]">₹{tradeData.stopLoss.toLocaleString('en-IN')}</span>
+                          <span className="text-xs font-mono font-semibold text-[#EB5B3C]">₹{parseFloat(localStopLoss).toLocaleString('en-IN')}</span>
                         </div>
                       )}
-                      {tradeData.target && (
+                      {localTarget && parseFloat(localTarget) > 0 && (
                         <div className="flex items-center gap-1.5">
                           <div className="size-2 rounded-full bg-[#00B386]" />
                           <span className="text-[10px] uppercase tracking-wider text-[#6b7280]">TP</span>
-                          <span className="text-xs font-mono font-semibold text-[#00B386]">₹{tradeData.target.toLocaleString('en-IN')}</span>
+                          <span className="text-xs font-mono font-semibold text-[#00B386]">₹{parseFloat(localTarget).toLocaleString('en-IN')}</span>
                         </div>
                       )}
                     </div>
