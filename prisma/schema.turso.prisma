@@ -309,9 +309,11 @@ model Order {
 
   // Price & Quantity
   quantity        Int
-  price           Float       // Order price
+  price           Float       // Order price (limit price for LIMIT orders)
   triggerPrice    Float?      // For SL orders
   fillPrice       Float?      // Actual execution price
+  stopLoss        Float?      // Stop Loss price
+  target          Float?      // Target / Take Profit price
 
   // Calculated
   totalValue      Float       @default(0)
@@ -414,6 +416,11 @@ model Position {
 
   // Margin
   marginUsed      Float       @default(0)
+
+  // Risk Management
+  stopLoss        Float?      // Stop Loss price
+  target          Float?      // Target / Take Profit price
+  exitReason      String?     // Exit reason: MANUAL, STOP_LOSS, TARGET, EXPIRY
 
   // Status
   isOpen          Boolean     @default(true)

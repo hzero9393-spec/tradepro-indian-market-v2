@@ -30,6 +30,9 @@ import {
   IndianRupee,
   AlertTriangle,
   Clock,
+  Target,
+  ShieldAlert,
+  Pencil,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
@@ -61,11 +64,14 @@ interface PositionData {
   unrealizedPnlPercent: number
   realizedPnl?: number | null
   exitPrice?: number | null
+  exitReason?: string | null
   closedAt?: string | null
   marginUsed: number
   lots: number
   lotSize: number
   isOpen: boolean
+  stopLoss?: number | null
+  target?: number | null
   createdAt: string
 }
 
@@ -94,6 +100,10 @@ export function PositionsPage() {
   const [squaringOff, setSquaringOff] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('open')
   const [segmentFilter, setSegmentFilter] = useState<string>('all')
+  const [modifyPosition, setModifyPosition] = useState<PositionData | null>(null)
+  const [modifySl, setModifySl] = useState<string>('')
+  const [modifyTp, setModifyTp] = useState<string>('')
+  const [modifying, setModifying] = useState(false)
 
   // ─── Date Filter State ──────────────────────────────────────
   const [datePreset, setDatePreset] = useState<DatePreset>('today')
@@ -133,12 +143,42 @@ export function PositionsPage() {
     }
   }, [token, buildQueryString])
 
+  // ─── Check Triggers (SL/TP polling) ────────────────────
+  const checkTriggers = useCallback(async () => {
+    if (!token) return
+    try {
+      const res = await fetch('/api/trade/check-triggers', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.slTpTriggers && data.slTpTriggers.length > 0) {
+          for (const trigger of data.slTpTriggers) {
+            toast.warning(`SL/TP triggered for position ${trigger.positionId}`, {
+              description: `Reason: ${trigger.exitReason} @ ₹${trigger.currentPrice}`,
+            })
+          }
+          // Refresh positions after triggers
+          fetchPositions()
+        }
+      }
+    } catch {
+      // Silent fail for polling
+    }
+  }, [token, fetchPositions])
+
   useEffect(() => {
     fetchPositions()
-    // Auto-refresh every 30 seconds (reduced from 5s to cut DB load)
+    // Auto-refresh every 30 seconds
     const interval = setInterval(fetchPositions, 30000)
-    return () => clearInterval(interval)
-  }, [fetchPositions])
+    // Poll for SL/TP triggers every 30 seconds
+    const triggerInterval = setInterval(checkTriggers, 30000)
+    return () => {
+      clearInterval(interval)
+      clearInterval(triggerInterval)
+    }
+  }, [fetchPositions, checkTriggers])
 
   // ─── Square Off ───────────────────────────────────────────
   const handleSquareOff = async (positionId: string, symbol: string) => {
@@ -254,6 +294,7 @@ export function PositionsPage() {
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Entry Price</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">LTP</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">SL / TP</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">P&amp;L</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-center">Action</TableHead>
             </TableRow>
@@ -306,6 +347,25 @@ export function PositionsPage() {
                       {formatINR(pos.currentPrice)}
                     </TableCell>
                     <TableCell className="py-4 text-right">
+                      <div className="flex flex-col gap-0.5">
+                        {pos.stopLoss ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <ShieldAlert className="size-2.5 text-[#EB5B3C]" />
+                            <span className="text-[10px] font-mono text-[#EB5B3C]">₹{pos.stopLoss.toLocaleString('en-IN')}</span>
+                          </div>
+                        ) : null}
+                        {pos.target ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <Target className="size-2.5 text-[#00B386]" />
+                            <span className="text-[10px] font-mono text-[#00B386]">₹{pos.target.toLocaleString('en-IN')}</span>
+                          </div>
+                        ) : null}
+                        {!pos.stopLoss && !pos.target && (
+                          <span className="text-[10px] text-[#9ca3af]">—</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 text-right">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
                         isPositive
                           ? 'bg-[#00B386]/10 text-[#00B386]'
@@ -318,19 +378,33 @@ export function PositionsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="py-4 text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-lg border-[#00D09C]/40 px-3 py-1.5 text-[11px] font-semibold text-[#00D09C] bg-transparent hover:bg-[#00D09C] hover:text-white hover:border-[#00D09C] active:scale-95 transition-all"
-                        disabled={squaringOff === pos.id}
-                        onClick={() => handleSquareOff(pos.id, pos.symbol)}
-                      >
-                        {squaringOff === pos.id ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          'Square Off'
-                        )}
-                      </Button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-[#6b7280]/30 px-2 py-1.5 text-[10px] font-semibold text-[#6b7280] bg-transparent hover:bg-[#f5f7fa] hover:text-[#1a1a1a] active:scale-95 transition-all"
+                          onClick={() => {
+                            setModifyPosition(pos)
+                            setModifySl(pos.stopLoss ? String(pos.stopLoss) : '')
+                            setModifyTp(pos.target ? String(pos.target) : '')
+                          }}
+                        >
+                          <Pencil className="size-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-[#00D09C]/40 px-3 py-1.5 text-[11px] font-semibold text-[#00D09C] bg-transparent hover:bg-[#00D09C] hover:text-white hover:border-[#00D09C] active:scale-95 transition-all"
+                          disabled={squaringOff === pos.id}
+                          onClick={() => handleSquareOff(pos.id, pos.symbol)}
+                        >
+                          {squaringOff === pos.id ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            'Square Off'
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </motion.tr>
                 )
@@ -368,6 +442,7 @@ export function PositionsPage() {
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Entry Price</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Exit Price</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">P&amp;L Realized</TableHead>
+              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Exit Reason</TableHead>
               <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Duration</TableHead>
             </TableRow>
           </TableHeader>
@@ -418,6 +493,19 @@ export function PositionsPage() {
                     }`}>
                       {isPositive ? '+' : '-'}{formatINR(Math.abs(realizedPnl))}
                     </span>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    {pos.exitReason ? (
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                        pos.exitReason === 'STOP_LOSS' ? 'bg-[#EB5B3C]/10 text-[#EB5B3C]' :
+                        pos.exitReason === 'TARGET' ? 'bg-[#00B386]/10 text-[#00B386]' :
+                        'bg-[#6b7280]/10 text-[#6b7280]'
+                      }`}>
+                        {pos.exitReason.replace('_', ' ')}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-[#9ca3af]">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-xs text-[#6b7280] py-4">
                     <div className="flex items-center gap-1">
@@ -568,6 +656,94 @@ export function PositionsPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* ── Modify SL/TP Dialog ──────────────────────────────────────── */}
+      {modifyPosition && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setModifyPosition(null)} />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <h3 className="text-base font-bold text-[#1a1a1a] mb-1">Modify SL / Target</h3>
+            <p className="text-xs text-[#6b7280] mb-4">
+              {modifyPosition.symbol} • {modifyPosition.tradeDirection} • Entry: ₹{modifyPosition.entryPrice.toLocaleString('en-IN')}
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Stop Loss</label>
+                <input
+                  type="number"
+                  placeholder="Enter stop loss price"
+                  step="0.05"
+                  min="0"
+                  value={modifySl}
+                  onChange={(e) => setModifySl(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Target</label>
+                <input
+                  type="number"
+                  placeholder="Enter target price"
+                  step="0.05"
+                  min="0"
+                  value={modifyTp}
+                  onChange={(e) => setModifyTp(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <Button
+                variant="outline"
+                className="flex-1 h-10 rounded-xl text-sm font-semibold border-[#e5e7eb]"
+                onClick={() => setModifyPosition(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 h-10 rounded-xl text-sm font-bold text-white bg-[#00D09C] hover:bg-[#00b88a]"
+                disabled={modifying}
+                onClick={async () => {
+                  if (!token) return
+                  setModifying(true)
+                  try {
+                    const slVal = modifySl ? parseFloat(modifySl) : null
+                    const tpVal = modifyTp ? parseFloat(modifyTp) : null
+                    const res = await fetch('/api/trade/modify', {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        positionId: modifyPosition.id,
+                        stopLoss: slVal,
+                        target: tpVal,
+                      }),
+                    })
+                    const data = await res.json()
+                    if (res.ok && data.success) {
+                      toast.success('SL/Target updated successfully')
+                      setModifyPosition(null)
+                      fetchPositions()
+                    } else {
+                      toast.error(data.error || 'Failed to modify')
+                    }
+                  } catch {
+                    toast.error('Network error')
+                  } finally {
+                    setModifying(false)
+                  }
+                }}
+              >
+                {modifying ? <Loader2 className="size-4 animate-spin" /> : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

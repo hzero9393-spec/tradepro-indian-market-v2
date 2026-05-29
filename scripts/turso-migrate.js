@@ -631,6 +631,27 @@ async function migrate() {
       await addColumnIfMissing('sessions', alt.col, alt.sql);
     }
 
+    // ──── Orders table: Add SL/TP columns ────
+    const orderAlterations = [
+      { col: 'stopLoss', sql: 'ALTER TABLE orders ADD COLUMN stopLoss REAL' },
+      { col: 'target', sql: 'ALTER TABLE orders ADD COLUMN target REAL' },
+    ];
+
+    for (const alt of orderAlterations) {
+      await addColumnIfMissing('orders', alt.col, alt.sql);
+    }
+
+    // ──── Positions table: Add SL/TP/exitReason columns ────
+    const positionAlterations = [
+      { col: 'stopLoss', sql: 'ALTER TABLE positions ADD COLUMN stopLoss REAL' },
+      { col: 'target', sql: 'ALTER TABLE positions ADD COLUMN target REAL' },
+      { col: 'exitReason', sql: 'ALTER TABLE positions ADD COLUMN exitReason TEXT' },
+    ];
+
+    for (const alt of positionAlterations) {
+      await addColumnIfMissing('positions', alt.col, alt.sql);
+    }
+
     // ════════════════════════════════════════════════════════════════
     // CREATE INDEXES
     // ════════════════════════════════════════════════════════════════

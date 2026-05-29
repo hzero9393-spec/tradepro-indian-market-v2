@@ -33,6 +33,11 @@ import {
   CheckCircle2,
   XCircle,
   TrendingUp,
+  X,
+  Pencil,
+  ShieldAlert,
+  Target,
+  Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
@@ -60,6 +65,8 @@ interface OrderData {
   status: string
   optionType?: string | null
   strikePrice?: number | null
+  stopLoss?: number | null
+  target?: number | null
   rejectReason: string | null
   placedAt: string
   filledAt: string | null
@@ -122,6 +129,40 @@ export function OrdersPage() {
   const [loadingTrades, setLoadingTrades] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('open')
+
+  const [cancelling, setCancelling] = useState<string | null>(null)
+  const [modifyOrder, setModifyOrder] = useState<OrderData | null>(null)
+  const [modifyPrice, setModifyPrice] = useState<string>('')
+  const [modifySl, setModifySl] = useState<string>('')
+  const [modifyTp, setModifyTp] = useState<string>('')
+  const [modifying, setModifying] = useState(false)
+
+  // ─── Cancel Order ────────────────────────────────────────
+  const handleCancelOrder = async (orderId: string) => {
+    if (!token) return
+    setCancelling(orderId)
+    try {
+      const res = await fetch('/api/trade/cancel', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success('Order cancelled successfully')
+        fetchOrders()
+      } else {
+        toast.error(data.error || 'Failed to cancel order')
+      }
+    } catch {
+      toast.error('Network error')
+    } finally {
+      setCancelling(null)
+    }
+  }
 
   // ─── Date Filter State ──────────────────────────────────────
   const [datePreset, setDatePreset] = useState<DatePreset>('all')
@@ -208,7 +249,11 @@ export function OrdersPage() {
     [trades, dateFrom, dateTo]
   )
 
-  // ─── Split orders: All Orders and Trade History ──
+  // ─── Split orders: Pending vs All ──
+  const pendingOrders = useMemo(() =>
+    filteredOrders.filter(o => o.status === 'PENDING'),
+    [filteredOrders]
+  )
   const allOrders = filteredOrders // Show ALL orders (not just pending)
 
   // Stats (based on filtered data)
@@ -273,18 +318,130 @@ export function OrdersPage() {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Symbol</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Type</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Segment</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Fill Price</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Value</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Time</TableHead>
+      <div className="space-y-4">
+        {/* Pending Orders Section */}
+        {pendingOrders.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="size-2 rounded-full bg-[#f59e0b] animate-pulse" />
+              <h3 className="text-sm font-bold text-[#1a1a1a]">Pending Orders</h3>
+              <span className="text-[10px] bg-[#f59e0b]/10 text-[#f59e0b] px-2 py-0.5 rounded-full font-bold">{pendingOrders.length}</span>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-[#f59e0b]/20">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-b border-[#f59e0b]/10">
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Symbol</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Type</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Segment</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb] text-right">Price</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb] text-right">Qty</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">SL / TP</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Time</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb] text-center">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-[#f59e0b]/10">
+                  {pendingOrders.map((order) => {
+                    const isBuy = order.tradeDirection === 'BUY'
+                    return (
+                      <TableRow key={order.id} className="hover:bg-[#fffbeb]/50 transition-colors bg-[#fffbeb]/20">
+                        <TableCell className="py-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-[#1a1a1a]">{order.symbol}</span>
+                            {order.optionType && order.strikePrice && (
+                              <span className="text-[10px] text-[#6b7280]">{order.strikePrice} {order.optionType}</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${isBuy ? 'bg-[#00B386]/10 text-[#00B386]' : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'}`}>
+                            {isBuy ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
+                            {order.tradeDirection}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs text-[#6b7280] py-3">{order.segment}</TableCell>
+                        <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-3">
+                          {formatINR(order.price)}
+                        </TableCell>
+                        <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-3">
+                          {order.quantity}
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex flex-col gap-0.5">
+                            {order.stopLoss ? (
+                              <div className="flex items-center gap-1">
+                                <ShieldAlert className="size-2.5 text-[#EB5B3C]" />
+                                <span className="text-[10px] font-mono text-[#EB5B3C]">₹{order.stopLoss.toLocaleString('en-IN')}</span>
+                              </div>
+                            ) : null}
+                            {order.target ? (
+                              <div className="flex items-center gap-1">
+                                <Target className="size-2.5 text-[#00B386]" />
+                                <span className="text-[10px] font-mono text-[#00B386]">₹{order.target.toLocaleString('en-IN')}</span>
+                              </div>
+                            ) : null}
+                            {!order.stopLoss && !order.target && (
+                              <span className="text-[10px] text-[#9ca3af]">—</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-1 text-xs text-[#6b7280]">
+                            <Clock className="size-3" />
+                            {formatShortDateTime(order.placedAt)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg border-[#6b7280]/30 px-2 py-1 text-[10px] font-semibold text-[#6b7280] bg-transparent hover:bg-white hover:text-[#1a1a1a] active:scale-95 transition-all"
+                              onClick={() => {
+                                setModifyOrder(order)
+                                setModifyPrice(String(order.price))
+                                setModifySl(order.stopLoss ? String(order.stopLoss) : '')
+                                setModifyTp(order.target ? String(order.target) : '')
+                              }}
+                            >
+                              <Pencil className="size-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg border-[#EB5B3C]/30 px-2 py-1 text-[10px] font-semibold text-[#EB5B3C] bg-transparent hover:bg-[#EB5B3C] hover:text-white hover:border-[#EB5B3C] active:scale-95 transition-all"
+                              disabled={cancelling === order.id}
+                              onClick={() => handleCancelOrder(order.id)}
+                            >
+                              {cancelling === order.id ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" />}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        {/* All Orders Table */}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Symbol</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Type</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Segment</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Fill Price</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Value</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">SL / TP</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Time</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#e5e7eb]">
@@ -328,6 +485,25 @@ export function OrdersPage() {
                     {formatINR(order.totalValue)}
                   </TableCell>
                   <TableCell className="py-4">
+                    <div className="flex flex-col gap-0.5">
+                      {order.stopLoss ? (
+                        <div className="flex items-center gap-1">
+                          <ShieldAlert className="size-2.5 text-[#EB5B3C]" />
+                          <span className="text-[10px] font-mono text-[#EB5B3C]">₹{order.stopLoss.toLocaleString('en-IN')}</span>
+                        </div>
+                      ) : null}
+                      {order.target ? (
+                        <div className="flex items-center gap-1">
+                          <Target className="size-2.5 text-[#00B386]" />
+                          <span className="text-[10px] font-mono text-[#00B386]">₹{order.target.toLocaleString('en-IN')}</span>
+                        </div>
+                      ) : null}
+                      {!order.stopLoss && !order.target && (
+                        <span className="text-[10px] text-[#9ca3af]">—</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4">
                     <StatusBadge status={order.status} />
                   </TableCell>
                   <TableCell className="py-4">
@@ -336,11 +512,40 @@ export function OrdersPage() {
                       {formatShortDateTime(order.placedAt)}
                     </div>
                   </TableCell>
+                  <TableCell className="py-4 text-center">
+                    {order.status === 'PENDING' && (
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-[#6b7280]/30 px-2 py-1.5 text-[10px] font-semibold text-[#6b7280] bg-transparent hover:bg-[#f5f7fa] hover:text-[#1a1a1a] active:scale-95 transition-all"
+                          onClick={() => {
+                            setModifyOrder(order)
+                            setModifyPrice(String(order.price))
+                            setModifySl(order.stopLoss ? String(order.stopLoss) : '')
+                            setModifyTp(order.target ? String(order.target) : '')
+                          }}
+                        >
+                          <Pencil className="size-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-[#EB5B3C]/30 px-2 py-1.5 text-[10px] font-semibold text-[#EB5B3C] bg-transparent hover:bg-[#EB5B3C] hover:text-white hover:border-[#EB5B3C] active:scale-95 transition-all"
+                          disabled={cancelling === order.id}
+                          onClick={() => handleCancelOrder(order.id)}
+                        >
+                          {cancelling === order.id ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" />}
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
                 </TableRow>
               )
             })}
           </TableBody>
         </Table>
+      </div>
       </div>
     )
   }
@@ -558,6 +763,108 @@ export function OrdersPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* ── Modify Order Dialog ──────────────────────────────────────── */}
+      {modifyOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setModifyOrder(null)} />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <h3 className="text-base font-bold text-[#1a1a1a] mb-1">Modify Order</h3>
+            <p className="text-xs text-[#6b7280] mb-4">
+              {modifyOrder.symbol} • {modifyOrder.tradeDirection} • {modifyOrder.orderType}
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Price</label>
+                <input
+                  type="number"
+                  placeholder="Order price"
+                  step="0.05"
+                  min="0"
+                  value={modifyPrice}
+                  onChange={(e) => setModifyPrice(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Stop Loss</label>
+                <input
+                  type="number"
+                  placeholder="Enter stop loss price"
+                  step="0.05"
+                  min="0"
+                  value={modifySl}
+                  onChange={(e) => setModifySl(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Target</label>
+                <input
+                  type="number"
+                  placeholder="Enter target price"
+                  step="0.05"
+                  min="0"
+                  value={modifyTp}
+                  onChange={(e) => setModifyTp(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <Button
+                variant="outline"
+                className="flex-1 h-10 rounded-xl text-sm font-semibold border-[#e5e7eb]"
+                onClick={() => setModifyOrder(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 h-10 rounded-xl text-sm font-bold text-white bg-[#00D09C] hover:bg-[#00b88a]"
+                disabled={modifying}
+                onClick={async () => {
+                  if (!token) return
+                  setModifying(true)
+                  try {
+                    const priceVal = modifyPrice ? parseFloat(modifyPrice) : undefined
+                    const slVal = modifySl ? parseFloat(modifySl) : null
+                    const tpVal = modifyTp ? parseFloat(modifyTp) : null
+                    const res = await fetch('/api/trade/modify', {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        orderId: modifyOrder.id,
+                        price: priceVal,
+                        stopLoss: slVal,
+                        target: tpVal,
+                      }),
+                    })
+                    const data = await res.json()
+                    if (res.ok && data.success) {
+                      toast.success('Order modified successfully')
+                      setModifyOrder(null)
+                      fetchOrders()
+                    } else {
+                      toast.error(data.error || 'Failed to modify order')
+                    }
+                  } catch {
+                    toast.error('Network error')
+                  } finally {
+                    setModifying(false)
+                  }
+                }}
+              >
+                {modifying ? <Loader2 className="size-4 animate-spin" /> : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -36,6 +36,9 @@ export interface TradeConfirmData {
   lots?: number
   lotSize?: number
   expiryDate?: string
+  // Risk Management
+  stopLoss?: number
+  target?: number
 }
 
 type ModalState = 'confirming' | 'executing' | 'success' | 'error'
@@ -386,6 +389,94 @@ export function TradeConfirmModal({
                     </div>
                   </div>
 
+                  {/* Stop Loss & Target Inputs */}
+                  {tradeData.orderType !== 'MARKET' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Stop Loss</label>
+                        <input
+                          type="number"
+                          placeholder="₹0.00"
+                          step="0.05"
+                          min="0"
+                          value={tradeData.stopLoss || ''}
+                          onChange={(e) => {
+                            const val = e.target.value ? parseFloat(e.target.value) : undefined
+                            if (val !== undefined && val > 0) {
+                              tradeData.stopLoss = val
+                            } else {
+                              tradeData.stopLoss = undefined
+                            }
+                          }}
+                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Target</label>
+                        <input
+                          type="number"
+                          placeholder="₹0.00"
+                          step="0.05"
+                          min="0"
+                          value={tradeData.target || ''}
+                          onChange={(e) => {
+                            const val = e.target.value ? parseFloat(e.target.value) : undefined
+                            if (val !== undefined && val > 0) {
+                              tradeData.target = val
+                            } else {
+                              tradeData.target = undefined
+                            }
+                          }}
+                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SL/Target Summary for MARKET orders */}
+                  {tradeData.orderType === 'MARKET' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Stop Loss (optional)</label>
+                        <input
+                          type="number"
+                          placeholder="₹0.00"
+                          step="0.05"
+                          min="0"
+                          value={tradeData.stopLoss || ''}
+                          onChange={(e) => {
+                            const val = e.target.value ? parseFloat(e.target.value) : undefined
+                            if (val !== undefined && val > 0) {
+                              tradeData.stopLoss = val
+                            } else {
+                              tradeData.stopLoss = undefined
+                            }
+                          }}
+                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1.5 block">Target (optional)</label>
+                        <input
+                          type="number"
+                          placeholder="₹0.00"
+                          step="0.05"
+                          min="0"
+                          value={tradeData.target || ''}
+                          onChange={(e) => {
+                            const val = e.target.value ? parseFloat(e.target.value) : undefined
+                            if (val !== undefined && val > 0) {
+                              tradeData.target = val
+                            } else {
+                              tradeData.target = undefined
+                            }
+                          }}
+                          className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {/* Cost Breakdown */}
                   <div className="border border-[#e5e7eb] rounded-xl p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
@@ -438,6 +529,26 @@ export function TradeConfirmModal({
                           You need {formatINR(totalCost - tradeData.availableBalance)} more to place this order.
                         </p>
                       </div>
+                    </div>
+                  )}
+
+                  {/* SL/TP Summary */}
+                  {(tradeData.stopLoss || tradeData.target) && (
+                    <div className="flex items-center gap-4 p-3 rounded-xl bg-[#f5f7fa] border border-[#e5e7eb]">
+                      {tradeData.stopLoss && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="size-2 rounded-full bg-[#EB5B3C]" />
+                          <span className="text-[10px] uppercase tracking-wider text-[#6b7280]">SL</span>
+                          <span className="text-xs font-mono font-semibold text-[#EB5B3C]">₹{tradeData.stopLoss.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      {tradeData.target && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="size-2 rounded-full bg-[#00B386]" />
+                          <span className="text-[10px] uppercase tracking-wider text-[#6b7280]">TP</span>
+                          <span className="text-xs font-mono font-semibold text-[#00B386]">₹{tradeData.target.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
