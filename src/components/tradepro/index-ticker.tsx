@@ -93,23 +93,22 @@ export function IndexTicker() {
                 <button
                   key={idx.symbol}
                   type="button"
-                  className="flex items-center gap-1.5 shrink-0 cursor-pointer hover:bg-[#f0f2f5] active:bg-[#e5e7eb] px-3 py-1.5 rounded-lg transition-all duration-150 group"
+                  className="flex flex-col items-start shrink-0 px-3 py-1 cursor-pointer hover:bg-[#f0f2f5] active:bg-[#e5e7eb] rounded-lg transition-all duration-150 group"
                   onClick={() => navigateToIndex(idx.symbol)}
                   title={`View ${idx.name} details`}
                 >
-                  <span className="text-[11px] font-semibold tracking-wide group-hover:text-[#1a1a1a]" style={{ color: '#4a4a4a' }}>
-                    {idx.symbol}
-                  </span>
-                  <span className="text-[12px] font-semibold font-tabular" style={{ color: '#1a1a1a' }}>
-                    {idx.currentPrice.toLocaleString('en-IN')}
-                  </span>
-                  <span
-                    className="flex items-center gap-0.5 text-[11px] font-semibold font-tabular"
-                    style={{ color: isPositive ? '#00B386' : '#eb5b3c' }}
-                  >
-                    {isPositive ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-                    {isPositive ? '+' : ''}{formatPercent(idx.changePercent)}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-[#1a1a1a]">{idx.symbol}</span>
+                    <span className="text-[13px] font-bold font-tabular text-[#1a1a1a]">{idx.currentPrice.toLocaleString('en-IN')}</span>
+                    <span
+                      className="flex items-center gap-0.5 text-[11px] font-semibold font-tabular"
+                      style={{ color: isPositive ? '#00B386' : '#eb5b3c' }}
+                    >
+                      {isPositive ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
+                      {isPositive ? '+' : ''}{formatPercent(idx.changePercent)}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-[#9ca3af] leading-tight">{idx.name}</span>
                 </button>
               )
             })}

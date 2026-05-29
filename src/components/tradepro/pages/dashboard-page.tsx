@@ -25,6 +25,7 @@ import {
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { formatPrice } from '@/lib/format'
+import { NotificationBanner } from '@/components/tradepro/ui/notification-banner'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -283,6 +284,9 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
+
+      {/* ═══ NOTIFICATION BANNER ═══════════════════════════════════════════ */}
+      <NotificationBanner />
 
       {/* ═══ TAB BAR ═══════════════════════════════════════════════════════ */}
       <div className="sticky top-[96px] md:top-[96px] z-30 bg-white border-b border-[#e5e7eb] px-4 sm:px-6 lg:px-8">

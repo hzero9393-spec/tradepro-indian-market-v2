@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import {
   Card,
   CardContent,
@@ -119,6 +120,7 @@ export function OrdersPage() {
   const [trades, setTrades] = useState<TradeData[]>([])
   const [loadingOrders, setLoadingOrders] = useState(true)
   const [loadingTrades, setLoadingTrades] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('open')
 
   // ─── Date Filter State ──────────────────────────────────────
@@ -141,15 +143,23 @@ export function OrdersPage() {
   const fetchOrders = useCallback(async () => {
     if (!token) { setLoadingOrders(false); return }
     try {
+      setFetchError(null)
       const res = await fetch(buildQueryString('/api/trade/orders'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         const json = await res.json()
         setOrders(json.data || [])
+      } else {
+        const json = await res.json().catch(() => ({}))
+        const errMsg = json.error || `Failed to fetch orders (${res.status})`
+        setFetchError(errMsg)
+        toast.error(errMsg)
       }
     } catch {
-      // silent
+      const errMsg = 'Network error fetching orders. Please check your connection.'
+      setFetchError(errMsg)
+      toast.error(errMsg)
     } finally {
       setLoadingOrders(false)
     }
@@ -165,9 +175,12 @@ export function OrdersPage() {
       if (res.ok) {
         const json = await res.json()
         setTrades(json.data || [])
+      } else {
+        const json = await res.json().catch(() => ({}))
+        console.error('[OrdersPage] Trades fetch failed:', res.status, json.error)
       }
     } catch {
-      // silent
+      console.error('[OrdersPage] Trades fetch network error')
     } finally {
       setLoadingTrades(false)
     }
@@ -176,6 +189,12 @@ export function OrdersPage() {
   useEffect(() => {
     fetchOrders()
     fetchTrades()
+    // Auto-refresh every 30 seconds to show new orders after trades
+    const interval = setInterval(() => {
+      fetchOrders()
+      fetchTrades()
+    }, 30000)
+    return () => clearInterval(interval)
   }, [fetchOrders, fetchTrades])
 
   // ─── Client-side date filtering (for data already fetched) ──
@@ -219,10 +238,27 @@ export function OrdersPage() {
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
             <FileText className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-[#1a1a1a] font-semibold text-sm">No orders yet</p>
-          <p className="text-[#6b7280] text-xs mt-1.5">
-            Your orders will appear here after you place a trade
-          </p>
+          {fetchError ? (
+            <>
+              <p className="text-[#EB5B3C] font-semibold text-sm">Failed to load orders</p>
+              <p className="text-[#6b7280] text-xs mt-1.5">{fetchError}</p>
+              <Button
+                size="sm"
+                className="mt-5 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
+                onClick={() => { fetchOrders(); fetchTrades(); }}
+              >
+                Retry
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-[#1a1a1a] font-semibold text-sm">No orders yet</p>
+              <p className="text-[#6b7280] text-xs mt-1.5">
+                Your orders will appear here after you place a trade
+              </p>
+            </>
+          )}
+          {!fetchError && (
           <Button
             size="sm"
             className="mt-5 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
@@ -231,6 +267,7 @@ export function OrdersPage() {
             <TrendingUp className="size-3.5" />
             Place Order
           </Button>
+          )}
         </div>
       )
     }

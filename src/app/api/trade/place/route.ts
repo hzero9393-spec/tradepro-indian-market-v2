@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
               totalValue,
               brokerage,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -235,6 +236,7 @@ export async function POST(request: NextRequest) {
               totalValue,
               brokerage,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -374,6 +376,7 @@ export async function POST(request: NextRequest) {
               marginRequired,
               expiryDate: (future as Record<string, unknown>).expiryDate as Date,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -496,6 +499,7 @@ export async function POST(request: NextRequest) {
               marginRequired,
               expiryDate: (future as Record<string, unknown>).expiryDate as Date,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -675,6 +679,7 @@ export async function POST(request: NextRequest) {
               totalValue,
               brokerage,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -815,6 +820,7 @@ export async function POST(request: NextRequest) {
                 totalValue,
                 brokerage,
                 status: 'FILLED',
+                placedAt: new Date(),
                 filledAt: new Date(),
               }
             })
@@ -922,6 +928,7 @@ export async function POST(request: NextRequest) {
               brokerage,
               marginRequired,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })

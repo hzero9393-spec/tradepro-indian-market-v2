@@ -37,6 +37,7 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
+import { useNotifications } from '@/lib/use-notifications'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole, formatLargeNumber, formatVolume, calculateBrokerage } from '@/lib/format'
 import { StockLogo } from '@/components/tradepro/ui/stock-logo'
@@ -336,6 +337,7 @@ export function StockOverviewPage() {
   const { token, user } = useAuthStore()
   const { selectedStockSymbol, setCurrentPage, navigateToStock } = useAppStore()
   const { showTradeSuccess } = useTradeSuccess()
+  const { notify } = useNotifications()
 
   // State
   const [stockDetail, setStockDetail] = useState<StockDetail | null>(null)
@@ -613,6 +615,14 @@ export function StockOverviewPage() {
           totalValue: data.order?.totalValue,
           brokerage: data.order?.brokerage,
         })
+
+        // Fire a direct browser push notification as well
+        notify(`Trade Executed: ${stockDetail.symbol}`, {
+          body: `${direction} ${quantity} x ${stockDetail.symbol} at ₹${fillPrice.toLocaleString('en-IN')}`,
+          tag: `trade-${stockDetail.symbol}-${Date.now()}`,
+          data: { type: 'TRADE_EXECUTED', link: '/positions' },
+        })
+
         setShowTradePanel(false)
         return {
           success: true,
@@ -866,16 +876,15 @@ export function StockOverviewPage() {
               </Card>
 
               {/* ─── TradingView Open Button ──────────────────────────── */}
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] text-[#9ca3af] font-medium">Chart powered by TradingView</span>
+              <div className="flex items-center justify-center pt-2">
                 <a
                   href={`https://www.tradingview.com/chart/?symbol=NSE:${selectedStockSymbol}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#00D09C]/30 text-[12px] font-semibold text-[#00D09C] hover:bg-[#00D09C]/5 hover:border-[#00D09C]/50 transition-all duration-200"
+                  className="inline-flex items-center justify-center size-9 rounded-xl bg-[#00D09C]/10 border border-[#00D09C]/20 text-[#00D09C] hover:bg-[#00D09C] hover:text-white hover:border-[#00D09C] transition-all duration-200 group"
+                  title="Open in TradingView for detailed analysis"
                 >
-                  <Maximize2 className="size-3.5" />
-                  Open in TradingView
+                  <Maximize2 className="size-4 group-hover:scale-110 transition-transform" />
                 </a>
               </div>
 

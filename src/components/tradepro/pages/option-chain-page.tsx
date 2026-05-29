@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuthStore } from '@/lib/auth-store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
+import { useNotifications } from '@/lib/use-notifications'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 
@@ -139,6 +140,7 @@ function QuickTradeModal({
 }) {
   const { token } = useAuthStore()
   const { showTradeSuccess } = useTradeSuccess()
+  const { notify } = useNotifications()
   const [lots, setLots] = useState(1)
   const [direction, setDirection] = useState<'BUY' | 'SELL'>('BUY')
   const [placing, setPlacing] = useState(false)
@@ -196,6 +198,14 @@ function QuickTradeModal({
           totalValue: data.order?.totalValue,
           brokerage: data.order?.brokerage,
         })
+
+        // Fire a direct browser push notification as well
+        notify(`${side === 'CE' ? 'Call' : 'Put'} Option Trade: ${instrument} ₹${row.strike.toLocaleString()}`, {
+          body: `${direction} ${lots} Lot${lots > 1 ? 's' : ''} × ${side} ₹${row.strike.toLocaleString()} at ₹${ltp.toFixed(2)}`,
+          tag: `options-${instrument}-${row.strike}-${side}-${Date.now()}`,
+          data: { type: 'TRADE_EXECUTED', link: '/positions' },
+        })
+
         onClose()
       } else {
         toast.error(data.error || 'Failed to place order')
@@ -209,7 +219,7 @@ function QuickTradeModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white border-[#e5e7eb] text-[#1a1a1a] p-0 overflow-hidden rounded-xl">
+      <DialogContent className="sm:max-w-md bg-[#1a1d27] border-[#2a2d3a] text-[#e5e7eb] p-0 overflow-hidden rounded-xl">
         {/* Header with CE/PE color */}
         <div className={cn(
           'px-5 py-4',
@@ -244,7 +254,7 @@ function QuickTradeModal({
                 'py-3 rounded-lg font-bold text-sm transition-all',
                 direction === 'BUY'
                   ? 'bg-[#00d09c] text-white shadow-md shadow-[#00d09c]/25'
-                  : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#e5e7eb]'
+                  : 'bg-[#252836] text-[#9ca3af] hover:bg-[#2a2d3a]'
               )}
             >
               BUY
@@ -255,7 +265,7 @@ function QuickTradeModal({
                 'py-3 rounded-lg font-bold text-sm transition-all',
                 direction === 'SELL'
                   ? 'bg-[#eb5b3c] text-white shadow-md shadow-[#eb5b3c]/25'
-                  : 'bg-[#f5f7fa] text-[#6b7280] hover:bg-[#e5e7eb]'
+                  : 'bg-[#252836] text-[#9ca3af] hover:bg-[#2a2d3a]'
               )}
             >
               SELL
@@ -264,10 +274,10 @@ function QuickTradeModal({
 
           {/* Lots Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Lots</label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Lots</label>
             <div className="flex items-center gap-3">
               <button
-                className="size-10 rounded-lg border border-[#e5e7eb] flex items-center justify-center text-[#6b7280] hover:bg-[#f5f7fa] active:bg-[#e5e7eb] transition-colors"
+                className="size-10 rounded-lg border border-[#2a2d3a] flex items-center justify-center text-[#9ca3af] hover:bg-[#252836] active:bg-[#2a2d3a] transition-colors"
                 onClick={() => setLots(Math.max(1, lots - 1))}
               >
                 <Minus className="size-4" />
@@ -276,10 +286,10 @@ function QuickTradeModal({
                 type="number"
                 value={lots}
                 onChange={(e) => setLots(Math.max(1, parseInt(e.target.value) || 1))}
-                className="text-center font-mono font-tabular text-lg font-bold bg-white border-[#e5e7eb] h-10"
+                className="text-center font-mono font-tabular text-lg font-bold bg-[#1a1d27] border-[#2a2d3a] h-10"
               />
               <button
-                className="size-10 rounded-lg border border-[#e5e7eb] flex items-center justify-center text-[#6b7280] hover:bg-[#f5f7fa] active:bg-[#e5e7eb] transition-colors"
+                className="size-10 rounded-lg border border-[#2a2d3a] flex items-center justify-center text-[#9ca3af] hover:bg-[#252836] active:bg-[#2a2d3a] transition-colors"
                 onClick={() => setLots(lots + 1)}
               >
                 <Plus className="size-4" />
@@ -288,26 +298,26 @@ function QuickTradeModal({
           </div>
 
           {/* Order Summary */}
-          <div className="bg-[#f9fafb] rounded-lg p-4 space-y-2.5 text-sm border border-[#f0f0f0]">
+          <div className="bg-[#252836] rounded-lg p-4 space-y-2.5 text-sm border border-[#2a2d3a]">
             <div className="flex justify-between items-center">
-              <span className="text-[#6b7280] text-xs">Lot Size</span>
-              <span className="font-mono font-tabular font-medium text-[#1a1a1a]">{lotSize}</span>
+              <span className="text-[#9ca3af] text-xs">Lot Size</span>
+              <span className="font-mono font-tabular font-medium text-[#e5e7eb]">{lotSize}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[#6b7280] text-xs">Total Qty</span>
-              <span className="font-mono font-tabular font-medium text-[#1a1a1a]">{totalQty}</span>
+              <span className="text-[#9ca3af] text-xs">Total Qty</span>
+              <span className="font-mono font-tabular font-medium text-[#e5e7eb]">{totalQty}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[#6b7280] text-xs">IV</span>
-              <span className="font-mono font-tabular font-medium text-[#1a1a1a]">{iv.toFixed(1)}%</span>
+              <span className="text-[#9ca3af] text-xs">IV</span>
+              <span className="font-mono font-tabular font-medium text-[#e5e7eb]">{iv.toFixed(1)}%</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[#6b7280] text-xs">Spot Price</span>
-              <span className="font-mono font-tabular font-medium text-[#1a1a1a]">₹{spotPrice.toLocaleString()}</span>
+              <span className="text-[#9ca3af] text-xs">Spot Price</span>
+              <span className="font-mono font-tabular font-medium text-[#e5e7eb]">₹{spotPrice.toLocaleString()}</span>
             </div>
-            <div className="border-t border-[#e5e7eb] pt-2.5 flex justify-between items-center">
-              <span className="text-[#6b7280] font-semibold text-xs">Approx. Margin</span>
-              <span className="font-mono font-tabular font-bold text-[#1a1a1a]">₹{marginRequired.toLocaleString()}</span>
+            <div className="border-t border-[#2a2d3a] pt-2.5 flex justify-between items-center">
+              <span className="text-[#9ca3af] font-semibold text-xs">Approx. Margin</span>
+              <span className="font-mono font-tabular font-bold text-[#e5e7eb]">₹{marginRequired.toLocaleString()}</span>
             </div>
           </div>
 
@@ -344,40 +354,40 @@ function OptionChainSkeleton() {
       {/* Stats Skeleton */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <Card key={i} className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl shadow-sm">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-2">
-                <Skeleton className="h-3 w-20 bg-[#f0f0f5]" />
-                <Skeleton className="size-7 rounded-lg bg-[#f0f0f5]" />
+                <Skeleton className="h-3 w-20 bg-[#252836]" />
+                <Skeleton className="size-7 rounded-lg bg-[#252836]" />
               </div>
-              <Skeleton className="h-7 w-24 bg-[#f0f0f5]" />
+              <Skeleton className="h-7 w-24 bg-[#252836]" />
             </CardContent>
           </Card>
         ))}
       </div>
       {/* Table Skeleton */}
-      <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+      <Card className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl shadow-sm">
         <CardContent className="p-0">
           <div className="p-4">
-            <Skeleton className="h-6 w-48 bg-[#f0f0f5] mb-3" />
+            <Skeleton className="h-6 w-48 bg-[#252836] mb-3" />
             <div className="flex gap-2 mb-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-8 w-20 rounded-lg bg-[#f0f0f5]" />
+                <Skeleton key={i} className="h-8 w-20 rounded-lg bg-[#252836]" />
               ))}
             </div>
           </div>
           <div className="space-y-0">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-2 px-4 py-2.5 border-t border-[#f5f5f5]">
-                <Skeleton className="h-3 w-12 bg-[#f0f0f5]" />
-                <Skeleton className="h-3 w-10 bg-[#f0f0f5]" />
-                <Skeleton className="h-3 w-14 bg-[#f0f0f5]" />
-                <Skeleton className="h-3 w-10 bg-[#f0f0f5]" />
-                <Skeleton className="h-3 w-12 bg-[#f0f0f5] mx-auto" />
-                <Skeleton className="h-3 w-10 bg-[#f0f0f5]" />
-                <Skeleton className="h-3 w-14 bg-[#f0f0f5]" />
-                <Skeleton className="h-3 w-10 bg-[#f0f0f5]" />
-                <Skeleton className="h-3 w-12 bg-[#f0f0f5]" />
+              <div key={i} className="flex items-center gap-2 px-4 py-2.5 border-t border-[#2a2d3a]">
+                <Skeleton className="h-3 w-12 bg-[#252836]" />
+                <Skeleton className="h-3 w-10 bg-[#252836]" />
+                <Skeleton className="h-3 w-14 bg-[#252836]" />
+                <Skeleton className="h-3 w-10 bg-[#252836]" />
+                <Skeleton className="h-3 w-12 bg-[#252836] mx-auto" />
+                <Skeleton className="h-3 w-10 bg-[#252836]" />
+                <Skeleton className="h-3 w-14 bg-[#252836]" />
+                <Skeleton className="h-3 w-10 bg-[#252836]" />
+                <Skeleton className="h-3 w-12 bg-[#252836]" />
               </div>
             ))}
           </div>
@@ -536,12 +546,12 @@ export function OptionChainPage() {
   const stats = [
     { label: 'Spot Price', value: spotPrice > 0 ? `₹${spotPrice.toLocaleString()}` : '—', icon: Target, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
     { label: 'PCR (OI)', value: pcr > 0 ? pcr.toFixed(2) : '—', icon: BarChart3, borderColor: pcr > 1 ? 'border-l-[#00B386]' : 'border-l-[#EB5B3C]', iconBg: pcr > 1 ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10', iconColor: pcr > 1 ? 'text-[#00B386]' : 'text-[#EB5B3C]' },
-    { label: 'Max Pain', value: apiMaxPain > 0 ? `₹${apiMaxPain.toLocaleString()}` : '—', icon: IndianRupee, borderColor: 'border-l-[#6b7280]', iconBg: 'bg-[#6b7280]/10', iconColor: 'text-[#6b7280]' },
+    { label: 'Max Pain', value: apiMaxPain > 0 ? `₹${apiMaxPain.toLocaleString()}` : '—', icon: IndianRupee, borderColor: 'border-l-[#9ca3af]', iconBg: 'bg-[#9ca3af]/10', iconColor: 'text-[#9ca3af]' },
     { label: 'Total OI (L)', value: data.length > 0 ? `${(totalCEOI + totalPEOI).toFixed(0)}` : '—', icon: Activity, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
   ]
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="min-h-screen bg-[#0f1117] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* ── Page Header ─────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -554,8 +564,8 @@ export function OptionChainPage() {
             <GitBranch className="size-5 text-[#00B386]" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">Options Chain</h1>
-            <p className="text-[#6b7280] mt-0.5 text-sm">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#e5e7eb] tracking-tight">Options Chain</h1>
+            <p className="text-[#9ca3af] mt-0.5 text-sm">
               Analyze call &amp; put options by strike price. Click on LTP to place a quick trade.
             </p>
           </div>
@@ -565,7 +575,7 @@ export function OptionChainPage() {
           size="sm"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="gap-2 border-[#e5e7eb] text-[#6b7280] hover:text-[#1a1a1a] hover:border-[#00D09C] hover:bg-[#00D09C]/5 rounded-lg font-semibold"
+          className="gap-2 border-[#2a2d3a] text-[#9ca3af] hover:text-[#e5e7eb] hover:border-[#00D09C] hover:bg-[#00D09C]/5 rounded-lg font-semibold"
         >
           <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -582,17 +592,17 @@ export function OptionChainPage() {
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className={`bg-white border border-[#e5e7eb] border-l-4 ${stat.borderColor} rounded-xl shadow-sm`}>
+            <Card key={stat.label} className={`bg-[#1a1d27] border border-[#2a2d3a] border-l-4 ${stat.borderColor} rounded-xl shadow-sm`}>
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">
                     {stat.label}
                   </p>
                   <div className={`size-7 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
                     <Icon className={`size-3.5 ${stat.iconColor}`} />
                   </div>
                 </div>
-                <p className="text-lg font-bold font-mono font-tabular text-[#1a1a1a]">
+                <p className="text-lg font-bold font-mono font-tabular text-[#e5e7eb]">
                   {stat.value}
                 </p>
               </CardContent>
@@ -607,7 +617,7 @@ export function OptionChainPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
       >
-        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+        <Card className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl shadow-sm">
           <CardContent className="p-4 space-y-3">
             {/* Instrument Selector */}
             <div className="flex flex-wrap items-center gap-2">
@@ -619,7 +629,7 @@ export function OptionChainPage() {
                     'px-4 py-2 rounded-lg text-sm font-semibold transition-all',
                     instrument === inst
                       ? 'bg-[#00D09C] text-white shadow-sm shadow-[#00D09C]/20'
-                      : 'bg-[#f5f7fa] text-[#6b7280] border border-[#e5e7eb] hover:border-[#00D09C] hover:text-[#1a1a1a]'
+                      : 'bg-[#252836] text-[#9ca3af] border border-[#2a2d3a] hover:border-[#00D09C] hover:text-[#e5e7eb]'
                   )}
                 >
                   {inst}
@@ -629,7 +639,7 @@ export function OptionChainPage() {
 
             {/* Expiry Selector */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280] shrink-0">Expiry:</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] shrink-0">Expiry:</span>
               {expiries.map((exp, idx) => (
                 <button
                   key={exp.label}
@@ -638,7 +648,7 @@ export function OptionChainPage() {
                     'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5',
                     expiryIdx === idx
                       ? 'bg-[#00D09C] text-white shadow-sm'
-                      : 'bg-[#f5f7fa] text-[#6b7280] border border-[#e5e7eb] hover:border-[#00D09C]'
+                      : 'bg-[#252836] text-[#9ca3af] border border-[#2a2d3a] hover:border-[#00D09C]'
                   )}
                 >
                   {exp.label}
@@ -646,7 +656,7 @@ export function OptionChainPage() {
                     'text-[8px] px-1 py-0 h-4 font-bold border-0',
                     expiryIdx === idx
                       ? 'bg-white/20 text-white'
-                      : exp.type === 'Weekly' ? 'bg-[#00D09C]/10 text-[#00D09C]' : 'bg-[#6b7280]/10 text-[#6b7280]'
+                      : exp.type === 'Weekly' ? 'bg-[#00D09C]/10 text-[#00D09C]' : 'bg-[#9ca3af]/10 text-[#9ca3af]'
                   )}>
                     {exp.type}
                   </Badge>
@@ -666,13 +676,13 @@ export function OptionChainPage() {
         {loading ? (
           <OptionChainSkeleton />
         ) : data.length === 0 ? (
-          <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <Card className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl shadow-sm">
             <CardContent className="py-16 flex flex-col items-center justify-center">
-              <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
-                <CandlestickChart className="size-7 text-[#6b7280]/40" />
+              <div className="size-16 rounded-full bg-[#252836] flex items-center justify-center mb-4">
+                <CandlestickChart className="size-7 text-[#9ca3af]/40" />
               </div>
-              <p className="text-[#1a1a1a] font-semibold text-sm">No options data available</p>
-              <p className="text-[#6b7280] text-xs mt-1.5">
+              <p className="text-[#e5e7eb] font-semibold text-sm">No options data available</p>
+              <p className="text-[#9ca3af] text-xs mt-1.5">
                 Data for {instrument} will appear here when available
               </p>
               <Button
@@ -687,7 +697,7 @@ export function OptionChainPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
+          <Card className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto custom-scrollbar max-h-[calc(100vh-420px)] overflow-y-auto">
               <table className="w-full text-xs">
                 <thead className="sticky top-0 z-10">
@@ -703,12 +713,12 @@ export function OptionChainPage() {
                       PUTS
                     </th>
                   </tr>
-                  <tr className="bg-[#f9fafb] border-b border-[#e5e7eb] text-[#6b7280]">
+                  <tr className="bg-[#252836] border-b border-[#2a2d3a] text-[#9ca3af]">
                     <th className="px-2 py-2 text-right font-medium">OI (L)</th>
                     <th className="px-2 py-2 text-right font-medium">Vol</th>
                     <th className="px-2 py-2 text-right font-medium">LTP</th>
                     <th className="px-2 py-2 text-right font-medium">Chg%</th>
-                    <th className="px-2 py-2 text-center font-bold bg-[#f3f4f6] border-x border-[#e5e7eb] text-[#1a1a1a]">₹</th>
+                    <th className="px-2 py-2 text-center font-bold bg-[#252836] border-x border-[#2a2d3a] text-[#e5e7eb]">₹</th>
                     <th className="px-2 py-2 text-left font-medium">Chg%</th>
                     <th className="px-2 py-2 text-left font-medium">LTP</th>
                     <th className="px-2 py-2 text-left font-medium">Vol</th>
@@ -727,21 +737,21 @@ export function OptionChainPage() {
                         key={row.strike}
                         ref={isATM ? atmRef : undefined}
                         className={cn(
-                          'border-b border-[#f3f4f6] transition-colors',
-                          isATM && 'bg-[#00D09C]/8'
+                          'border-b border-[#2a2d3a] transition-colors',
+                          isATM && 'bg-[#00D09C]/10'
                         )}
                       >
                         {/* CE Side */}
-                        <td className={cn('px-2 py-1.5 text-right font-mono font-tabular text-[#6b7280]', ceITM && 'bg-[#00B386]/6')}>
+                        <td className={cn('px-2 py-1.5 text-right font-mono font-tabular text-[#9ca3af]', ceITM && 'bg-[#00B386]/10')}>
                           {row.ceOI.toFixed(1)}
                         </td>
-                        <td className={cn('px-2 py-1.5 text-right font-mono font-tabular text-[#9ca3af]', ceITM && 'bg-[#00B386]/6')}>
+                        <td className={cn('px-2 py-1.5 text-right font-mono font-tabular text-[#9ca3af]', ceITM && 'bg-[#00B386]/10')}>
                           {row.ceVolume > 0 ? `${(row.ceVolume / 1000).toFixed(0)}K` : '-'}
                         </td>
                         <td
                           className={cn(
-                            'px-2 py-1.5 text-right font-mono font-tabular font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#00B386] hover:underline',
-                            ceITM && 'bg-[#00B386]/6'
+                            'px-2 py-1.5 text-right font-mono font-tabular font-semibold text-[#e5e7eb] cursor-pointer hover:text-[#00B386] hover:underline',
+                            ceITM && 'bg-[#00B386]/10'
                           )}
                           onClick={() => handleRowClick(row, 'CE')}
                         >
@@ -750,15 +760,15 @@ export function OptionChainPage() {
                         <td className={cn(
                           'px-2 py-1.5 text-right font-mono',
                           row.ceChngPct > 0 ? 'text-[#00B386]' : row.ceChngPct < 0 ? 'text-[#EB5B3C]' : 'text-[#9ca3af]',
-                          ceITM && 'bg-[#00B386]/6'
+                          ceITM && 'bg-[#00B386]/10'
                         )}>
                           {row.ceChngPct > 0 ? '+' : ''}{row.ceChngPct.toFixed(1)}%
                         </td>
 
                         {/* Strike */}
                         <td className={cn(
-                          'px-2 py-1.5 text-center font-mono font-tabular font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
-                          isATM ? 'text-[#00A67E] bg-[#00D09C]/10' : 'text-[#1a1a1a]'
+                          'px-2 py-1.5 text-center font-mono font-tabular font-bold bg-[#252836] border-x border-[#2a2d3a]',
+                          isATM ? 'text-[#00A67E] bg-[#00D09C]/10' : 'text-[#e5e7eb]'
                         )}>
                           {isATM && <span className="text-[8px] font-bold text-[#00A67E] block leading-none">ATM</span>}
                           {row.strike.toLocaleString()}
@@ -768,23 +778,23 @@ export function OptionChainPage() {
                         <td className={cn(
                           'px-2 py-1.5 text-left font-mono',
                           row.peChngPct > 0 ? 'text-[#00B386]' : row.peChngPct < 0 ? 'text-[#EB5B3C]' : 'text-[#9ca3af]',
-                          peITM && 'bg-[#EB5B3C]/6'
+                          peITM && 'bg-[#EB5B3C]/10'
                         )}>
                           {row.peChngPct > 0 ? '+' : ''}{row.peChngPct.toFixed(1)}%
                         </td>
                         <td
                           className={cn(
-                            'px-2 py-1.5 text-left font-mono font-tabular font-semibold text-[#1a1a1a] cursor-pointer hover:text-[#EB5B3C] hover:underline',
-                            peITM && 'bg-[#EB5B3C]/6'
+                            'px-2 py-1.5 text-left font-mono font-tabular font-semibold text-[#e5e7eb] cursor-pointer hover:text-[#EB5B3C] hover:underline',
+                            peITM && 'bg-[#EB5B3C]/10'
                           )}
                           onClick={() => handleRowClick(row, 'PE')}
                         >
                           {row.peLTP.toFixed(2)}
                         </td>
-                        <td className={cn('px-2 py-1.5 text-left font-mono font-tabular text-[#9ca3af]', peITM && 'bg-[#EB5B3C]/6')}>
+                        <td className={cn('px-2 py-1.5 text-left font-mono font-tabular text-[#9ca3af]', peITM && 'bg-[#EB5B3C]/10')}>
                           {row.peVolume > 0 ? `${(row.peVolume / 1000).toFixed(0)}K` : '-'}
                         </td>
-                        <td className={cn('px-2 py-1.5 text-left font-mono font-tabular text-[#6b7280]', peITM && 'bg-[#EB5B3C]/6')}>
+                        <td className={cn('px-2 py-1.5 text-left font-mono font-tabular text-[#9ca3af]', peITM && 'bg-[#EB5B3C]/10')}>
                           {row.peOI.toFixed(1)}
                         </td>
                       </tr>
@@ -804,48 +814,48 @@ export function OptionChainPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
         >
-          <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <Card className="bg-[#1a1d27] border border-[#2a2d3a] rounded-xl shadow-sm">
             <CardContent className="p-5">
               <div className="flex items-center gap-2 mb-4">
-                <div className="size-7 rounded-lg bg-[#6b7280]/10 flex items-center justify-center">
-                  <BarChart3 className="size-3.5 text-[#6b7280]" />
+                <div className="size-7 rounded-lg bg-[#9ca3af]/10 flex items-center justify-center">
+                  <BarChart3 className="size-3.5 text-[#9ca3af]" />
                 </div>
-                <h3 className="text-sm font-semibold text-[#1a1a1a]">Open Interest & IV Analysis</h3>
+                <h3 className="text-sm font-semibold text-[#e5e7eb]">Open Interest & IV Analysis</h3>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Total CE OI (L)</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Total CE OI (L)</p>
                   <p className="text-sm font-bold font-mono font-tabular text-[#00B386]">{totalCEOI.toFixed(0)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Total PE OI (L)</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Total PE OI (L)</p>
                   <p className="text-sm font-bold font-mono font-tabular text-[#EB5B3C]">{totalPEOI.toFixed(0)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">CE Volume</p>
-                  <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">CE Volume</p>
+                  <p className="text-sm font-bold font-mono font-tabular text-[#e5e7eb]">
                     {totalCEVolume > 1000000 ? `${(totalCEVolume / 1000000).toFixed(1)}M` : `${(totalCEVolume / 1000).toFixed(0)}K`}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">PE Volume</p>
-                  <p className="text-sm font-bold font-mono font-tabular text-[#1a1a1a]">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">PE Volume</p>
+                  <p className="text-sm font-bold font-mono font-tabular text-[#e5e7eb]">
                     {totalPEVolume > 1000000 ? `${(totalPEVolume / 1000000).toFixed(1)}M` : `${(totalPEVolume / 1000).toFixed(0)}K`}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Avg CE IV</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Avg CE IV</p>
                   <p className="text-sm font-bold font-mono font-tabular text-[#00B386]">{avgCEIV.toFixed(1)}%</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Avg PE IV</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Avg PE IV</p>
                   <p className="text-sm font-bold font-mono font-tabular text-[#EB5B3C]">{avgPEIV.toFixed(1)}%</p>
                 </div>
               </div>
               {/* PCR sentiment bar */}
-              <div className="mt-4 pt-4 border-t border-[#e5e7eb]">
+              <div className="mt-4 pt-4 border-t border-[#2a2d3a]">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6b7280]">Market Sentiment (PCR)</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af]">Market Sentiment (PCR)</span>
                   <span className={cn(
                     'text-xs font-bold',
                     pcr > 1.2 ? 'text-[#00B386]' : pcr < 0.7 ? 'text-[#EB5B3C]' : 'text-[#f59e0b]'
@@ -853,7 +863,7 @@ export function OptionChainPage() {
                     {pcr > 1.2 ? 'Bullish' : pcr < 0.7 ? 'Bearish' : 'Neutral'}
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-[#f0f0f0] overflow-hidden">
+                <div className="h-2 rounded-full bg-[#252836] overflow-hidden">
                   <div
                     className={cn(
                       'h-full rounded-full transition-all duration-500',

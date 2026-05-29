@@ -56,16 +56,21 @@ export function getDateRange(preset: DatePreset, customFrom?: string | null, cus
 
     case 'custom': {
       if (customFrom && customTo) {
-        const from = new Date(customFrom + 'T00:00:00.000Z')
-        const to = new Date(customTo + 'T23:59:59.999Z')
+        // Use local time (not UTC) so IST users see their local day boundaries
+        const [fy, fm, fd] = customFrom.split('-').map(Number)
+        const [ty, tm, td] = customTo.split('-').map(Number)
+        const from = new Date(fy, fm - 1, fd, 0, 0, 0, 0)
+        const to = new Date(ty, tm - 1, td, 23, 59, 59, 999)
         return { from: from.toISOString(), to: to.toISOString() }
       }
       if (customFrom) {
-        const from = new Date(customFrom + 'T00:00:00.000Z')
+        const [fy, fm, fd] = customFrom.split('-').map(Number)
+        const from = new Date(fy, fm - 1, fd, 0, 0, 0, 0)
         return { from: from.toISOString(), to: null }
       }
       if (customTo) {
-        const to = new Date(customTo + 'T23:59:59.999Z')
+        const [ty, tm, td] = customTo.split('-').map(Number)
+        const to = new Date(ty, tm - 1, td, 23, 59, 59, 999)
         return { from: null, to: to.toISOString() }
       }
       return { from: null, to: null }
