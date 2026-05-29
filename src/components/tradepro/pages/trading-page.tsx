@@ -21,6 +21,7 @@ import {
   Plus,
   Loader2,
   ShoppingCart,
+  Star,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
@@ -160,9 +161,82 @@ function SkeletonRow() {
   )
 }
 
+// ─── Watchlist Star Button ──────────────────────────────────────────────
+function WatchlistStar({ symbol, name, token }: { symbol: string; name: string; token: string | null }) {
+  const [isInWatchlist, setIsInWatchlist] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!token) return
+    fetch(`/api/watchlist`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setIsInWatchlist(data.data.some((item: { symbol: string }) => item.symbol === symbol))
+        }
+      })
+      .catch(() => {})
+  }, [symbol, token])
+
+  const toggleWatchlist = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!token || loading) return
+    setLoading(true)
+    try {
+      if (isInWatchlist) {
+        const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json()
+        if (data.success) {
+          setIsInWatchlist(false)
+          toast.success(`${symbol} removed from watchlist`)
+        }
+      } else {
+        const res = await fetch('/api/watchlist', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol, name, segment: 'EQUITY' }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setIsInWatchlist(true)
+          toast.success(`${symbol} added to watchlist`)
+        } else if (res.status === 409) {
+          setIsInWatchlist(true)
+        }
+      }
+    } catch {
+      toast.error('Failed to update watchlist')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={toggleWatchlist}
+      disabled={loading}
+      className="size-8 rounded-lg flex items-center justify-center transition-all hover:bg-[#f59e0b]/5 shrink-0"
+      title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+    >
+      <Star
+        className={cn('size-4 transition-colors', isInWatchlist ? 'text-[#f59e0b] fill-[#f59e0b]' : 'text-[#d1d5db] hover:text-[#f59e0b]')}
+      />
+    </button>
+  )
+}
+
+function cn(...args: (string | boolean | undefined | null)[]) {
+  return args.filter(Boolean).join(' ')
+}
+
 // ─── Stock Row Component ──────────────────────────────────────────────────
 
-function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => void }) {
+function StockRow({ stock, onClick, token }: { stock: TradeableStock; onClick: () => void; token: string | null }) {
   const isPositive = stock.changePercent >= 0
 
   return (
@@ -209,6 +283,8 @@ function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => vo
           )}
           {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
         </div>
+        {/* Watchlist star */}
+        <WatchlistStar symbol={stock.symbol} name={stock.name} token={token} />
       </div>
     </motion.button>
   )
@@ -1002,6 +1078,7 @@ export function TradingPage() {
                         <StockRow
                           stock={stock}
                           onClick={() => handleSelectStock(stock)}
+                          token={token}
                         />
                       </motion.div>
                     ))}

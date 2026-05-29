@@ -155,6 +155,18 @@ async function migrate() {
         )`,
       },
       {
+        name: 'watchlist_items',
+        sql: `CREATE TABLE IF NOT EXISTS watchlist_items (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          symbol TEXT NOT NULL,
+          name TEXT,
+          segment TEXT NOT NULL DEFAULT 'EQUITY',
+          addedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(userId, symbol)
+        )`,
+      },
+      {
         name: 'price_alerts',
         sql: `CREATE TABLE IF NOT EXISTS price_alerts (
           id TEXT PRIMARY KEY,
@@ -191,6 +203,7 @@ async function migrate() {
       { name: 'idx_ticket_replies_ticketId', sql: 'CREATE INDEX IF NOT EXISTS idx_ticket_replies_ticketId ON ticket_replies(ticketId)' },
       { name: 'idx_subscription_transactions_userId', sql: 'CREATE INDEX IF NOT EXISTS idx_subscription_transactions_userId ON subscription_transactions(userId)' },
       { name: 'idx_watchlists_userId', sql: 'CREATE INDEX IF NOT EXISTS idx_watchlists_userId ON watchlists(userId)' },
+      { name: 'idx_watchlist_items_userId', sql: 'CREATE INDEX IF NOT EXISTS idx_watchlist_items_userId ON watchlist_items(userId)' },
       { name: 'idx_price_alerts_userId', sql: 'CREATE INDEX IF NOT EXISTS idx_price_alerts_userId ON price_alerts(userId)' },
     ];
 

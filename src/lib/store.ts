@@ -11,6 +11,7 @@ export type PageId =
   | 'reports'      // Reports/analytics
   | 'optionChain'  // Option chain (accessible from index detail)
   | 'futures'      // Futures trading
+  | 'watchlist'    // Watchlist
   | 'learning'     // Learn section
   | 'profile'      // Profile/settings
   | 'activeDevices' // Active devices/sessions detail
@@ -38,6 +39,7 @@ const PAGE_TO_URL: Record<PageId, string> = {
   reports: '/reports',
   optionChain: '/option-chain',
   futures: '/futures',
+  watchlist: '/watchlist',
   learning: '/learning',
   profile: '/profile',
   activeDevices: '/active-devices',
@@ -55,6 +57,7 @@ const PAGE_TO_URL: Record<PageId, string> = {
 const URL_TO_PAGE: Record<string, PageId> = {
   '/': 'dashboard',
   '/stocks': 'trading',
+  '/watchlist': 'watchlist',
   '/positions': 'positions',
   '/orders': 'orders',
   '/portfolio': 'portfolio',

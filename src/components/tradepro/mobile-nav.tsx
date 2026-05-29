@@ -6,6 +6,7 @@ import {
   Crosshair,
   FileText,
   Wallet,
+  Star,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
 
@@ -18,8 +19,8 @@ interface MobileNavItem {
 const mobileNavItems: MobileNavItem[] = [
   { id: 'dashboard', label: 'Home', icon: Home },
   { id: 'trading', label: 'Stocks', icon: CandlestickChart },
+  { id: 'watchlist', label: 'Watchlist', icon: Star },
   { id: 'positions', label: 'Positions', icon: Crosshair },
-  { id: 'orders', label: 'Orders', icon: FileText },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet },
 ]
 

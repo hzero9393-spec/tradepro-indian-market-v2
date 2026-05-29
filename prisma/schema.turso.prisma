@@ -56,6 +56,7 @@ model User {
   sessions        Session[]
   notifications   Notification[]
   pushSubscriptions PushSubscription[]
+  watchlistItems  WatchlistItem[]
 
   @@index([email])
   @@unique([oauthProvider, oauthId])
@@ -701,4 +702,23 @@ model PushSubscription {
 
   @@unique([userId, endpoint])
   @@map("push_subscriptions")
+}
+
+// ============================================================
+// WATCHLIST
+// ============================================================
+
+model WatchlistItem {
+  id              String   @id @default(cuid())
+  userId          String
+  symbol          String   // Stock symbol: RELIANCE, TCS, etc.
+  name            String?  // Stock name for display
+  segment         String   @default("EQUITY") // Segment: EQUITY, INDEX
+  addedAt         DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+  @@index([userId])
+  @@map("watchlist_items")
 }
