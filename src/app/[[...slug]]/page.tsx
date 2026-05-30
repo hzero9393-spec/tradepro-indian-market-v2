@@ -37,6 +37,7 @@ import {
 } from '@/components/tradepro/footer-pages'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { TrendingUp } from 'lucide-react'
+import { useMarketEngine } from '@/hooks/use-market-engine'
 
 // Footer page IDs — these pages show their own footer-free layout
 const FOOTER_PAGES = new Set([
@@ -151,6 +152,9 @@ function LoadingScreen() {
 export default function CatchAllPage() {
   const { currentPage, sidebarOpen, setSidebarOpen } = useAppStore()
   const { isAuthenticated, isInitializing, initialize, logout, user, token, setAuth } = useAuthStore()
+
+  // Start the real-time market engine for live price updates
+  useMarketEngine()
 
   // Handle OAuth callback token from URL
   const handleOAuthCallback = useCallback(async () => {
