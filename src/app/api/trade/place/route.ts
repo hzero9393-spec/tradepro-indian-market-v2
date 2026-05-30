@@ -39,6 +39,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Target must be greater than 0' }, { status: 400 })
     }
 
+    // ─── Step 2b: SL/TP Directional Validation ──────────────────────────
+    // BUY: Target must be ABOVE entry price, SL must be BELOW entry price
+    // SELL: Target must be BELOW entry price, SL must be ABOVE entry price
+    // This prevents invalid orders where SL/TP would trigger immediately
+    const entryPrice = price || 0 // Will be refined after getting fillPrice below
+    if (stopLoss && target && entryPrice > 0) {
+      if (direction === 'BUY') {
+        if (target <= entryPrice) {
+          return NextResponse.json({ error: `Invalid Target: Must be above entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+        }
+        if (stopLoss >= entryPrice) {
+          return NextResponse.json({ error: `Invalid Stop Loss: Must be below entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+        }
+        if (stopLoss >= target) {
+          return NextResponse.json({ error: 'Invalid: Stop Loss must be below Target for BUY orders' }, { status: 400 })
+        }
+      } else if (direction === 'SELL') {
+        if (target >= entryPrice) {
+          return NextResponse.json({ error: `Invalid Target: Must be below entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+        }
+        if (stopLoss <= entryPrice) {
+          return NextResponse.json({ error: `Invalid Stop Loss: Must be above entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+        }
+        if (stopLoss <= target) {
+          return NextResponse.json({ error: 'Invalid: Stop Loss must be above Target for SELL orders' }, { status: 400 })
+        }
+      }
+    } else if (stopLoss && entryPrice > 0) {
+      // Only SL provided
+      if (direction === 'BUY' && stopLoss >= entryPrice) {
+        return NextResponse.json({ error: `Invalid Stop Loss: Must be below entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+      }
+      if (direction === 'SELL' && stopLoss <= entryPrice) {
+        return NextResponse.json({ error: `Invalid Stop Loss: Must be above entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+      }
+    } else if (target && entryPrice > 0) {
+      // Only Target provided
+      if (direction === 'BUY' && target <= entryPrice) {
+        return NextResponse.json({ error: `Invalid Target: Must be above entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+      }
+      if (direction === 'SELL' && target >= entryPrice) {
+        return NextResponse.json({ error: `Invalid Target: Must be below entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+      }
+    }
+
+    // Minimum distance from entry price (0.01 = 1 paisa threshold)
+    const MIN_DISTANCE = 0.01
+    if (stopLoss && entryPrice > 0 && Math.abs(entryPrice - stopLoss) < MIN_DISTANCE) {
+      return NextResponse.json({ error: 'Stop Loss too close to entry price (minimum 1 paisa distance)' }, { status: 400 })
+    }
+    if (target && entryPrice > 0 && Math.abs(entryPrice - target) < MIN_DISTANCE) {
+      return NextResponse.json({ error: 'Target too close to entry price (minimum 1 paisa distance)' }, { status: 400 })
+    }
+
     // Quantity validation
     const qtyError = validateOrderQuantity(quantity, segment)
     if (qtyError) {

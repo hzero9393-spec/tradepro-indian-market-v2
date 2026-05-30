@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -37,6 +37,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { useMarketData } from '@/lib/market-data'
+import { getExecutionEngine, type TriggerResult, type OpenPosition } from '@/lib/execution-engine'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole } from '@/lib/format'
@@ -192,9 +193,85 @@ export function PositionsPage() {
   }, [token, fetchPositions])
 
   // ─── Real-time market data for live position updates ────────
-  const { isConnected: isSimulatorConnected, stocks: liveStocks, indices: liveIndices, optionChains: liveOptionChains, recentTriggers } = useMarketData()
+  const { isConnected: isSimulatorConnected, stocks: liveStocks, indices: liveIndices, optionChains: liveOptionChains, recentTriggers, syncPositionsToEngine, removePositionFromEngine } = useMarketData()
+
+  // ─── Execution Engine: Auto square-off on SL/TP trigger ────────
+  const squareOffInProgress = useRef<Set<string>>(new Set())
+
+  // When positions load, sync them to the ExecutionEngine
+  useEffect(() => {
+    if (positions.length > 0 && token) {
+      const openWithSLTP = positions.filter(p => p.isOpen && (p.stopLoss || p.target))
+      const enginePositions: OpenPosition[] = openWithSLTP.map(p => ({
+        id: p.id,
+        userId: '', // Not needed client-side
+        symbol: p.symbol,
+        segment: p.segment,
+        tradeDirection: p.tradeDirection as 'BUY' | 'SELL',
+        entryPrice: p.entryPrice,
+        quantity: p.quantity,
+        stopLoss: p.stopLoss ?? null,
+        target: p.target ?? null,
+        marginUsed: p.marginUsed,
+        totalInvested: p.totalInvested,
+        isOpen: p.isOpen,
+      }))
+      syncPositionsToEngine(enginePositions)
+    }
+  }, [positions, token, syncPositionsToEngine])
+
+  // Subscribe to ExecutionEngine triggers and auto square-off
+  useEffect(() => {
+    const execEngine = getExecutionEngine()
+    const unsubscribe = execEngine.subscribe(async (result: TriggerResult) => {
+      // Prevent duplicate square-offs
+      if (squareOffInProgress.current.has(result.positionId)) return
+      squareOffInProgress.current.add(result.positionId)
+
+      const reasonLabel = result.exitReason === 'STOP_LOSS' ? 'Stop Loss' : 'Target'
+      const emoji = result.exitReason === 'STOP_LOSS' ? '🛑' : '🎯'
+
+      // Show toast immediately
+      toast.success(`${emoji} ${reasonLabel} triggered! ${result.symbol} auto-squaring off...`, {
+        description: `Exit @ ₹${result.exitPrice.toLocaleString('en-IN')} | Est. P&L: ₹${result.pnl.toLocaleString('en-IN')}`,
+        duration: 5000,
+      })
+
+      // Call server API to square-off
+      if (!token) return
+      try {
+        const res = await fetch('/api/trade/square-off', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ positionId: result.positionId }),
+        })
+        const data = await res.json()
+        if (res.ok && data.success) {
+          // Optimistic update: remove from local state
+          setPositions(prev => prev.filter(p => p.id !== result.positionId))
+          removePositionFromEngine(result.positionId)
+          // Refresh for accurate data
+          fetchPositions()
+        } else {
+          toast.error(`Failed to auto-square-off ${result.symbol}: ${data.error || 'Unknown error'}`)
+        }
+      } catch {
+        toast.error(`Network error auto-squaring-off ${result.symbol}`)
+      } finally {
+        squareOffInProgress.current.delete(result.positionId)
+      }
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [token, fetchPositions, removePositionFromEngine])
 
   // Helper: Get live price for a position
+  // OPTIMIZED: Use .get() directly without creating dependency on the whole Map
   const getLivePrice = useCallback((pos: PositionData): number | null => {
     // Check stocks first
     const liveStock = liveStocks.get(pos.symbol)

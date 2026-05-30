@@ -7,12 +7,17 @@
  * This ensures real-time 1-second updates work EVERYWHERE:
  * - Vercel deployment (client engine only)
  * - Local dev with simulator (Socket.IO preferred, client engine fallback)
+ * 
+ * INTEGRATED: Client-Side Execution Engine for SL/TP auto-triggers.
+ * Live prices are fed to ExecutionEngine every tick, which checks
+ * open positions and auto-squares-off when SL/TP is hit.
  */
 
 'use client';
 
 import { create } from 'zustand';
 import { getClientMarketEngine, destroyClientMarketEngine, type IndexData, type StockData, type OptionChainData, type MarketTickData } from './client-market-engine';
+import { getExecutionEngine, destroyExecutionEngine, type OpenPosition, type TriggerResult } from './execution-engine';
 
 // ─── Socket.IO (optional, for when server is running) ──────────
 let socketImport: typeof import('socket.io-client') | null = null;
@@ -61,6 +66,12 @@ interface MarketDataState {
   getIndexPrice: (symbol: string) => number | null;
   getOptionChain: (underlying: string) => OptionChainData | null;
   clearTriggers: () => void;
+
+  // ─── Execution Engine Integration ──────────────────────────────
+  // Feed open positions to the client-side execution engine
+  // for automatic SL/TP trigger detection against live prices
+  syncPositionsToEngine: (positions: OpenPosition[]) => void;
+  removePositionFromEngine: (positionId: string) => void;
 }
 
 // ─── Create Store ──────────────────────────────────────────────
@@ -229,6 +240,18 @@ export const useMarketData = create<MarketDataState>((set, get) => ({
   clearTriggers: () => {
     set({ recentTriggers: [] });
   },
+
+  // ─── Execution Engine: Sync positions for SL/TP monitoring ────
+  syncPositionsToEngine: (positions: OpenPosition[]) => {
+    const execEngine = getExecutionEngine();
+    execEngine.addPositions(positions);
+    console.log(`[MarketData] Synced ${positions.length} positions to ExecutionEngine`);
+  },
+
+  removePositionFromEngine: (positionId: string) => {
+    const execEngine = getExecutionEngine();
+    execEngine.removePosition(positionId);
+  },
 }));
 
 // ─── Helper: Apply market data from any source ────────────────
@@ -272,4 +295,24 @@ function applyMarketData(data: {
     tickCount: data.tick || state.tickCount + 1,
     lastTickTime: data.timestamp || Date.now(),
   });
+
+  // ─── Feed live prices to ExecutionEngine for SL/TP checks ────────
+  // This is the KEY integration point: every market tick updates
+  // the ExecutionEngine, which checks all open positions against
+  // the latest prices and triggers auto square-off when SL/TP is hit.
+  const priceBatch = new Map<string, number>()
+  if (data.indices) {
+    for (const idx of data.indices) {
+      priceBatch.set(idx.symbol, idx.price)
+    }
+  }
+  if (data.stocks) {
+    for (const stock of data.stocks) {
+      priceBatch.set(stock.symbol, stock.price)
+    }
+  }
+  if (priceBatch.size > 0) {
+    const execEngine = getExecutionEngine()
+    execEngine.onBatchPriceUpdate(priceBatch)
+  }
 }
