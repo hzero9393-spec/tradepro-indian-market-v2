@@ -14,26 +14,26 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
   FREE: {
-    maxTradesPerMonth: 50,
-    maxOpenPositions: 5,
-    activeSessions: 2,
-    optionsAccess: false,
-    futuresAccess: false,
-    advancedReports: false,
-    prioritySupport: false,
-    customWatchlists: false,
-    virtualBalance: 100000,
-  },
-  PRO: {
-    maxTradesPerMonth: 500,
-    maxOpenPositions: 20,
-    activeSessions: 3,
-    optionsAccess: false,
+    maxTradesPerMonth: -1,
+    maxOpenPositions: -1,
+    activeSessions: 5,
+    optionsAccess: true,
     futuresAccess: true,
     advancedReports: true,
-    prioritySupport: false,
+    prioritySupport: true,
     customWatchlists: true,
-    virtualBalance: 500000,
+    virtualBalance: 1000000,
+  },
+  PRO: {
+    maxTradesPerMonth: -1,
+    maxOpenPositions: -1,
+    activeSessions: 5,
+    optionsAccess: true,
+    futuresAccess: true,
+    advancedReports: true,
+    prioritySupport: true,
+    customWatchlists: true,
+    virtualBalance: 1000000,
   },
   PREMIUM: {
     maxTradesPerMonth: -1, // unlimited

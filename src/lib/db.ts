@@ -6,15 +6,15 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  // Check if we're using Turso/libSQL (production on Vercel)
+  // Check if we're using Turso/libSQL
   const tursoUrl = process.env.TURSO_DATABASE_URL
   const tursoAuthToken = process.env.TURSO_AUTH_TOKEN
 
-  if (tursoUrl) {
+  if (tursoUrl && tursoAuthToken) {
     // Use Turso with libSQL adapter (Prisma v7 factory pattern)
     const adapter = new PrismaLibSql({
       url: tursoUrl,
-      authToken: tursoAuthToken || undefined,
+      authToken: tursoAuthToken,
     })
 
     return new PrismaClient({
@@ -23,10 +23,11 @@ function createPrismaClient() {
     })
   }
 
-  // Fallback for local dev: use libsql with local file
-  const localDbPath = process.env.DATABASE_URL || 'file:./prisma/db/local.db'
+  // Fallback to local SQLite via libSQL adapter
+  // Prisma v7 with engine type "client" requires an adapter
+  const dbUrl = process.env.DATABASE_URL || 'file:./db/custom.db'
   const adapter = new PrismaLibSql({
-    url: localDbPath,
+    url: dbUrl,
   })
 
   return new PrismaClient({
