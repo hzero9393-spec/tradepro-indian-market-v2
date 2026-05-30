@@ -620,18 +620,81 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      if (!option) {
-        return NextResponse.json({
-          error: `Option not found: ${symbol} ${strikePrice} ${optionType}`
-        }, { status: 404 })
-      }
-
-      const indexData = await db.index.findFirst({
-        where: { symbol },
-      })
+      // ─── Get index data once for lot size + underlying price ───
+      const indexData = await db.index.findFirst({ where: { symbol } })
       const lotSize = indexData?.lotSize || 50
 
-      const fillPrice = orderType === 'MARKET' ? option.ltp : (price || option.ltp)
+      // ─── Auto-create option if not found in DB (paper trading simulation) ───
+      // When user clicks an LTP from the option chain, the option may not exist
+      // in our DB yet. For a paper trading sim, we create it on-the-fly.
+      let optionId: string
+      let optionExpiryDate: Date
+      let optionLtp: number
+
+      if (!option) {
+        // Use the price from the request body (sent by option-chain-page)
+        const requestPrice = price || body.ltp || 0
+        if (requestPrice <= 0) {
+          return NextResponse.json({
+            error: `Option not found: ${symbol} ${strikePrice} ${optionType}. Please provide a valid price.`
+          }, { status: 400 })
+        }
+
+        // Get underlying price for the option
+        let underlyingPrice = indexData?.currentValue || 0
+        if (underlyingPrice <= 0) {
+          const stockData = await db.stock.findFirst({ where: { symbol, isActive: true } })
+          if (stockData) underlyingPrice = stockData.currentPrice
+        }
+
+        // Default expiry: nearest Thursday (Indian options weekly expiry)
+        const now = new Date()
+        const expiryDate = new Date(now)
+        const daysUntilThursday = (4 - expiryDate.getDay() + 7) % 7 || 7
+        expiryDate.setDate(expiryDate.getDate() + daysUntilThursday)
+        expiryDate.setHours(15, 30, 0, 0)
+
+        try {
+          const createdOption = await db.option.create({
+            data: {
+              underlying: symbol,
+              optionType: optionType as 'CE' | 'PE',
+              strikePrice,
+              ltp: requestPrice,
+              change: 0,
+              changePercent: 0,
+              volume: Math.round(Math.random() * 500000 + 100000),
+              openInterest: Math.round(Math.random() * 80 + 20),
+              oiChange: 0,
+              oiChangePercent: 0,
+              impliedVolatility: Math.round((15 + Math.random() * 15) * 100) / 100,
+              delta: optionType === 'CE' ? 0.5 : -0.5,
+              gamma: 0.01,
+              theta: -2.5,
+              vega: 5.0,
+              underlyingPrice,
+              expiryDate,
+              isActive: true,
+            }
+          })
+          optionId = createdOption.id
+          optionExpiryDate = createdOption.expiryDate
+          optionLtp = createdOption.ltp
+          // Cache the newly created option
+          cache.set(CacheKeys.optionPrice(symbol, optionType, strikePrice), createdOption, CacheTTL.OPTION_PRICE)
+        } catch (createError) {
+          console.error('[OPTIONS CREATE] Failed to create option:', createError)
+          return NextResponse.json({
+            error: `Failed to create option instrument: ${symbol} ${strikePrice} ${optionType}. Please try again.`
+          }, { status: 500 })
+        }
+      } else {
+        optionId = option.id
+        optionExpiryDate = option.expiryDate
+        optionLtp = option.ltp
+      }
+
+      const fillPrice = orderType === 'MARKET' ? optionLtp : (price || optionLtp)
       const totalQty = lots * lotSize
       const totalValue = Math.round(totalQty * fillPrice * 100) / 100
       const brokerage = calculateBrokerage(totalValue)
@@ -663,10 +726,10 @@ export async function POST(request: NextRequest) {
               segment: 'OPTIONS',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               symbol,
-              instrumentId: option!.id,
+              instrumentId: optionId,
               optionType: optionType as 'CE' | 'PE',
               strikePrice,
-              expiryDate: option!.expiryDate,
+              expiryDate: optionExpiryDate,
               quantity: totalQty,
               lotSize,
               lots,
@@ -687,10 +750,10 @@ export async function POST(request: NextRequest) {
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               tradeDirection: 'BUY',
               symbol,
-              instrumentId: option!.id,
+              instrumentId: optionId,
               optionType: optionType as 'CE' | 'PE',
               strikePrice,
-              expiryDate: option!.expiryDate,
+              expiryDate: optionExpiryDate,
               quantity: totalQty,
               fillPrice,
               totalValue,
@@ -705,7 +768,7 @@ export async function POST(request: NextRequest) {
               strikePrice,
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               tradeDirection: 'BUY', isOpen: true,
-              expiryDate: option!.expiryDate,
+              expiryDate: optionExpiryDate,
             }
           })
 
@@ -739,8 +802,8 @@ export async function POST(request: NextRequest) {
                 entryPrice: fillPrice, currentPrice: fillPrice,
                 totalInvested: totalValue, currentValue,
                 unrealizedPnl: Math.round((currentValue - totalValue) * 100) / 100,
-                instrumentId: option!.id,
-                expiryDate: option!.expiryDate,
+                instrumentId: optionId,
+                expiryDate: optionExpiryDate,
                 isOpen: true,
               }
             })
@@ -770,7 +833,7 @@ export async function POST(request: NextRequest) {
             optionType: optionType as 'CE' | 'PE',
             strikePrice,
             tradeDirection: 'BUY', isOpen: true,
-            expiryDate: option.expiryDate,
+            expiryDate: optionExpiryDate,
           }
         })
 
@@ -803,10 +866,10 @@ export async function POST(request: NextRequest) {
                 segment: 'OPTIONS',
                 productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
                 symbol,
-                instrumentId: option!.id,
+                instrumentId: optionId,
                 optionType: optionType as 'CE' | 'PE',
                 strikePrice,
-                expiryDate: option!.expiryDate,
+                expiryDate: optionExpiryDate,
                 quantity: totalQty,
                 lotSize,
                 lots,
@@ -824,10 +887,10 @@ export async function POST(request: NextRequest) {
                 userId: user.id, orderId: order.id, segment: 'OPTIONS',
                 productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
                 tradeDirection: 'SELL', symbol,
-                instrumentId: option!.id,
+                instrumentId: optionId,
                 optionType: optionType as 'CE' | 'PE',
                 strikePrice,
-                expiryDate: option!.expiryDate,
+                expiryDate: optionExpiryDate,
                 quantity: totalQty,
                 fillPrice, totalValue, brokerage, pnl: realizedPnl,
                 pnlPercent: existingBuyPosition.entryPrice > 0
@@ -909,10 +972,10 @@ export async function POST(request: NextRequest) {
               segment: 'OPTIONS',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               symbol,
-              instrumentId: option!.id,
+              instrumentId: optionId,
               optionType: optionType as 'CE' | 'PE',
               strikePrice,
-              expiryDate: option!.expiryDate,
+              expiryDate: optionExpiryDate,
               quantity: totalQty,
               lotSize,
               lots,
@@ -934,10 +997,10 @@ export async function POST(request: NextRequest) {
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               tradeDirection: 'SELL',
               symbol,
-              instrumentId: option!.id,
+              instrumentId: optionId,
               optionType: optionType as 'CE' | 'PE',
               strikePrice,
-              expiryDate: option!.expiryDate,
+              expiryDate: optionExpiryDate,
               quantity: totalQty,
               fillPrice,
               totalValue,
@@ -952,7 +1015,7 @@ export async function POST(request: NextRequest) {
               strikePrice,
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               tradeDirection: 'SELL', isOpen: true,
-              expiryDate: option!.expiryDate,
+              expiryDate: optionExpiryDate,
             }
           })
 
@@ -989,8 +1052,8 @@ export async function POST(request: NextRequest) {
                 totalInvested: totalValue, currentValue,
                 unrealizedPnl: Math.round((currentValue - totalValue) * 100) / 100,
                 marginUsed: marginRequired,
-                instrumentId: option!.id,
-                expiryDate: option!.expiryDate,
+                instrumentId: optionId,
+                expiryDate: optionExpiryDate,
                 isOpen: true,
               }
             })

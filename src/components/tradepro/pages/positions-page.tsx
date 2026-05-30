@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -34,7 +34,6 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { toast } from 'sonner'
-import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole } from '@/lib/format'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -80,6 +79,146 @@ function formatDuration(startIso: string, endIso?: string | null): string {
   return `${diffDay}d ${remHr}h`
 }
 
+// ─── Stable Position Row (NO animation, NO sliding) ────────────────
+
+function StableOpenPositionRow({
+  pos,
+  squaringOff,
+  onSquareOff,
+}: {
+  pos: PositionData
+  squaringOff: string | null
+  onSquareOff: (id: string, symbol: string) => void
+}) {
+  const isLong = pos.tradeDirection === 'BUY'
+  const isPositive = pos.unrealizedPnl >= 0
+
+  return (
+    <TableRow
+      key={pos.id}
+      className="hover:bg-[#f8f9fb] transition-colors"
+    >
+      <TableCell className="py-4">
+        <div className="flex flex-col">
+          <span className="font-bold text-sm text-[#1a1a1a]">{pos.symbol}</span>
+          {pos.segment === 'OPTIONS' && pos.strikePrice && (
+            <span className="text-[10px] uppercase text-[#6b7280]">
+              {pos.strikePrice} {pos.optionType}
+            </span>
+          )}
+          {pos.segment === 'FUTURES' && (
+            <span className="text-[10px] text-[#6b7280]">FUT</span>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="py-4">
+        <span
+          className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+            isLong
+              ? 'bg-[#00B386]/10 text-[#00B386]'
+              : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
+          }`}
+        >
+          {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
+          {isLong ? 'BUY' : 'SELL'}
+        </span>
+      </TableCell>
+      <TableCell className="text-xs text-[#6b7280] py-4">{pos.segment}</TableCell>
+      <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">{pos.quantity}</TableCell>
+      <TableCell className="font-mono-data font-tabular text-sm text-right text-[#6b7280] py-4">
+        {formatINR(pos.entryPrice)}
+      </TableCell>
+      <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
+        {formatINR(pos.currentPrice)}
+      </TableCell>
+      <TableCell className="py-4 text-right">
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
+          isPositive
+            ? 'bg-[#00B386]/10 text-[#00B386]'
+            : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
+        }`}>
+          {isPositive ? '+' : '-'}{formatINR(Math.abs(pos.unrealizedPnl))}
+        </span>
+        <div className={`text-[10px] font-medium mt-0.5 ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
+          {isPositive ? '+' : ''}{pos.unrealizedPnlPercent.toFixed(2)}%
+        </div>
+      </TableCell>
+      <TableCell className="py-4 text-center">
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-lg border-[#00D09C]/40 px-3 py-1.5 text-[11px] font-semibold text-[#00D09C] bg-transparent hover:bg-[#00D09C] hover:text-white hover:border-[#00D09C] active:scale-95 transition-all"
+          disabled={squaringOff === pos.id}
+          onClick={() => onSquareOff(pos.id, pos.symbol)}
+        >
+          {squaringOff === pos.id ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            'Square Off'
+          )}
+        </Button>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+function StableClosedPositionRow({ pos }: { pos: PositionData }) {
+  const isLong = pos.tradeDirection === 'BUY'
+  const isPositive = (pos.realizedPnl ?? 0) >= 0
+  const realizedPnl = pos.realizedPnl ?? 0
+
+  return (
+    <TableRow
+      key={pos.id}
+      className="hover:bg-[#f8f9fb] transition-colors"
+    >
+      <TableCell className="py-4">
+        <div className="flex flex-col">
+          <span className="font-bold text-sm text-[#1a1a1a]">{pos.symbol}</span>
+          {pos.segment === 'OPTIONS' && pos.strikePrice && (
+            <span className="text-[10px] uppercase text-[#6b7280]">
+              {pos.strikePrice} {pos.optionType}
+            </span>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="py-4">
+        <span
+          className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+            isLong
+              ? 'bg-[#00B386]/10 text-[#00B386]'
+              : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
+          }`}
+        >
+          {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
+          {isLong ? 'BUY' : 'SELL'}
+        </span>
+      </TableCell>
+      <TableCell className="font-mono-data font-tabular text-sm text-right text-[#6b7280] py-4">
+        {formatINR(pos.entryPrice)}
+      </TableCell>
+      <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
+        {pos.exitPrice ? formatINR(pos.exitPrice) : '—'}
+      </TableCell>
+      <TableCell className="py-4 text-right">
+        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
+          isPositive
+            ? 'bg-[#00B386]/10 text-[#00B386]'
+            : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
+        }`}>
+          {isPositive ? '+' : '-'}{formatINR(Math.abs(realizedPnl))}
+        </span>
+      </TableCell>
+      <TableCell className="text-xs text-[#6b7280] py-4">
+        <div className="flex items-center gap-1">
+          <Clock className="size-3" />
+          {formatDuration(pos.createdAt, pos.closedAt)}
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────
 
 export function PositionsPage() {
@@ -90,7 +229,10 @@ export function PositionsPage() {
   const [squaringOff, setSquaringOff] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('open')
 
-  // ─── Fetch Positions ──────────────────────────────────────
+  // Track previous position IDs to detect ACTUAL changes vs same data
+  const prevPositionsRef = useRef<Map<string, { currentPrice: number; unrealizedPnl: number; isOpen: boolean }>>(new Map())
+
+  // ─── Fetch Positions (smart update — only update if data changed) ──
   const fetchPositions = useCallback(async () => {
     if (!token) { setLoading(false); return }
     try {
@@ -99,12 +241,34 @@ export function PositionsPage() {
       })
       if (res.ok) {
         const json = await res.json()
-        setPositions(json.data || [])
+        const newData: PositionData[] = json.data || []
+
+        // Smart comparison: only update state if something actually changed
+        setPositions(prev => {
+          // Quick length check
+          if (prev.length !== newData.length) return newData
+
+          // Check if any position's key fields changed
+          const prevMap = new Map(prev.map(p => [p.id, p]))
+          let hasChanges = false
+          for (const newPos of newData) {
+            const oldPos = prevMap.get(newPos.id)
+            if (!oldPos ||
+                oldPos.currentPrice !== newPos.currentPrice ||
+                oldPos.unrealizedPnl !== newPos.unrealizedPnl ||
+                oldPos.isOpen !== newPos.isOpen) {
+              hasChanges = true
+              break
+            }
+          }
+
+          return hasChanges ? newData : prev
+        })
       } else {
         setPositions([])
       }
     } catch {
-      setPositions([])
+      // Don't clear positions on network error — keep showing stale data
     } finally {
       setLoading(false)
     }
@@ -112,7 +276,7 @@ export function PositionsPage() {
 
   useEffect(() => {
     fetchPositions()
-    // Auto-refresh every 30 seconds (reduced from 5s to cut DB load)
+    // Auto-refresh every 30 seconds
     const interval = setInterval(fetchPositions, 30000)
     return () => clearInterval(interval)
   }, [fetchPositions])
@@ -152,7 +316,7 @@ export function PositionsPage() {
     }
   }
 
-  // ─── Split positions by open/closed ──────────────────────
+  // ─── Split positions by open/closed (memoized) ──────────
   const openPositions = useMemo(() =>
     positions.filter(p => p.isOpen !== false),
     [positions]
@@ -163,20 +327,22 @@ export function PositionsPage() {
     [positions]
   )
 
-  // ─── Stats ────────────────────────────────────────────────
-  const totalPnl = openPositions.reduce((s, p) => s + (p.unrealizedPnl || 0), 0)
-  const totalInvested = openPositions.reduce((s, p) => s + (p.totalInvested || 0), 0)
-  const totalMargin = openPositions.reduce((s, p) => s + (p.marginUsed || 0), 0)
-  const isProfit = totalPnl >= 0
+  // ─── Stats (memoized) ──────────────────────────────────────
+  const stats = useMemo(() => {
+    const totalPnl = openPositions.reduce((s, p) => s + (p.unrealizedPnl || 0), 0)
+    const totalInvested = openPositions.reduce((s, p) => s + (p.totalInvested || 0), 0)
+    const totalMargin = openPositions.reduce((s, p) => s + (p.marginUsed || 0), 0)
+    const isProfit = totalPnl >= 0
 
-  const stats = [
-    { label: 'Open Positions', value: String(openPositions.length), icon: Crosshair, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
-    { label: 'Total Invested', value: formatINRWhole(totalInvested), icon: IndianRupee, borderColor: 'border-l-[#6b7280]', iconBg: 'bg-[#6b7280]/10', iconColor: 'text-[#6b7280]' },
-    { label: 'Unrealized P&L', value: `${isProfit ? '+' : '-'}${formatINR(Math.abs(totalPnl))}`, icon: isProfit ? TrendingUp : AlertTriangle, borderColor: isProfit ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]', iconBg: isProfit ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10', iconColor: isProfit ? 'text-[#00B386]' : 'text-[#EB5B3C]' },
-    { label: 'Margin Used', value: formatINRWhole(totalMargin), icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
-  ]
+    return [
+      { label: 'Open Positions', value: String(openPositions.length), icon: Crosshair, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
+      { label: 'Total Invested', value: formatINRWhole(totalInvested), icon: IndianRupee, borderColor: 'border-l-[#6b7280]', iconBg: 'bg-[#6b7280]/10', iconColor: 'text-[#6b7280]' },
+      { label: 'Unrealized P&L', value: `${isProfit ? '+' : '-'}${formatINR(Math.abs(totalPnl))}`, icon: isProfit ? TrendingUp : AlertTriangle, borderColor: isProfit ? 'border-l-[#00d09c]' : 'border-l-[#eb5b3c]', iconBg: isProfit ? 'bg-[#00B386]/10' : 'bg-[#EB5B3C]/10', iconColor: isProfit ? 'text-[#00B386]' : 'text-[#EB5B3C]' },
+      { label: 'Margin Used', value: formatINRWhole(totalMargin), icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
+    ]
+  }, [openPositions])
 
-  // ─── Open Position Table ─────────────────────────────────
+  // ─── Open Position Table (STABLE — no AnimatePresence, no motion.tr) ──
   const OpenPositionTable = () => {
     if (openPositions.length === 0) {
       return (
@@ -216,90 +382,21 @@ export function PositionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#e5e7eb]">
-            <AnimatePresence>
-              {openPositions.map((pos) => {
-                const isLong = pos.tradeDirection === 'BUY'
-                const isPositive = pos.unrealizedPnl >= 0
-
-                return (
-                  <motion.tr
-                    key={pos.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 10 }}
-                    className="hover:bg-[#f8f9fb] transition-colors"
-                  >
-                    <TableCell className="py-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-[#1a1a1a]">{pos.symbol}</span>
-                        {pos.segment === 'OPTIONS' && pos.strikePrice && (
-                          <span className="text-[10px] uppercase text-[#6b7280]">
-                            {pos.strikePrice} {pos.optionType}
-                          </span>
-                        )}
-                        {pos.segment === 'FUTURES' && (
-                          <span className="text-[10px] text-[#6b7280]">FUT</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <span
-                        className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                          isLong
-                            ? 'bg-[#00B386]/10 text-[#00B386]'
-                            : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
-                        }`}
-                      >
-                        {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
-                        {isLong ? 'BUY' : 'SELL'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-[#6b7280] py-4">{pos.segment}</TableCell>
-                    <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">{pos.quantity}</TableCell>
-                    <TableCell className="font-mono-data font-tabular text-sm text-right text-[#6b7280] py-4">
-                      {formatINR(pos.entryPrice)}
-                    </TableCell>
-                    <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
-                      {formatINR(pos.currentPrice)}
-                    </TableCell>
-                    <TableCell className="py-4 text-right">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
-                        isPositive
-                          ? 'bg-[#00B386]/10 text-[#00B386]'
-                          : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
-                      }`}>
-                        {isPositive ? '+' : '-'}{formatINR(Math.abs(pos.unrealizedPnl))}
-                      </span>
-                      <div className={`text-[10px] font-medium mt-0.5 ${isPositive ? 'text-[#00B386]' : 'text-[#EB5B3C]'}`}>
-                        {isPositive ? '+' : ''}{pos.unrealizedPnlPercent.toFixed(2)}%
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4 text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-lg border-[#00D09C]/40 px-3 py-1.5 text-[11px] font-semibold text-[#00D09C] bg-transparent hover:bg-[#00D09C] hover:text-white hover:border-[#00D09C] active:scale-95 transition-all"
-                        disabled={squaringOff === pos.id}
-                        onClick={() => handleSquareOff(pos.id, pos.symbol)}
-                      >
-                        {squaringOff === pos.id ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          'Square Off'
-                        )}
-                      </Button>
-                    </TableCell>
-                  </motion.tr>
-                )
-              })}
-            </AnimatePresence>
+            {openPositions.map((pos) => (
+              <StableOpenPositionRow
+                key={pos.id}
+                pos={pos}
+                squaringOff={squaringOff}
+                onSquareOff={handleSquareOff}
+              />
+            ))}
           </TableBody>
         </Table>
       </div>
     )
   }
 
-  // ─── Closed Position Table ────────────────────────────────
+  // ─── Closed Position Table (STABLE — no AnimatePresence) ────────
   const ClosedPositionTable = () => {
     if (closedPositions.length === 0) {
       return (
@@ -329,62 +426,9 @@ export function PositionsPage() {
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#e5e7eb]">
-            {closedPositions.map((pos) => {
-              const isLong = pos.tradeDirection === 'BUY'
-              const isPositive = (pos.realizedPnl ?? 0) >= 0
-              const realizedPnl = pos.realizedPnl ?? 0
-
-              return (
-                <TableRow
-                  key={pos.id}
-                  className="hover:bg-[#f8f9fb] transition-colors"
-                >
-                  <TableCell className="py-4">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-sm text-[#1a1a1a]">{pos.symbol}</span>
-                      {pos.segment === 'OPTIONS' && pos.strikePrice && (
-                        <span className="text-[10px] uppercase text-[#6b7280]">
-                          {pos.strikePrice} {pos.optionType}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <span
-                      className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                        isLong
-                          ? 'bg-[#00B386]/10 text-[#00B386]'
-                          : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
-                      }`}
-                    >
-                      {isLong ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
-                      {isLong ? 'BUY' : 'SELL'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#6b7280] py-4">
-                    {formatINR(pos.entryPrice)}
-                  </TableCell>
-                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
-                    {pos.exitPrice ? formatINR(pos.exitPrice) : '—'}
-                  </TableCell>
-                  <TableCell className="py-4 text-right">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold ${
-                      isPositive
-                        ? 'bg-[#00B386]/10 text-[#00B386]'
-                        : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'
-                    }`}>
-                      {isPositive ? '+' : '-'}{formatINR(Math.abs(realizedPnl))}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs text-[#6b7280] py-4">
-                    <div className="flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {formatDuration(pos.createdAt, pos.closedAt)}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
+            {closedPositions.map((pos) => (
+              <StableClosedPositionRow key={pos.id} pos={pos} />
+            ))}
           </TableBody>
         </Table>
       </div>
@@ -394,26 +438,17 @@ export function PositionsPage() {
   return (
     <div className="min-h-screen bg-[#f5f7fa] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-      >
+      <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] tracking-tight">
           Positions
         </h1>
         <p className="text-[#6b7280] mt-1 text-sm">
           Track and manage your open and closed trades with real-time P&amp;L updates.
         </p>
-      </motion.div>
+      </div>
 
       {/* ── Stats Grid ─────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-      >
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
@@ -434,63 +469,57 @@ export function PositionsPage() {
             </Card>
           )
         })}
-      </motion.div>
+      </div>
 
       {/* ── Positions Table with Tabs ───────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-      >
-        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
-          <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="flex items-center justify-between mb-5">
-                <TabsList className="bg-[#f5f7fa] border border-[#e5e7eb] p-1 rounded-lg">
-                  <TabsTrigger
-                    value="open"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
-                  >
-                    Open Positions
-                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{openPositions.length}</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="closed"
-                    className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
-                  >
-                    Closed Positions
-                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{closedPositions.length}</span>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+      <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+        <CardContent className="p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <div className="flex items-center justify-between mb-5">
+              <TabsList className="bg-[#f5f7fa] border border-[#e5e7eb] p-1 rounded-lg">
+                <TabsTrigger
+                  value="open"
+                  className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                >
+                  Open Positions
+                  <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{openPositions.length}</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="closed"
+                  className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
+                >
+                  Closed Positions
+                  <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{closedPositions.length}</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-              {loading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-16 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-16 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
-                      <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <TabsContent value="open" className="mt-0">
-                    <OpenPositionTable />
-                  </TabsContent>
-                  <TabsContent value="closed" className="mt-0">
-                    <ClosedPositionTable />
-                  </TabsContent>
-                </>
-              )}
-            </Tabs>
-          </CardContent>
-        </Card>
-      </motion.div>
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                    <Skeleton className="h-4 w-16 bg-[#f0f0f5]" />
+                    <Skeleton className="h-4 w-16 bg-[#f0f0f5]" />
+                    <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                    <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                    <Skeleton className="h-4 w-20 bg-[#f0f0f5]" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <TabsContent value="open" className="mt-0">
+                  <OpenPositionTable />
+                </TabsContent>
+                <TabsContent value="closed" className="mt-0">
+                  <ClosedPositionTable />
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }
