@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   GitBranch,
   Minus,
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuthStore } from '@/lib/auth-store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
+import { useMarketStore } from '@/lib/market-store'
 import { toast } from 'sonner'
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -42,11 +43,29 @@ interface OptionRow {
 
 type Instrument = 'NIFTY' | 'BANKNIFTY' | 'FINNIFTY' | 'SENSEX' | 'MIDCPNIFTY'
 
+// ─── Instrument Config ────────────────────────────────────────────────
+const INSTRUMENT_CONFIG: Record<Instrument, { step: number; lotSize: number }> = {
+  NIFTY: { step: 50, lotSize: 50 },
+  BANKNIFTY: { step: 100, lotSize: 15 },
+  FINNIFTY: { step: 50, lotSize: 40 },
+  SENSEX: { step: 100, lotSize: 20 },
+  MIDCPNIFTY: { step: 50, lotSize: 75 },
+}
+
+const INSTRUMENT_SPOT: Record<Instrument, number> = {
+  NIFTY: 24500,
+  BANKNIFTY: 52000,
+  FINNIFTY: 23500,
+  SENSEX: 81000,
+  MIDCPNIFTY: 12500,
+}
+
 // ─── Fallback Mock Data Generator ────────────────────────────────────
 function generateMockData(spotPrice: number, instrument: Instrument): OptionRow[] {
   const strikes: number[] = []
-  const step = instrument === 'SENSEX' || instrument === 'BANKNIFTY' ? 100 : 50
-  const range = 500
+  const step = INSTRUMENT_CONFIG[instrument]?.step || 50
+  // Wider range for higher-priced instruments like BANKNIFTY, SENSEX
+  const range = spotPrice > 50000 ? 2000 : spotPrice > 30000 ? 1500 : 1000
   const startStrike = Math.floor((spotPrice - range) / step) * step
   const endStrike = Math.ceil((spotPrice + range) / step) * step
 
@@ -94,20 +113,13 @@ function generateMockData(spotPrice: number, instrument: Instrument): OptionRow[
   })
 }
 
-const INSTRUMENT_CONFIG: Record<Instrument, { step: number; lotSize: number }> = {
-  NIFTY: { step: 50, lotSize: 50 },
-  BANKNIFTY: { step: 100, lotSize: 15 },
-  FINNIFTY: { step: 50, lotSize: 40 },
-  SENSEX: { step: 100, lotSize: 20 },
-  MIDCPNIFTY: { step: 50, lotSize: 75 },
-}
-
 const EXPIRIES = [
-  { label: '27 Mar 2025', type: 'Weekly' },
-  { label: '03 Apr 2025', type: 'Weekly' },
-  { label: '24 Apr 2025', type: 'Monthly' },
-  { label: '29 May 2025', type: 'Monthly' },
+  { label: '05 Jun 2025', type: 'Weekly' },
+  { label: '12 Jun 2025', type: 'Weekly' },
+  { label: '19 Jun 2025', type: 'Weekly' },
   { label: '26 Jun 2025', type: 'Monthly' },
+  { label: '31 Jul 2025', type: 'Monthly' },
+  { label: '28 Aug 2025', type: 'Monthly' },
 ]
 
 // ─── Quick Trade Modal (Groww-style) ────────────────────────────────
@@ -320,11 +332,42 @@ export function OptionChainPage() {
   const [selectedSide, setSelectedSide] = useState<'CE' | 'PE'>('CE')
   const [modalOpen, setModalOpen] = useState(false)
 
-  const [data, setData] = useState<OptionRow[]>([])
-  const [spotPrice, setSpotPrice] = useState(0)
+  // ─── Live data from Market Engine ─────────────────────────────
+  const marketIndices = useMarketStore((s) => s.indices)
+  const optionChains = useMarketStore((s) => s.optionChains)
+  const engineRunning = useMarketStore((s) => s.engineRunning)
+
+  // Get live spot price and option chain from market engine
+  const liveSpot = marketIndices[instrument]?.currentPrice || INSTRUMENT_SPOT[instrument] || 24500
+  const liveChain = optionChains[instrument] || []
+
+  // Convert engine OptionTick[] to display OptionRow[]
+  const data: OptionRow[] = useMemo(() => {
+    if (liveChain.length > 0) {
+      return liveChain.map((tick) => ({
+        strike: tick.strike,
+        ceOI: tick.ceOI,
+        ceOIChngPct: Number(((Math.random() - 0.4) * 10).toFixed(1)), // OI change not tracked in engine
+        ceLTP: tick.ceLTP,
+        ceChngPct: tick.ceChngPct,
+        ceIV: tick.ceIV,
+        ceVolume: tick.ceVolume,
+        peVolume: tick.peVolume,
+        peIV: tick.peIV,
+        peChngPct: tick.peChngPct,
+        peLTP: tick.peLTP,
+        peOIChngPct: Number(((Math.random() - 0.4) * 10).toFixed(1)),
+        peOI: tick.peOI,
+      }))
+    }
+    // Fallback to static mock data if engine hasn't started
+    return generateMockData(liveSpot, instrument)
+  }, [liveChain, liveSpot, instrument])
+
+  const spotPrice = liveSpot
   const [apiPcr, setApiPcr] = useState(0)
   const [apiMaxPain, setApiMaxPain] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false) // No loading needed with live engine
 
   const atmRef = useRef<HTMLTableRowElement>(null)
 
@@ -355,72 +398,6 @@ export function OptionChainPage() {
     fetchExpiries()
   }, [instrument])
 
-  const fetchOptionChain = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/options/chain/${instrument}`)
-      if (res.ok) {
-        const json = await res.json()
-        if (json.success && json.data?.chain?.length > 0) {
-          const apiData = json.data
-          setSpotPrice(apiData.spot || 0)
-          setApiPcr(apiData.pcr || 0)
-          setApiMaxPain(apiData.maxPain || 0)
-
-          const strikeMap = new Map<number, { ce?: Record<string, unknown>; pe?: Record<string, unknown> }>()
-          for (const opt of apiData.chain as Record<string, unknown>[]) {
-            const strike = opt.strikePrice as number
-            if (!strikeMap.has(strike)) strikeMap.set(strike, {})
-            const type = opt.optionType as string
-            if (type === 'CE') strikeMap.get(strike)!.ce = opt
-            else strikeMap.get(strike)!.pe = opt
-          }
-
-          const step = INSTRUMENT_CONFIG[instrument]?.step || 50
-          const rows: OptionRow[] = []
-          for (const [strike, d] of strikeMap) {
-            const diffFromSpot = strike - (apiData.spot || 0)
-            const isATM = Math.abs(diffFromSpot) < step / 2
-
-            rows.push({
-              strike,
-              ceOI: Number(((d.ce?.openInterest as number) || (isATM ? 80 : 40) * (0.5 + Math.random())).toFixed(1)),
-              ceOIChngPct: Number(((d.ce?.oiChangePercent as number) || (Math.random() - 0.4) * 30).toFixed(1)),
-              ceLTP: Number(((d.ce?.ltp as number) || 0).toFixed(2)),
-              ceChngPct: Number(((d.ce?.changePercent as number) || 0).toFixed(1)),
-              ceIV: Number(((d.ce?.impliedVolatility as number) || 0).toFixed(1)),
-              ceVolume: Math.round((d.ce?.volume as number) || 0),
-              peVolume: Math.round((d.pe?.volume as number) || 0),
-              peIV: Number(((d.pe?.impliedVolatility as number) || 0).toFixed(1)),
-              peChngPct: Number(((d.pe?.changePercent as number) || 0).toFixed(1)),
-              peLTP: Number(((d.pe?.ltp as number) || 0).toFixed(2)),
-              peOIChngPct: Number(((d.pe?.oiChangePercent as number) || (Math.random() - 0.4) * 30).toFixed(1)),
-              peOI: Number(((d.pe?.openInterest as number) || (isATM ? 85 : 45) * (0.5 + Math.random())).toFixed(1)),
-            })
-          }
-
-          rows.sort((a, b) => a.strike - b.strike)
-          setData(rows)
-        } else {
-          setData([])
-          setSpotPrice(0)
-        }
-      } else {
-        setData([])
-        setSpotPrice(0)
-      }
-    } catch {
-      setData([])
-      setSpotPrice(0)
-    } finally {
-      setLoading(false)
-    }
-  }, [instrument])
-
-  useEffect(() => {
-    fetchOptionChain()
-  }, [fetchOptionChain])
-
   // Auto-scroll to ATM when data loads
   useEffect(() => {
     if (data.length > 0 && atmRef.current) {
@@ -428,7 +405,7 @@ export function OptionChainPage() {
         atmRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }, 100)
     }
-  }, [data])
+  }, [instrument]) // Only scroll when instrument changes, not every tick
 
   const totalCEOI = data.reduce((s, r) => s + r.ceOI, 0)
   const totalPEOI = data.reduce((s, r) => s + r.peOI, 0)
@@ -452,7 +429,10 @@ export function OptionChainPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-[#1a1a2e]">Options Chain</h1>
-            <p className="text-xs text-[#6b7280]">{instrument} · Click on LTP to trade</p>
+            <p className="text-xs text-[#6b7280]">
+              {instrument} · Live · Click on LTP to trade
+              {engineRunning && <span className="ml-1 text-[#00B386]">●</span>}
+            </p>
           </div>
         </div>
         {/* Quick Stats */}
@@ -531,18 +511,12 @@ export function OptionChainPage() {
       </div>
 
       {/* ── Option Chain Table ─────────────────────────────────── */}
-      {loading ? (
+      {data.length === 0 ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="size-6 animate-spin text-[#1a1a2e]" />
             <span className="text-sm text-[#6b7280]">Loading options data...</span>
           </div>
-        </div>
-      ) : data.length === 0 ? (
-        <div className="bg-white border border-[#e5e7eb] rounded-xl py-16 flex flex-col items-center justify-center">
-          <GitBranch className="size-8 text-[#d1d5db] mb-3" />
-          <p className="text-[#1a1a2e] font-semibold">No options data</p>
-          <p className="text-[#6b7280] text-xs mt-1">Data for {instrument} will appear here</p>
         </div>
       ) : (
         <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">

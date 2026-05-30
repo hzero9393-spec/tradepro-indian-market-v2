@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -21,10 +21,12 @@ import {
   Plus,
   Loader2,
   ShoppingCart,
+  Star,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
+import { useMarketData } from '@/lib/market-data'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -160,9 +162,82 @@ function SkeletonRow() {
   )
 }
 
+// ─── Watchlist Star Button ──────────────────────────────────────────────
+function WatchlistStar({ symbol, name, token }: { symbol: string; name: string; token: string | null }) {
+  const [isInWatchlist, setIsInWatchlist] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!token) return
+    fetch(`/api/watchlist`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setIsInWatchlist(data.data.some((item: { symbol: string }) => item.symbol === symbol))
+        }
+      })
+      .catch(() => {})
+  }, [symbol, token])
+
+  const toggleWatchlist = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!token || loading) return
+    setLoading(true)
+    try {
+      if (isInWatchlist) {
+        const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json()
+        if (data.success) {
+          setIsInWatchlist(false)
+          toast.success(`${symbol} removed from watchlist`)
+        }
+      } else {
+        const res = await fetch('/api/watchlist', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol, name, segment: 'EQUITY' }),
+        })
+        const data = await res.json()
+        if (data.success) {
+          setIsInWatchlist(true)
+          toast.success(`${symbol} added to watchlist`)
+        } else if (res.status === 409) {
+          setIsInWatchlist(true)
+        }
+      }
+    } catch {
+      toast.error('Failed to update watchlist')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={toggleWatchlist}
+      disabled={loading}
+      className="size-8 rounded-lg flex items-center justify-center transition-all hover:bg-[#f59e0b]/5 shrink-0"
+      title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+    >
+      <Star
+        className={cn('size-4 transition-colors', isInWatchlist ? 'text-[#f59e0b] fill-[#f59e0b]' : 'text-[#d1d5db] hover:text-[#f59e0b]')}
+      />
+    </button>
+  )
+}
+
+function cn(...args: (string | boolean | undefined | null)[]) {
+  return args.filter(Boolean).join(' ')
+}
+
 // ─── Stock Row Component ──────────────────────────────────────────────────
 
-function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => void }) {
+function StockRow({ stock, onClick, token }: { stock: TradeableStock; onClick: () => void; token: string | null }) {
   const isPositive = stock.changePercent >= 0
 
   return (
@@ -209,6 +284,8 @@ function StockRow({ stock, onClick }: { stock: TradeableStock; onClick: () => vo
           )}
           {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
         </div>
+        {/* Watchlist star */}
+        <WatchlistStar symbol={stock.symbol} name={stock.name} token={token} />
       </div>
     </motion.button>
   )
@@ -235,6 +312,8 @@ function OrderPanel({
   const [productType, setProductType] = useState('INTRADAY')
   const [quantity, setQuantity] = useState(10)
   const [price, setPrice] = useState('')
+  const [stopLoss, setStopLoss] = useState('')
+  const [target, setTarget] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [confirmData, setConfirmData] = useState<TradeConfirmData | null>(null)
@@ -275,6 +354,29 @@ function OrderPanel({
     // Open confirmation modal instead of directly placing order
     const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
     const fillPrice = orderType === 'MARKET' ? selectedStock.currentPrice : parseFloat(price)
+    // SL/TP validation
+    const entryPrice = fillPrice
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      if (direction === 'BUY' && parseFloat(stopLoss) >= entryPrice) {
+        toast.error('Stop Loss should be below entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(stopLoss) <= entryPrice) {
+        toast.error('Stop Loss should be above entry price for SELL orders')
+        return
+      }
+    }
+    if (target && parseFloat(target) > 0) {
+      if (direction === 'BUY' && parseFloat(target) <= entryPrice) {
+        toast.error('Target should be above entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(target) >= entryPrice) {
+        toast.error('Target should be below entry price for SELL orders')
+        return
+      }
+    }
+
     setConfirmData({
       symbol: selectedStock.symbol,
       direction: direction as 'BUY' | 'SELL',
@@ -286,6 +388,8 @@ function OrderPanel({
       totalValue: estimatedTotal,
       brokerage: estimatedBrokerage,
       availableBalance,
+      stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+      target: target ? parseFloat(target) : undefined,
     })
     setConfirmModalOpen(true)
   }
@@ -305,6 +409,18 @@ function OrderPanel({
 
     if (orderType === 'LIMIT' && price) {
       body.price = parseFloat(price)
+    }
+
+    // Include Stop Loss & Target from OrderPanel inputs and confirm modal
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      body.stopLoss = parseFloat(stopLoss)
+    } else if (confirmData?.stopLoss && confirmData.stopLoss > 0) {
+      body.stopLoss = confirmData.stopLoss
+    }
+    if (target && parseFloat(target) > 0) {
+      body.target = parseFloat(target)
+    } else if (confirmData?.target && confirmData.target > 0) {
+      body.target = confirmData.target
     }
 
     try {
@@ -341,10 +457,13 @@ function OrderPanel({
           brokerage: data.order?.brokerage,
         }
       } else {
+        console.error('[Trade] Order failed:', res.status, data.error)
+        toast.error(data.error || 'Order failed', { duration: 5000 })
         return { success: false, error: data.error || 'Failed to place order' }
       }
-    } catch {
-      return { success: false, error: 'Network error placing order' }
+    } catch (err) {
+      console.error('[Trade] Network error:', err)
+      return { success: false, error: 'Network error placing order. Check your connection.' }
     }
   }
 
@@ -497,6 +616,40 @@ function OrderPanel({
           </div>
         )}
 
+        {/* Stop Loss & Target */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-[#EB5B3C]" />
+              Stop Loss
+            </label>
+            <Input
+              type="number"
+              placeholder="Optional"
+              step="0.05"
+              min="0"
+              value={stopLoss}
+              onChange={(e) => setStopLoss(e.target.value)}
+              className="h-9 font-mono font-tabular border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-[#00B386]" />
+              Target
+            </label>
+            <Input
+              type="number"
+              placeholder="Optional"
+              step="0.05"
+              min="0"
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              className="h-9 font-mono font-tabular border-[#e5e7eb] bg-white text-[#1a1a1a] focus:ring-[#00B386]/20 focus:border-[#00B386]"
+            />
+          </div>
+        </div>
+
         {/* Order Summary */}
         <div className="rounded-xl bg-[#f5f7fa] p-4 space-y-2">
           <div className="flex items-center justify-between">
@@ -563,7 +716,12 @@ function OrderPanel({
         tradeData={confirmData}
         onConfirm={executeTrade}
         onSuccess={() => {
+          setStopLoss('')
+          setTarget('')
           useAppStore.getState().setCurrentPage('positions')
+        }}
+        onDataChange={(data) => {
+          setConfirmData(prev => prev ? { ...prev, ...data } : null)
         }}
       />
     </Card>
@@ -576,6 +734,9 @@ export function TradingPage() {
   const { token, user } = useAuthStore()
   const { setCurrentPage, navigateToStock } = useAppStore()
   const { showTradeSuccess } = useTradeSuccess()
+
+  // ── Real-time market data ────────────────────────────────────────
+  const { stocks: liveStocks, isConnected: isLiveConnected } = useMarketData()
 
   // ── State ─────────────────────────────────────────────────────────────
   const [stocks, setStocks] = useState<TradeableStock[]>([])
@@ -717,7 +878,7 @@ export function TradingPage() {
     fetchPortfolio()
   }, [fetchPortfolio])
 
-  // ── Filtered Stocks ──────────────────────────────────────────────────
+  // ── Filtered Stocks (with live prices from client engine) ────────
   const displayStocks = useMemo(() => {
     let list: TradeableStock[]
 
@@ -751,8 +912,25 @@ export function TradingPage() {
       )
     }
 
+    // Overlay live prices from client market engine
+    if (isLiveConnected && liveStocks.size > 0) {
+      list = list.map(stock => {
+        const live = liveStocks.get(stock.symbol)
+        if (live) {
+          return {
+            ...stock,
+            currentPrice: live.price,
+            change: live.change,
+            changePercent: live.changePercent,
+            volume: live.volume,
+          }
+        }
+        return stock
+      })
+    }
+
     return list
-  }, [stocks, gainers, losers, activeTab, searchQuery])
+  }, [stocks, gainers, losers, activeTab, searchQuery, isLiveConnected, liveStocks])
 
   // ── Loading state for current tab ────────────────────────────────────
   const isCurrentTabLoading = useMemo(() => {
@@ -766,13 +944,19 @@ export function TradingPage() {
     }
   }, [activeTab, loadingStocks, loadingGainers, loadingLosers])
 
-  // ── Market summary stats ─────────────────────────────────────────────
+  // ── Market summary stats (use live data when available) ───────────
   const marketStats = useMemo(() => {
-    const advancing = stocks.filter((s) => s.changePercent > 0).length
-    const declining = stocks.filter((s) => s.changePercent < 0).length
-    const unchanged = stocks.filter((s) => s.changePercent === 0).length
-    return { advancing, declining, unchanged, total: stocks.length }
-  }, [stocks])
+    const sourceList = isLiveConnected && liveStocks.size > 0
+      ? stocks.map(stock => {
+          const live = liveStocks.get(stock.symbol)
+          return live ? { ...stock, changePercent: live.changePercent } : stock
+        })
+      : stocks
+    const advancing = sourceList.filter((s) => s.changePercent > 0).length
+    const declining = sourceList.filter((s) => s.changePercent < 0).length
+    const unchanged = sourceList.filter((s) => s.changePercent === 0).length
+    return { advancing, declining, unchanged, total: sourceList.length }
+  }, [stocks, isLiveConnected, liveStocks])
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
@@ -999,6 +1183,7 @@ export function TradingPage() {
                         <StockRow
                           stock={stock}
                           onClick={() => handleSelectStock(stock)}
+                          token={token}
                         />
                       </motion.div>
                     ))}

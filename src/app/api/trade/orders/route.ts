@@ -13,9 +13,11 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20'), 1), 100)
     const offset = Math.max(parseInt(searchParams.get('offset') || '0'), 0)
+    const from = searchParams.get('from')
+    const to = searchParams.get('to')
 
     // Build where clause
-    const where: { userId: string; status?: string } = { userId }
+    const where: Record<string, unknown> = { userId }
 
     if (status) {
       const validStatuses = ['PENDING', 'PARTIALLY_FILLED', 'FILLED', 'CANCELLED', 'REJECTED', 'EXPIRED']
@@ -26,6 +28,17 @@ export async function GET(request: NextRequest) {
         )
       }
       where.status = status
+    }
+
+    // Date range filter on placedAt
+    if (from || to) {
+      where.placedAt = {}
+      if (from) {
+        where.placedAt.gte = new Date(from)
+      }
+      if (to) {
+        where.placedAt.lte = new Date(to)
+      }
     }
 
     // Get total count

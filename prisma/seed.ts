@@ -348,110 +348,90 @@ async function main() {
   }
 
   // ============================================================
-  // SEED FUTURES DATA
+  // SEED FUTURES DATA (3 contracts per underlying: Current/Next/Far Month)
+  // NON-DESTRUCTIVE: Uses upsert pattern — existing futures preserved
   // ============================================================
-  console.log('📉 Seeding futures...')
-  const futuresData = [
-    {
-      underlying: 'NIFTY',
-      underlyingType: 'INDEX' as const,
-      expiryDate: new Date('2025-03-27'),
-      expiryType: 'MONTHLY' as const,
-      lotSize: 50,
-      ltp: 19545,
-      open: 19460,
-      high: 19610,
-      low: 19420,
-      previousClose: 19425,
-      change: 120,
-      changePercent: 0.62,
-      openInterest: 12500000,
-      oiChange: 850000,
-      volume: 32500000,
-      basis: 45,
-      marginPercent: 8.5,
-    },
-    {
-      underlying: 'BANKNIFTY',
-      underlyingType: 'INDEX' as const,
-      expiryDate: new Date('2025-03-26'),
-      expiryType: 'MONTHLY' as const,
-      lotSize: 25,
-      ltp: 44320,
-      open: 44150,
-      high: 44520,
-      low: 44100,
-      previousClose: 44150,
-      change: 170,
-      changePercent: 0.39,
-      openInterest: 8200000,
-      oiChange: 420000,
-      volume: 22500000,
-      basis: 70,
-      marginPercent: 9.2,
-    },
-    {
-      underlying: 'SENSEX',
-      underlyingType: 'INDEX' as const,
-      expiryDate: new Date('2025-03-27'),
-      expiryType: 'MONTHLY' as const,
-      lotSize: 15,
-      ltp: 65280,
-      open: 65100,
-      high: 65530,
-      low: 64950,
-      previousClose: 65020,
-      change: 260,
-      changePercent: 0.4,
-      openInterest: 2100000,
-      oiChange: 125000,
-      volume: 8500000,
-      basis: 80,
-      marginPercent: 8.8,
-    },
-    {
-      underlying: 'FINNIFTY',
-      underlyingType: 'INDEX' as const,
-      expiryDate: new Date('2025-03-25'),
-      expiryType: 'MONTHLY' as const,
-      lotSize: 40,
-      ltp: 20210,
-      open: 20100,
-      high: 20280,
-      low: 20040,
-      previousClose: 20060,
-      change: 150,
-      changePercent: 0.75,
-      openInterest: 3500000,
-      oiChange: 180000,
-      volume: 12000000,
-      basis: 60,
-      marginPercent: 9.5,
-    },
-    {
-      underlying: 'MIDCPNIFTY',
-      underlyingType: 'INDEX' as const,
-      expiryDate: new Date('2025-03-27'),
-      expiryType: 'MONTHLY' as const,
-      lotSize: 75,
-      ltp: 12550,
-      open: 12470,
-      high: 12610,
-      low: 12440,
-      previousClose: 12470,
-      change: 80,
-      changePercent: 0.64,
-      openInterest: 2800000,
-      oiChange: 150000,
-      volume: 9500000,
-      basis: 50,
-      marginPercent: 10.0,
-    },
+  console.log('📉 Seeding futures (3 contracts per index)...')
+
+  // Helper: Get next N monthly expiry dates (last Thursday of each month)
+  function getNextExpiries(count: number): Date[] {
+    const expiries: Date[] = []
+    const now = new Date()
+    let year = now.getFullYear()
+    let month = now.getMonth()
+
+    for (let i = 0; i < count + 2; i++) {
+      const lastDay = new Date(year, month + 1, 0).getDate()
+      let lastThursday = lastDay
+      while (lastThursday > 0) {
+        const d = new Date(year, month, lastThursday)
+        if (d.getDay() === 4) break // Thursday = 4
+        lastThursday--
+      }
+
+      const expiry = new Date(year, month, lastThursday, 15, 30, 0)
+      if (expiry > now) {
+        expiries.push(expiry)
+      }
+
+      month++
+      if (month > 11) { month = 0; year++ }
+    }
+
+    return expiries.slice(0, count)
+  }
+
+  const futuresConfigs = [
+    { underlying: 'NIFTY', underlyingType: 'INDEX' as const, lotSize: 50, marginPercent: 12, spotPrice: 19500 },
+    { underlying: 'BANKNIFTY', underlyingType: 'INDEX' as const, lotSize: 25, marginPercent: 14, spotPrice: 44250 },
+    { underlying: 'SENSEX', underlyingType: 'INDEX' as const, lotSize: 15, marginPercent: 12, spotPrice: 65200 },
+    { underlying: 'FINNIFTY', underlyingType: 'INDEX' as const, lotSize: 25, marginPercent: 13, spotPrice: 20150 },
+    { underlying: 'MIDCPNIFTY', underlyingType: 'INDEX' as const, lotSize: 75, marginPercent: 15, spotPrice: 12500 },
   ]
 
-  for (const data of futuresData) {
-    await prisma.future.create({ data })
-    console.log(`  ✓ ${data.underlying} Future: ₹${data.ltp} (basis: ₹${data.basis})`)
+  const expiries = getNextExpiries(3)
+  const basisPoints = [0.05, 0.15, 0.30] // % premium over spot
+  let futuresCount = 0
+
+  for (const cfg of futuresConfigs) {
+    for (let idx = 0; idx < expiries.length; idx++) {
+      const premium = cfg.spotPrice * basisPoints[idx] / 100
+      const futurePrice = cfg.spotPrice + premium
+      const previousClose = futurePrice * (1 + (Math.random() - 0.5) * 0.015)
+      const open = previousClose * (1 + (Math.random() - 0.5) * 0.008)
+      const change = open - previousClose
+      const changePct = previousClose > 0 ? (change / previousClose) * 100 : 0
+
+      try {
+        await prisma.future.create({
+          data: {
+            underlying: cfg.underlying,
+            underlyingType: cfg.underlyingType,
+            expiryDate: expiries[idx],
+            expiryType: 'MONTHLY',
+            lotSize: cfg.lotSize,
+            ltp: Number(open.toFixed(2)),
+            open: Number(open.toFixed(2)),
+            high: Number(Math.max(open, futurePrice).toFixed(2)),
+            low: Number(Math.min(open, futurePrice).toFixed(2)),
+            previousClose: Number(previousClose.toFixed(2)),
+            change: Number(change.toFixed(2)),
+            changePercent: Number(changePct.toFixed(2)),
+            openInterest: Number((Math.random() * 80 + 20).toFixed(1)),
+            oiChange: Number(((Math.random() - 0.3) * 5).toFixed(1)),
+            volume: Math.round(Math.random() * 5000000 + 500000),
+            basis: Number(premium.toFixed(2)),
+            marginPercent: cfg.marginPercent,
+            isActive: true,
+          }
+        })
+        futuresCount++
+        console.log(`  ✓ ${cfg.underlying} Future (${['Current', 'Next', 'Far'][idx]} Month): ₹${open.toFixed(2)}`)
+      } catch {
+        // Duplicate — skip (idempotent)
+        console.log(`  ⚠ ${cfg.underlying} Future (expiry: ${expiries[idx].toISOString().split('T')[0]}) already exists — skipped`)
+      }
+    }
   }
 
   // ============================================================
@@ -658,7 +638,7 @@ async function main() {
   console.log(`  Holidays:     12`)
   console.log(`  F&O Bans:     2`)
   console.log(`  Options:      ${strikes.length * 2} (NIFTY chain)`)
-  console.log(`  Futures:      5`)
+  console.log(`  Futures:      ${futuresCount} (3 per index)`)
   console.log(`  Challenges:   3`)
   console.log(`  Learning:     3 paths (${beginnerModules.length + techModules.length + riskModules.length} modules)`)
   console.log(`  Breadth:      1`)

@@ -6,6 +6,7 @@ import {
   Crosshair,
   FileText,
   Wallet,
+  GitBranch,
 } from 'lucide-react'
 import { useAppStore, type PageId } from '@/lib/store'
 import { usePathname } from 'next/navigation'
@@ -20,8 +21,8 @@ interface MobileNavItem {
 const mobileNavItems: MobileNavItem[] = [
   { id: 'dashboard', label: 'Home', icon: Home, url: '/' },
   { id: 'trading', label: 'Stocks', icon: CandlestickChart, url: '/stocks' },
+  { id: 'optionChain', label: 'Options', icon: GitBranch, url: '/option-chain' },
   { id: 'positions', label: 'Positions', icon: Crosshair, url: '/positions' },
-  { id: 'orders', label: 'Orders', icon: FileText, url: '/orders' },
   { id: 'portfolio', label: 'Portfolio', icon: Wallet, url: '/portfolio' },
 ]
 

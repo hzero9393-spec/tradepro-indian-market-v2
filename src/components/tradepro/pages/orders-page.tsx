@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import {
   Card,
   CardContent,
@@ -32,11 +33,20 @@ import {
   CheckCircle2,
   XCircle,
   TrendingUp,
+  X,
+  Pencil,
+  ShieldAlert,
+  Target,
+  Loader2,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { formatINR, formatPnL } from '@/lib/format'
+import { DateFilter, DatePreset, filterByDateRange, getDateRange } from '@/components/tradepro/ui/date-filter'
+
+// ─── Initialize date range (default to 'all' so no orders are hidden) ──
+const allRange = getDateRange('all')
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -55,6 +65,8 @@ interface OrderData {
   status: string
   optionType?: string | null
   strikePrice?: number | null
+  stopLoss?: number | null
+  target?: number | null
   rejectReason: string | null
   placedAt: string
   filledAt: string | null
@@ -115,70 +127,183 @@ export function OrdersPage() {
   const [trades, setTrades] = useState<TradeData[]>([])
   const [loadingOrders, setLoadingOrders] = useState(true)
   const [loadingTrades, setLoadingTrades] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('open')
+
+  const [cancelling, setCancelling] = useState<string | null>(null)
+  const [modifyOrder, setModifyOrder] = useState<OrderData | null>(null)
+  const [modifyPrice, setModifyPrice] = useState<string>('')
+  const [modifySl, setModifySl] = useState<string>('')
+  const [modifyTp, setModifyTp] = useState<string>('')
+  const [modifying, setModifying] = useState(false)
+
+  // ─── Cancel Order ────────────────────────────────────────
+  const handleCancelOrder = async (orderId: string) => {
+    if (!token) return
+    setCancelling(orderId)
+    try {
+      const res = await fetch('/api/trade/cancel', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        toast.success('Order cancelled successfully')
+        fetchOrders()
+      } else {
+        toast.error(data.error || 'Failed to cancel order')
+      }
+    } catch {
+      toast.error('Network error')
+    } finally {
+      setCancelling(null)
+    }
+  }
+
+  // ─── Date Filter State ──────────────────────────────────────
+  const [datePreset, setDatePreset] = useState<DatePreset>('all')
+  const [dateFrom, setDateFrom] = useState<string | null>(allRange.from)
+  const [dateTo, setDateTo] = useState<string | null>(allRange.to)
+  const [customFromInput, setCustomFromInput] = useState<string | null>(null)
+  const [customToInput, setCustomToInput] = useState<string | null>(null)
+
+  // ─── Build query string with date params ────────────────────
+  const buildQueryString = useCallback((basePath: string) => {
+    const params = new URLSearchParams()
+    params.set('limit', '100')
+    if (dateFrom) params.set('from', dateFrom)
+    if (dateTo) params.set('to', dateTo)
+    return `${basePath}?${params.toString()}`
+  }, [dateFrom, dateTo])
 
   // ─── Fetch Orders ────────────────────────────────────────
   const fetchOrders = useCallback(async () => {
     if (!token) { setLoadingOrders(false); return }
     try {
-      const res = await fetch('/api/trade/orders', {
+      setFetchError(null)
+      const res = await fetch(buildQueryString('/api/trade/orders'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         const json = await res.json()
         setOrders(json.data || [])
+      } else {
+        const json = await res.json().catch(() => ({}))
+        const errMsg = json.error || `Failed to fetch orders (${res.status})`
+        setFetchError(errMsg)
+        toast.error(errMsg)
       }
     } catch {
-      // silent
+      const errMsg = 'Network error fetching orders. Please check your connection.'
+      setFetchError(errMsg)
+      toast.error(errMsg)
     } finally {
       setLoadingOrders(false)
     }
-  }, [token])
+  }, [token, buildQueryString])
 
   // ─── Fetch Trades ────────────────────────────────────────
   const fetchTrades = useCallback(async () => {
     if (!token) { setLoadingTrades(false); return }
     try {
-      const res = await fetch('/api/trade/trades?limit=50', {
+      const res = await fetch(buildQueryString('/api/trade/trades'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
         const json = await res.json()
         setTrades(json.data || [])
+      } else {
+        const json = await res.json().catch(() => ({}))
+        console.error('[OrdersPage] Trades fetch failed:', res.status, json.error)
       }
     } catch {
-      // silent
+      console.error('[OrdersPage] Trades fetch network error')
     } finally {
       setLoadingTrades(false)
     }
-  }, [token])
+  }, [token, buildQueryString])
 
   useEffect(() => {
     fetchOrders()
     fetchTrades()
+    // Auto-refresh every 30 seconds to show new orders after trades
+    const interval = setInterval(() => {
+      fetchOrders()
+      fetchTrades()
+    }, 30000)
+    return () => clearInterval(interval)
   }, [fetchOrders, fetchTrades])
 
-  // ─── Split orders into open (non-filled/active) and trade history ──
-  const openOrders = orders.filter(o =>
-    o.status === 'PENDING' || o.status === 'PARTIALLY_FILLED'
+  // ─── Client-side date filtering (for data already fetched) ──
+  const filteredOrders = useMemo(() =>
+    filterByDateRange(orders, 'placedAt', dateFrom, dateTo),
+    [orders, dateFrom, dateTo]
   )
 
-  // Stats
-  const filledCount = orders.filter(o => o.status === 'FILLED').length
-  const totalVolume = trades.reduce((s, t) => s + t.totalValue, 0)
+  const filteredTrades = useMemo(() =>
+    filterByDateRange(trades, 'executedAt', dateFrom, dateTo),
+    [trades, dateFrom, dateTo]
+  )
 
-  // ─── Open Orders Table ───────────────────────────────────
-  const OpenOrdersTable = () => {
-    if (openOrders.length === 0) {
+  // ─── Split orders: Pending vs All ──
+  const pendingOrders = useMemo(() =>
+    filteredOrders.filter(o => o.status === 'PENDING'),
+    [filteredOrders]
+  )
+  const allOrders = filteredOrders // Show ALL orders (not just pending)
+
+  // Stats (based on filtered data)
+  const filledCount = filteredOrders.filter(o => o.status === 'FILLED').length
+  const totalVolume = filteredTrades.reduce((s, t) => s + t.totalValue, 0)
+
+  // ─── Date Filter Handler ────────────────────────────────────
+  const handleDateChange = useCallback((preset: DatePreset, from: string | null, to: string | null) => {
+    setDatePreset(preset)
+    setDateFrom(from)
+    setDateTo(to)
+
+    // Store raw date inputs for custom mode
+    if (preset === 'custom') {
+      // customFromInput/customToInput are managed by the component directly
+    } else {
+      setCustomFromInput(null)
+      setCustomToInput(null)
+    }
+  }, [])
+
+  // ─── All Orders Table ───────────────────────────────────
+  const AllOrdersTable = () => {
+    if (allOrders.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
             <FileText className="size-7 text-[#6b7280]/40" />
           </div>
-          <p className="text-[#1a1a1a] font-semibold text-sm">No orders yet</p>
-          <p className="text-[#6b7280] text-xs mt-1.5">
-            Your pending orders will appear here
-          </p>
+          {fetchError ? (
+            <>
+              <p className="text-[#EB5B3C] font-semibold text-sm">Failed to load orders</p>
+              <p className="text-[#6b7280] text-xs mt-1.5">{fetchError}</p>
+              <Button
+                size="sm"
+                className="mt-5 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
+                onClick={() => { fetchOrders(); fetchTrades(); }}
+              >
+                Retry
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-[#1a1a1a] font-semibold text-sm">No orders yet</p>
+              <p className="text-[#6b7280] text-xs mt-1.5">
+                Your orders will appear here after you place a trade
+              </p>
+            </>
+          )}
+          {!fetchError && (
           <Button
             size="sm"
             className="mt-5 gap-1.5 bg-[#00D09C] hover:bg-[#00b88a] text-white font-semibold rounded-lg"
@@ -187,25 +312,140 @@ export function OrdersPage() {
             <TrendingUp className="size-3.5" />
             Place Order
           </Button>
+          )}
         </div>
       )
     }
 
     return (
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Symbol</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Type</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Price</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Status</TableHead>
-              <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Time</TableHead>
+      <div className="space-y-4">
+        {/* Pending Orders Section */}
+        {pendingOrders.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="size-2 rounded-full bg-[#f59e0b] animate-pulse" />
+              <h3 className="text-sm font-bold text-[#1a1a1a]">Pending Orders</h3>
+              <span className="text-[10px] bg-[#f59e0b]/10 text-[#f59e0b] px-2 py-0.5 rounded-full font-bold">{pendingOrders.length}</span>
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-[#f59e0b]/20">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-b border-[#f59e0b]/10">
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Symbol</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Type</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Segment</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb] text-right">Price</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb] text-right">Qty</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">SL / TP</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb]">Time</TableHead>
+                    <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-2.5 bg-[#fffbeb] text-center">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-[#f59e0b]/10">
+                  {pendingOrders.map((order) => {
+                    const isBuy = order.tradeDirection === 'BUY'
+                    return (
+                      <TableRow key={order.id} className="hover:bg-[#fffbeb]/50 transition-colors bg-[#fffbeb]/20">
+                        <TableCell className="py-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-sm text-[#1a1a1a]">{order.symbol}</span>
+                            {order.optionType && order.strikePrice && (
+                              <span className="text-[10px] text-[#6b7280]">{order.strikePrice} {order.optionType}</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${isBuy ? 'bg-[#00B386]/10 text-[#00B386]' : 'bg-[#EB5B3C]/10 text-[#EB5B3C]'}`}>
+                            {isBuy ? <ArrowUpRight className="size-2.5" /> : <ArrowDownRight className="size-2.5" />}
+                            {order.tradeDirection}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-xs text-[#6b7280] py-3">{order.segment}</TableCell>
+                        <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-3">
+                          {formatINR(order.price)}
+                        </TableCell>
+                        <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-3">
+                          {order.quantity}
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex flex-col gap-0.5">
+                            {order.stopLoss ? (
+                              <div className="flex items-center gap-1">
+                                <ShieldAlert className="size-2.5 text-[#EB5B3C]" />
+                                <span className="text-[10px] font-mono text-[#EB5B3C]">₹{order.stopLoss.toLocaleString('en-IN')}</span>
+                              </div>
+                            ) : null}
+                            {order.target ? (
+                              <div className="flex items-center gap-1">
+                                <Target className="size-2.5 text-[#00B386]" />
+                                <span className="text-[10px] font-mono text-[#00B386]">₹{order.target.toLocaleString('en-IN')}</span>
+                              </div>
+                            ) : null}
+                            {!order.stopLoss && !order.target && (
+                              <span className="text-[10px] text-[#9ca3af]">—</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-1 text-xs text-[#6b7280]">
+                            <Clock className="size-3" />
+                            {formatShortDateTime(order.placedAt)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg border-[#6b7280]/30 px-2 py-1 text-[10px] font-semibold text-[#6b7280] bg-transparent hover:bg-white hover:text-[#1a1a1a] active:scale-95 transition-all"
+                              onClick={() => {
+                                setModifyOrder(order)
+                                setModifyPrice(String(order.price))
+                                setModifySl(order.stopLoss ? String(order.stopLoss) : '')
+                                setModifyTp(order.target ? String(order.target) : '')
+                              }}
+                            >
+                              <Pencil className="size-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg border-[#EB5B3C]/30 px-2 py-1 text-[10px] font-semibold text-[#EB5B3C] bg-transparent hover:bg-[#EB5B3C] hover:text-white hover:border-[#EB5B3C] active:scale-95 transition-all"
+                              disabled={cancelling === order.id}
+                              onClick={() => handleCancelOrder(order.id)}
+                            >
+                              {cancelling === order.id ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" />}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        {/* All Orders Table */}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent border-b border-[#e5e7eb]">
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Symbol</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Type</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Segment</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Fill Price</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Qty</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-right">Value</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">SL / TP</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb]">Time</TableHead>
+                <TableHead className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase py-3 bg-[#f8f9fb] text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#e5e7eb]">
-            {openOrders.map((order) => {
+            {allOrders.map((order) => {
               const isBuy = order.tradeDirection === 'BUY'
               return (
                 <TableRow
@@ -234,11 +474,34 @@ export function OrdersPage() {
                       {order.tradeDirection}
                     </span>
                   </TableCell>
+                  <TableCell className="text-xs text-[#6b7280] py-4">{order.segment}</TableCell>
                   <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
-                    {formatINR(order.price)}
+                    {formatINR(order.fillPrice || order.price)}
                   </TableCell>
                   <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
                     {order.quantity}
+                  </TableCell>
+                  <TableCell className="font-mono-data font-tabular text-sm text-right text-[#1a1a1a] py-4">
+                    {formatINR(order.totalValue)}
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="flex flex-col gap-0.5">
+                      {order.stopLoss ? (
+                        <div className="flex items-center gap-1">
+                          <ShieldAlert className="size-2.5 text-[#EB5B3C]" />
+                          <span className="text-[10px] font-mono text-[#EB5B3C]">₹{order.stopLoss.toLocaleString('en-IN')}</span>
+                        </div>
+                      ) : null}
+                      {order.target ? (
+                        <div className="flex items-center gap-1">
+                          <Target className="size-2.5 text-[#00B386]" />
+                          <span className="text-[10px] font-mono text-[#00B386]">₹{order.target.toLocaleString('en-IN')}</span>
+                        </div>
+                      ) : null}
+                      {!order.stopLoss && !order.target && (
+                        <span className="text-[10px] text-[#9ca3af]">—</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="py-4">
                     <StatusBadge status={order.status} />
@@ -249,18 +512,47 @@ export function OrdersPage() {
                       {formatShortDateTime(order.placedAt)}
                     </div>
                   </TableCell>
+                  <TableCell className="py-4 text-center">
+                    {order.status === 'PENDING' && (
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-[#6b7280]/30 px-2 py-1.5 text-[10px] font-semibold text-[#6b7280] bg-transparent hover:bg-[#f5f7fa] hover:text-[#1a1a1a] active:scale-95 transition-all"
+                          onClick={() => {
+                            setModifyOrder(order)
+                            setModifyPrice(String(order.price))
+                            setModifySl(order.stopLoss ? String(order.stopLoss) : '')
+                            setModifyTp(order.target ? String(order.target) : '')
+                          }}
+                        >
+                          <Pencil className="size-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg border-[#EB5B3C]/30 px-2 py-1.5 text-[10px] font-semibold text-[#EB5B3C] bg-transparent hover:bg-[#EB5B3C] hover:text-white hover:border-[#EB5B3C] active:scale-95 transition-all"
+                          disabled={cancelling === order.id}
+                          onClick={() => handleCancelOrder(order.id)}
+                        >
+                          {cancelling === order.id ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" />}
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
                 </TableRow>
               )
             })}
           </TableBody>
         </Table>
       </div>
+      </div>
     )
   }
 
   // ─── Trade History Table ─────────────────────────────────
   const TradeHistoryTable = () => {
-    if (trades.length === 0) {
+    if (filteredTrades.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="size-16 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
@@ -288,7 +580,7 @@ export function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-[#e5e7eb]">
-            {trades.map((trade) => {
+            {filteredTrades.map((trade) => {
               const isPositive = (trade.pnl ?? 0) >= 0
               return (
                 <TableRow key={trade.id} className="hover:bg-[#f8f9fb] transition-colors">
@@ -364,6 +656,24 @@ export function OrdersPage() {
         </p>
       </motion.div>
 
+      {/* ── Date Filter ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <CardContent className="p-4">
+            <DateFilter
+              value={datePreset}
+              customFrom={customFromInput}
+              customTo={customToInput}
+              onChange={handleDateChange}
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* ── Stats Grid ─────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -372,9 +682,9 @@ export function OrdersPage() {
         className="grid grid-cols-2 lg:grid-cols-4 gap-4"
       >
         {[
-          { label: 'Total Orders', value: String(orders.length), icon: ClipboardList, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
+          { label: 'Total Orders', value: String(filteredOrders.length), icon: ClipboardList, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
           { label: 'Filled', value: String(filledCount), icon: CheckCircle2, borderColor: 'border-l-[#00B386]', iconBg: 'bg-[#00B386]/10', iconColor: 'text-[#00B386]' },
-          { label: 'Cancelled', value: String(orders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#EB5B3C]/10', iconColor: 'text-[#EB5B3C]' },
+          { label: 'Cancelled', value: String(filteredOrders.filter(o => o.status === 'CANCELLED' || o.status === 'REJECTED').length), icon: XCircle, borderColor: 'border-l-[#eb5b3c]', iconBg: 'bg-[#EB5B3C]/10', iconColor: 'text-[#EB5B3C]' },
           { label: 'Total Volume', value: totalVolume >= 100000 ? `₹${(totalVolume / 100000).toFixed(1)}L` : `₹${totalVolume.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, icon: IndianRupee, borderColor: 'border-l-[#00D09C]', iconBg: 'bg-[#00D09C]/10', iconColor: 'text-[#00D09C]' },
         ].map((stat) => {
           const Icon = stat.icon
@@ -413,15 +723,15 @@ export function OrdersPage() {
                     value="open"
                     className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
-                    Open Orders
-                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{openOrders.length}</span>
+                    All Orders
+                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{allOrders.length}</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="history"
                     className="text-xs font-semibold px-4 py-1.5 rounded-md data-[state=active]:bg-[#00D09C] data-[state=active]:text-white data-[state=active]:shadow-sm text-[#6b7280] transition-all"
                   >
                     Trade History
-                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{trades.length}</span>
+                    <span className="ml-1.5 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{filteredTrades.length}</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -442,7 +752,7 @@ export function OrdersPage() {
               ) : (
                 <>
                   <TabsContent value="open" className="mt-0">
-                    <OpenOrdersTable />
+                    <AllOrdersTable />
                   </TabsContent>
                   <TabsContent value="history" className="mt-0">
                     <TradeHistoryTable />
@@ -453,6 +763,108 @@ export function OrdersPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* ── Modify Order Dialog ──────────────────────────────────────── */}
+      {modifyOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setModifyOrder(null)} />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <h3 className="text-base font-bold text-[#1a1a1a] mb-1">Modify Order</h3>
+            <p className="text-xs text-[#6b7280] mb-4">
+              {modifyOrder.symbol} • {modifyOrder.tradeDirection} • {modifyOrder.orderType}
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Price</label>
+                <input
+                  type="number"
+                  placeholder="Order price"
+                  step="0.05"
+                  min="0"
+                  value={modifyPrice}
+                  onChange={(e) => setModifyPrice(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Stop Loss</label>
+                <input
+                  type="number"
+                  placeholder="Enter stop loss price"
+                  step="0.05"
+                  min="0"
+                  value={modifySl}
+                  onChange={(e) => setModifySl(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C] transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#6b7280] mb-1 block">Target</label>
+                <input
+                  type="number"
+                  placeholder="Enter target price"
+                  step="0.05"
+                  min="0"
+                  value={modifyTp}
+                  onChange={(e) => setModifyTp(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-[#e5e7eb] bg-white text-sm font-mono text-[#1a1a1a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#00B386]/20 focus:border-[#00B386] transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <Button
+                variant="outline"
+                className="flex-1 h-10 rounded-xl text-sm font-semibold border-[#e5e7eb]"
+                onClick={() => setModifyOrder(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 h-10 rounded-xl text-sm font-bold text-white bg-[#00D09C] hover:bg-[#00b88a]"
+                disabled={modifying}
+                onClick={async () => {
+                  if (!token) return
+                  setModifying(true)
+                  try {
+                    const priceVal = modifyPrice ? parseFloat(modifyPrice) : undefined
+                    const slVal = modifySl ? parseFloat(modifySl) : null
+                    const tpVal = modifyTp ? parseFloat(modifyTp) : null
+                    const res = await fetch('/api/trade/modify', {
+                      method: 'POST',
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        orderId: modifyOrder.id,
+                        price: priceVal,
+                        stopLoss: slVal,
+                        target: tpVal,
+                      }),
+                    })
+                    const data = await res.json()
+                    if (res.ok && data.success) {
+                      toast.success('Order modified successfully')
+                      setModifyOrder(null)
+                      fetchOrders()
+                    } else {
+                      toast.error(data.error || 'Failed to modify order')
+                    }
+                  } catch {
+                    toast.error('Network error')
+                  } finally {
+                    setModifying(false)
+                  }
+                }}
+              >
+                {modifying ? <Loader2 className="size-4 animate-spin" /> : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

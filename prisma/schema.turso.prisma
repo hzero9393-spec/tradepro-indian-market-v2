@@ -44,12 +44,19 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // Notification preferences
+  notificationsEnabled Boolean  @default(false)
+  pushSubscriptionId   String?  // ID of active push subscription
+
   // Relations
   trades          Trade[]
   orders          Order[]
   positions       Position[]
   portfolios      Portfolio[]
   sessions        Session[]
+  notifications   Notification[]
+  pushSubscriptions PushSubscription[]
+  watchlistItems  WatchlistItem[]
 
   @@index([email])
   @@unique([oauthProvider, oauthId])
@@ -302,9 +309,11 @@ model Order {
 
   // Price & Quantity
   quantity        Int
-  price           Float       // Order price
+  price           Float       // Order price (limit price for LIMIT orders)
   triggerPrice    Float?      // For SL orders
   fillPrice       Float?      // Actual execution price
+  stopLoss        Float?      // Stop Loss price
+  target          Float?      // Target / Take Profit price
 
   // Calculated
   totalValue      Float       @default(0)
@@ -407,6 +416,11 @@ model Position {
 
   // Margin
   marginUsed      Float       @default(0)
+
+  // Risk Management
+  stopLoss        Float?      // Stop Loss price
+  target          Float?      // Target / Take Profit price
+  exitReason      String?     // Exit reason: MANUAL, STOP_LOSS, TARGET, EXPIRY
 
   // Status
   isOpen          Boolean     @default(true)
@@ -655,4 +669,63 @@ model PlatformSettings {
   updatedAt       DateTime @updatedAt
 
   @@map("platform_settings")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  body        String
+  icon        String?
+  type        String   @default("INFO") // NotificationType: TRADE_EXECUTED, POSITION_CLOSED, ORDER_FILLED, ORDER_CANCELLED, PRICE_ALERT, CHALLENGE, SYSTEM, INFO
+  category    String   @default("general") // general, trade, market, system, challenge
+  link        String?  // URL to navigate to when clicked
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model PushSubscription {
+  id          String   @id @default(cuid())
+  userId      String
+  endpoint    String
+  p256dh      String
+  auth        String
+  userAgent   String?  // Browser/device info
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@map("push_subscriptions")
+}
+
+// ============================================================
+// WATCHLIST
+// ============================================================
+
+model WatchlistItem {
+  id              String   @id @default(cuid())
+  userId          String
+  symbol          String   // Stock symbol: RELIANCE, TCS, etc.
+  name            String?  // Stock name for display
+  segment         String   @default("EQUITY") // Segment: EQUITY, INDEX
+  addedAt         DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+  @@index([userId])
+  @@map("watchlist_items")
 }

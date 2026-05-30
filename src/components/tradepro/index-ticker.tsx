@@ -3,14 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { formatPercent } from '@/lib/format'
-
-interface IndexData {
-  symbol: string
-  name: string
-  currentPrice: number
-  change: number
-  changePercent: number
-}
+import { useMarketStore } from '@/lib/market-store'
 
 interface MarketStatus {
   status: string
@@ -19,36 +12,37 @@ interface MarketStatus {
 }
 
 export function IndexTicker() {
-  const [indices, setIndices] = useState<IndexData[]>([])
+  // Live indices from market engine
+  const marketIndices = useMarketStore((s) => s.indices)
   const [marketStatus, setMarketStatus] = useState<MarketStatus | null>(null)
 
+  // Fetch market status (lightweight, just time check)
   useEffect(() => {
-    async function fetchData() {
+    async function fetchStatus() {
       try {
-        const [indicesRes, statusRes] = await Promise.all([
-          fetch('/api/indices'),
-          fetch('/api/market/status'),
-        ])
-        const indicesData = await indicesRes.json()
+        const statusRes = await fetch('/api/market/status')
         const statusData = await statusRes.json()
-        if (indicesData.success) setIndices(indicesData.data)
         if (statusData.success) setMarketStatus(statusData.data)
       } catch {
-        setIndices([
-          { symbol: 'NIFTY', name: 'NIFTY 50', currentPrice: 19500, change: 125.30, changePercent: 0.65 },
-          { symbol: 'BANKNIFTY', name: 'BANK NIFTY', currentPrice: 44250, change: -210.45, changePercent: -0.47 },
-          { symbol: 'SENSEX', name: 'SENSEX', currentPrice: 65200, change: 340.20, changePercent: 0.52 },
-        ])
-        setMarketStatus({ status: 'CLOSED', message: 'Market closed', istTime: new Date().toISOString() })
+        setMarketStatus({ status: 'DEMO', message: 'Demo Market', istTime: new Date().toISOString() })
       }
     }
-    fetchData()
-    const interval = setInterval(fetchData, 30000)
+    fetchStatus()
+    const interval = setInterval(fetchStatus, 60000)
     return () => clearInterval(interval)
   }, [])
 
-  const isOpen = marketStatus?.status === 'OPEN'
-  const statusLabel = marketStatus?.status || 'CLOSED'
+  // Convert market engine indices to display format
+  const indices = Object.values(marketIndices).map((idx) => ({
+    symbol: idx.symbol,
+    name: idx.name,
+    currentPrice: idx.currentPrice,
+    change: idx.change,
+    changePercent: idx.changePercent,
+  }))
+
+  const isOpen = marketStatus?.status === 'OPEN' || marketStatus?.status === 'DEMO'
+  const statusLabel = marketStatus?.status === 'DEMO' ? 'DEMO' : (marketStatus?.status || 'DEMO')
 
   return (
     <div className="fixed left-0 right-0 top-[56px] z-20 md:left-[220px]">

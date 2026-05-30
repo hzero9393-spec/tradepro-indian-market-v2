@@ -30,12 +30,15 @@ import {
   Gauge,
   Zap,
   Eye,
+  Maximize2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAppStore } from '@/lib/store'
+import { useMarketData } from '@/lib/market-data'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { TradeConfirmModal, TradeConfirmData } from '@/components/tradepro/ui/trade-confirm-modal'
+import { useNotifications } from '@/lib/use-notifications'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatINR, formatINRWhole, formatLargeNumber, formatVolume, calculateBrokerage } from '@/lib/format'
 import { StockLogo } from '@/components/tradepro/ui/stock-logo'
@@ -335,6 +338,10 @@ export function StockOverviewPage() {
   const { token, user } = useAuthStore()
   const { selectedStockSymbol, setCurrentPage, navigateToStock } = useAppStore()
   const { showTradeSuccess } = useTradeSuccess()
+  const { notify } = useNotifications()
+
+  // ── Real-time market data ────────────────────────────────────────
+  const { stocks: liveStocks, isConnected: isLiveConnected } = useMarketData()
 
   // State
   const [stockDetail, setStockDetail] = useState<StockDetail | null>(null)
@@ -359,6 +366,8 @@ export function StockOverviewPage() {
   const [quantity, setQuantity] = useState(10)
   const [price, setPrice] = useState('')
   const [placingOrder, setPlacingOrder] = useState(false)
+  const [stopLoss, setStopLoss] = useState('')
+  const [target, setTarget] = useState('')
   const [tradeSegment, setTradeSegment] = useState<'EQUITY' | 'FUTURES' | 'OPTIONS'>('EQUITY')
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
   const [confirmData, setConfirmData] = useState<TradeConfirmData | null>(null)
@@ -458,6 +467,21 @@ export function StockOverviewPage() {
     }
   }, [stockDetail?.currentPrice])
 
+  // ─── Update stock detail with live prices from client engine ────
+  useEffect(() => {
+    if (!isLiveConnected || !selectedStockSymbol || !stockDetail) return
+    const live = liveStocks.get(selectedStockSymbol)
+    if (live) {
+      setStockDetail(prev => prev ? {
+        ...prev,
+        currentPrice: live.price,
+        change: live.change,
+        changePercent: live.changePercent,
+        volume: live.volume,
+      } : prev)
+    }
+  }, [isLiveConnected, liveStocks, selectedStockSymbol])
+
   // ─── Derived values ─────────────────────────────────────────────
   const isPositive = stockDetail ? stockDetail.change >= 0 : true
   const gradientId = `stock-gradient-${selectedStockSymbol}`
@@ -533,6 +557,30 @@ export function StockOverviewPage() {
     // Open confirmation modal
     const direction = orderSide === 'buy' ? 'BUY' : 'SELL'
     const fillPrice = orderType === 'MARKET' ? stockDetail.currentPrice : parseFloat(price)
+
+    // SL/TP validation
+    const entryPrice = fillPrice
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      if (direction === 'BUY' && parseFloat(stopLoss) >= entryPrice) {
+        toast.error('Stop Loss should be below entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(stopLoss) <= entryPrice) {
+        toast.error('Stop Loss should be above entry price for SELL orders')
+        return
+      }
+    }
+    if (target && parseFloat(target) > 0) {
+      if (direction === 'BUY' && parseFloat(target) <= entryPrice) {
+        toast.error('Target should be above entry price for BUY orders')
+        return
+      }
+      if (direction === 'SELL' && parseFloat(target) >= entryPrice) {
+        toast.error('Target should be below entry price for SELL orders')
+        return
+      }
+    }
+
     setConfirmData({
       symbol: stockDetail.symbol,
       direction: direction as 'BUY' | 'SELL',
@@ -544,6 +592,8 @@ export function StockOverviewPage() {
       totalValue: estimatedTotal,
       brokerage: estimatedBrokerage,
       availableBalance,
+      stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+      target: target ? parseFloat(target) : undefined,
     })
     setConfirmModalOpen(true)
   }
@@ -563,6 +613,18 @@ export function StockOverviewPage() {
 
     if (orderType === 'LIMIT' && price) {
       body.price = parseFloat(price)
+    }
+
+    // Include Stop Loss & Target from OrderPanel inputs and confirm modal
+    if (stopLoss && parseFloat(stopLoss) > 0) {
+      body.stopLoss = parseFloat(stopLoss)
+    } else if (confirmData?.stopLoss && confirmData.stopLoss > 0) {
+      body.stopLoss = confirmData.stopLoss
+    }
+    if (target && parseFloat(target) > 0) {
+      body.target = parseFloat(target)
+    } else if (confirmData?.target && confirmData.target > 0) {
+      body.target = confirmData.target
     }
 
     if (tradeSegment === 'FUTURES') {
@@ -612,6 +674,14 @@ export function StockOverviewPage() {
           totalValue: data.order?.totalValue,
           brokerage: data.order?.brokerage,
         })
+
+        // Fire a direct browser push notification as well
+        notify(`Trade Executed: ${stockDetail.symbol}`, {
+          body: `${direction} ${quantity} x ${stockDetail.symbol} at ₹${fillPrice.toLocaleString('en-IN')}`,
+          tag: `trade-${stockDetail.symbol}-${Date.now()}`,
+          data: { type: 'TRADE_EXECUTED', link: '/positions' },
+        })
+
         setShowTradePanel(false)
         return {
           success: true,
@@ -621,10 +691,13 @@ export function StockOverviewPage() {
           brokerage: data.order?.brokerage,
         }
       } else {
+        console.error('[Trade] Order failed:', res.status, data.error)
+        toast.error(data.error || 'Order failed', { duration: 5000 })
         return { success: false, error: data.error || 'Failed to place order' }
       }
-    } catch {
-      return { success: false, error: 'Network error placing order' }
+    } catch (err) {
+      console.error('[Trade] Network error:', err)
+      return { success: false, error: 'Network error placing order. Check your connection.' }
     }
   }
 
@@ -683,7 +756,7 @@ export function StockOverviewPage() {
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       {/* ═══ Sticky Header ═════════════════════════════════════════════ */}
-      <div className="sticky top-14 z-30 bg-white border-b border-[#e5e7eb]">
+      <div className="sticky top-[96px] z-30 bg-white border-b border-[#e5e7eb]">
         <div className="px-4 sm:px-6 lg:px-8 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
@@ -860,6 +933,19 @@ export function StockOverviewPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* ─── TradingView Open Button ──────────────────────────── */}
+              <div className="flex items-center justify-center pt-2">
+                <a
+                  href={`https://www.tradingview.com/chart/?symbol=NSE:${selectedStockSymbol}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center size-9 rounded-xl bg-[#00D09C]/10 border border-[#00D09C]/20 text-[#00D09C] hover:bg-[#00D09C] hover:text-white hover:border-[#00D09C] transition-all duration-200 group"
+                  title="Open in TradingView for detailed analysis"
+                >
+                  <Maximize2 className="size-4 group-hover:scale-110 transition-transform" />
+                </a>
+              </div>
 
               {/* ─── Performance Section ──────────────────────────────── */}
               <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
@@ -1750,6 +1836,40 @@ export function StockOverviewPage() {
                     </div>
                   )}
 
+                  {/* Stop Loss & Target */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-[#EB5B3C]" />
+                        Stop Loss
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="Optional"
+                        step="0.05"
+                        min="0"
+                        value={stopLoss}
+                        onChange={(e) => setStopLoss(e.target.value)}
+                        className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C]"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-[#00B386]" />
+                        Target
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="Optional"
+                        step="0.05"
+                        min="0"
+                        value={target}
+                        onChange={(e) => setTarget(e.target.value)}
+                        className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#00B386]/20 focus:border-[#00B386]"
+                      />
+                    </div>
+                  </div>
+
                   {/* Order Summary */}
                   <div className="bg-[#f8f9fb] rounded-xl p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
@@ -1818,7 +1938,14 @@ export function StockOverviewPage() {
         onClose={() => setConfirmModalOpen(false)}
         tradeData={confirmData}
         onConfirm={executeTrade}
-        onSuccess={handleTradeConfirmSuccess}
+        onSuccess={() => {
+          setStopLoss('')
+          setTarget('')
+          handleTradeConfirmSuccess()
+        }}
+        onDataChange={(data) => {
+          setConfirmData(prev => prev ? { ...prev, ...data } : null)
+        }}
       />
     </div>
   )

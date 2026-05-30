@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     const userId = auth.userId
     const body = await request.json()
-    const { symbol, direction, orderType, segment, productType, quantity, price } = body
+    const { symbol, direction, orderType, segment, productType, quantity, price, stopLoss, target } = body
 
     // ─── Step 2: Input Validation ──────────────────────────────────
     if (!symbol || !direction || !orderType || !segment || !productType || !quantity) {
@@ -31,6 +31,68 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid productType. Must be: INTRADAY, DELIVERY, or CARRY_FORWARD' }, { status: 400 })
     }
 
+    // Stop Loss / Target validation
+    if (stopLoss !== undefined && stopLoss !== null && stopLoss <= 0) {
+      return NextResponse.json({ error: 'Stop Loss must be greater than 0' }, { status: 400 })
+    }
+    if (target !== undefined && target !== null && target <= 0) {
+      return NextResponse.json({ error: 'Target must be greater than 0' }, { status: 400 })
+    }
+
+    // ─── Step 2b: SL/TP Directional Validation ──────────────────────────
+    // BUY: Target must be ABOVE entry price, SL must be BELOW entry price
+    // SELL: Target must be BELOW entry price, SL must be ABOVE entry price
+    // This prevents invalid orders where SL/TP would trigger immediately
+    const entryPrice = price || 0 // Will be refined after getting fillPrice below
+    if (stopLoss && target && entryPrice > 0) {
+      if (direction === 'BUY') {
+        if (target <= entryPrice) {
+          return NextResponse.json({ error: `Invalid Target: Must be above entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+        }
+        if (stopLoss >= entryPrice) {
+          return NextResponse.json({ error: `Invalid Stop Loss: Must be below entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+        }
+        if (stopLoss >= target) {
+          return NextResponse.json({ error: 'Invalid: Stop Loss must be below Target for BUY orders' }, { status: 400 })
+        }
+      } else if (direction === 'SELL') {
+        if (target >= entryPrice) {
+          return NextResponse.json({ error: `Invalid Target: Must be below entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+        }
+        if (stopLoss <= entryPrice) {
+          return NextResponse.json({ error: `Invalid Stop Loss: Must be above entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+        }
+        if (stopLoss <= target) {
+          return NextResponse.json({ error: 'Invalid: Stop Loss must be above Target for SELL orders' }, { status: 400 })
+        }
+      }
+    } else if (stopLoss && entryPrice > 0) {
+      // Only SL provided
+      if (direction === 'BUY' && stopLoss >= entryPrice) {
+        return NextResponse.json({ error: `Invalid Stop Loss: Must be below entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+      }
+      if (direction === 'SELL' && stopLoss <= entryPrice) {
+        return NextResponse.json({ error: `Invalid Stop Loss: Must be above entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+      }
+    } else if (target && entryPrice > 0) {
+      // Only Target provided
+      if (direction === 'BUY' && target <= entryPrice) {
+        return NextResponse.json({ error: `Invalid Target: Must be above entry price (₹${entryPrice}) for BUY orders` }, { status: 400 })
+      }
+      if (direction === 'SELL' && target >= entryPrice) {
+        return NextResponse.json({ error: `Invalid Target: Must be below entry price (₹${entryPrice}) for SELL orders` }, { status: 400 })
+      }
+    }
+
+    // Minimum distance from entry price (0.01 = 1 paisa threshold)
+    const MIN_DISTANCE = 0.01
+    if (stopLoss && entryPrice > 0 && Math.abs(entryPrice - stopLoss) < MIN_DISTANCE) {
+      return NextResponse.json({ error: 'Stop Loss too close to entry price (minimum 1 paisa distance)' }, { status: 400 })
+    }
+    if (target && entryPrice > 0 && Math.abs(entryPrice - target) < MIN_DISTANCE) {
+      return NextResponse.json({ error: 'Target too close to entry price (minimum 1 paisa distance)' }, { status: 400 })
+    }
+
     // Quantity validation
     const qtyError = validateOrderQuantity(quantity, segment)
     if (qtyError) {
@@ -38,7 +100,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ─── Step 3: Market Status Check ───────────────────────────────
-    const enforceMarketHours = process.env.ENFORCE_MARKET_HOURS === 'true'
+    // Only enforce market hours block if explicitly set to 'strict'
+    // 'true' gives a warning but still allows the trade (paper trading friendly)
+    const enforceMarketHours = process.env.ENFORCE_MARKET_HOURS === 'strict'
     if (enforceMarketHours) {
       const marketStatus = await checkMarketStatus()
       if (!marketStatus.isOpen) {
@@ -48,6 +112,10 @@ export async function POST(request: NextRequest) {
         }, { status: 403 })
       }
     }
+    // Optional: Add market status as a warning in the response (when ENFORCE_MARKET_HOURS='true')
+    const marketWarning = process.env.ENFORCE_MARKET_HOURS === 'true'
+      ? await checkMarketStatus().then(s => !s.isOpen ? 'Market is currently closed. This is a paper trade.' : null).catch(() => null)
+      : null
 
     // ─── Step 4: Get user ──────────────────────────────────────────
     const user = await db.user.findUnique({ where: { id: userId } })
@@ -80,6 +148,39 @@ export async function POST(request: NextRequest) {
 
       // ─── BUY EQUITY ──────────────────────────────────────────
       if (direction === 'BUY') {
+        // For LIMIT/SL/SL_M orders - create pending order, don't execute
+        if (orderType !== 'MARKET') {
+          const order = await db.order.create({
+            data: {
+              userId: user.id,
+              orderType: orderType as 'LIMIT' | 'SL' | 'SL_M',
+              tradeDirection: 'BUY',
+              segment: 'EQUITY',
+              productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
+              symbol: stock!.symbol,
+              quantity,
+              price: price || stock!.currentPrice,
+              triggerPrice: (orderType === 'SL' || orderType === 'SL_M') ? price : null,
+              fillPrice: null,
+              stopLoss: stopLoss || null,
+              target: target || null,
+              totalValue,
+              brokerage,
+              marginRequired: 0,
+              status: 'PENDING',
+              placedAt: new Date(),
+            }
+          })
+          return NextResponse.json({
+            success: true,
+            message: `${orderType} order placed: BUY ${quantity} ${stock.symbol} @ ₹${price || stock.currentPrice}`,
+            order,
+            isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
+          }, { status: 201 })
+        }
+
+        // MARKET order - execute immediately
         const requiredAmount = totalValue + brokerage
         if (user.virtualBalance < requiredAmount) {
           return NextResponse.json({
@@ -100,17 +201,20 @@ export async function POST(request: NextRequest) {
           const order = await tx.order.create({
             data: {
               userId: user.id,
-              orderType: orderType as 'MARKET' | 'LIMIT' | 'SL' | 'SL_M',
+              orderType: 'MARKET',
               tradeDirection: 'BUY',
               segment: 'EQUITY',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               symbol: stock!.symbol,
               quantity,
-              price: price || stock!.currentPrice,
+              price: stock!.currentPrice,
               fillPrice,
+              stopLoss: stopLoss || null,
+              target: target || null,
               totalValue,
               brokerage,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -152,6 +256,8 @@ export async function POST(request: NextRequest) {
                 currentValue: newCurrent,
                 currentPrice: stock!.currentPrice,
                 unrealizedPnl: Math.round((newCurrent - newInvested) * 100) / 100,
+                stopLoss: stopLoss || existingPosition.stopLoss,
+                target: target || existingPosition.target,
               }
             })
           } else {
@@ -164,6 +270,8 @@ export async function POST(request: NextRequest) {
                 entryPrice: fillPrice, currentPrice: stock!.currentPrice,
                 totalInvested: totalValue, currentValue,
                 unrealizedPnl: Math.round((currentValue - totalValue) * 100) / 100,
+                stopLoss: stopLoss || null,
+                target: target || null,
                 isOpen: true,
               }
             })
@@ -183,11 +291,45 @@ export async function POST(request: NextRequest) {
           trade: result.trade,
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
       // ─── SELL EQUITY ─────────────────────────────────────────
       if (direction === 'SELL') {
+        // For LIMIT/SL/SL_M orders - create pending order, don't execute
+        if (orderType !== 'MARKET') {
+          const order = await db.order.create({
+            data: {
+              userId: user.id,
+              orderType: orderType as 'LIMIT' | 'SL' | 'SL_M',
+              tradeDirection: 'SELL',
+              segment: 'EQUITY',
+              productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
+              symbol: stock!.symbol,
+              quantity,
+              price: price || stock!.currentPrice,
+              triggerPrice: (orderType === 'SL' || orderType === 'SL_M') ? price : null,
+              fillPrice: null,
+              stopLoss: stopLoss || null,
+              target: target || null,
+              totalValue,
+              brokerage,
+              marginRequired: 0,
+              status: 'PENDING',
+              placedAt: new Date(),
+            }
+          })
+          return NextResponse.json({
+            success: true,
+            message: `${orderType} order placed: SELL ${quantity} ${stock.symbol} @ ₹${price || stock.currentPrice}`,
+            order,
+            isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
+          }, { status: 201 })
+        }
+
+        // MARKET order - execute immediately
         const position = await db.position.findFirst({
           where: {
             userId: user.id, symbol: stock.symbol, segment: 'EQUITY',
@@ -224,17 +366,20 @@ export async function POST(request: NextRequest) {
           const order = await tx.order.create({
             data: {
               userId: user.id,
-              orderType: orderType as 'MARKET' | 'LIMIT' | 'SL' | 'SL_M',
+              orderType: 'MARKET',
               tradeDirection: 'SELL',
               segment: 'EQUITY',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
               symbol: stock!.symbol,
               quantity,
-              price: price || stock!.currentPrice,
+              price: stock!.currentPrice,
               fillPrice,
+              stopLoss: stopLoss || null,
+              target: target || null,
               totalValue,
               brokerage,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -256,6 +401,7 @@ export async function POST(request: NextRequest) {
               data: {
                 isOpen: false, realizedPnl: { increment: realizedPnl },
                 squaredOffAt: new Date(), currentValue: 0, unrealizedPnl: 0,
+                exitReason: 'MANUAL',
               }
             })
           } else {
@@ -286,6 +432,7 @@ export async function POST(request: NextRequest) {
           realizedPnl: result.realizedPnl,
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
@@ -339,6 +486,43 @@ export async function POST(request: NextRequest) {
 
       // ─── BUY FUTURES ──────────────────────────────────────
       if (direction === 'BUY') {
+        // For LIMIT/SL/SL_M orders - create pending order, don't execute
+        if (orderType !== 'MARKET') {
+          const order = await db.order.create({
+            data: {
+              userId: user.id,
+              orderType: orderType as 'LIMIT' | 'SL' | 'SL_M',
+              tradeDirection: 'BUY',
+              segment: 'FUTURES',
+              productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
+              symbol,
+              instrumentId: (future as Record<string, unknown>).id as string,
+              quantity: totalQty,
+              lotSize,
+              lots,
+              price: price || fillPrice,
+              triggerPrice: (orderType === 'SL' || orderType === 'SL_M') ? price : null,
+              fillPrice: null,
+              stopLoss: stopLoss || null,
+              target: target || null,
+              totalValue,
+              brokerage,
+              marginRequired,
+              expiryDate: (future as Record<string, unknown>).expiryDate as Date,
+              status: 'PENDING',
+              placedAt: new Date(),
+            }
+          })
+          return NextResponse.json({
+            success: true,
+            message: `${orderType} order placed: BUY ${lots} lots (${totalQty} qty) ${symbol} FUT @ ₹${price || fillPrice}`,
+            order,
+            isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
+          }, { status: 201 })
+        }
+
+        // MARKET order - execute immediately
         if (user.virtualBalance < marginRequired) {
           return NextResponse.json({
             error: `Insufficient margin. Required: ₹${marginRequired.toLocaleString('en-IN')}, Available: ₹${user.virtualBalance.toLocaleString('en-IN')}`
@@ -358,7 +542,7 @@ export async function POST(request: NextRequest) {
           const order = await tx.order.create({
             data: {
               userId: user.id,
-              orderType: orderType as 'MARKET' | 'LIMIT' | 'SL' | 'SL_M',
+              orderType: 'MARKET',
               tradeDirection: 'BUY',
               segment: 'FUTURES',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
@@ -367,13 +551,16 @@ export async function POST(request: NextRequest) {
               quantity: totalQty,
               lotSize,
               lots,
-              price: price || fillPrice,
+              price: fillPrice,
               fillPrice,
+              stopLoss: stopLoss || null,
+              target: target || null,
               totalValue,
               brokerage,
               marginRequired,
               expiryDate: (future as Record<string, unknown>).expiryDate as Date,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -421,6 +608,8 @@ export async function POST(request: NextRequest) {
                 currentPrice: fillPrice,
                 unrealizedPnl: Math.round((newCurrent - newInvested) * 100) / 100,
                 marginUsed: newMargin,
+                stopLoss: stopLoss || existingPosition.stopLoss,
+                target: target || existingPosition.target,
               }
             })
           } else {
@@ -437,6 +626,8 @@ export async function POST(request: NextRequest) {
                 marginUsed: marginRequired,
                 instrumentId: (future as Record<string, unknown>).id as string,
                 expiryDate: (future as Record<string, unknown>).expiryDate as Date,
+                stopLoss: stopLoss || null,
+                target: target || null,
                 isOpen: true,
               }
             })
@@ -456,11 +647,49 @@ export async function POST(request: NextRequest) {
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
           marginRequired,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
       // ─── SELL FUTURES ─────────────────────────────────────
       if (direction === 'SELL') {
+        // For LIMIT/SL/SL_M orders - create pending order, don't execute
+        if (orderType !== 'MARKET') {
+          const order = await db.order.create({
+            data: {
+              userId: user.id,
+              orderType: orderType as 'LIMIT' | 'SL' | 'SL_M',
+              tradeDirection: 'SELL',
+              segment: 'FUTURES',
+              productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
+              symbol,
+              instrumentId: (future as Record<string, unknown>).id as string,
+              quantity: totalQty,
+              lotSize,
+              lots,
+              price: price || fillPrice,
+              triggerPrice: (orderType === 'SL' || orderType === 'SL_M') ? price : null,
+              fillPrice: null,
+              stopLoss: stopLoss || null,
+              target: target || null,
+              totalValue,
+              brokerage,
+              marginRequired,
+              expiryDate: (future as Record<string, unknown>).expiryDate as Date,
+              status: 'PENDING',
+              placedAt: new Date(),
+            }
+          })
+          return NextResponse.json({
+            success: true,
+            message: `${orderType} order placed: SELL ${lots} lots (${totalQty} qty) ${symbol} FUT @ ₹${price || fillPrice}`,
+            order,
+            isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
+          }, { status: 201 })
+        }
+
+        // MARKET order - execute immediately
         if (user.virtualBalance < marginRequired) {
           return NextResponse.json({
             error: `Insufficient margin for short position. Required: ₹${marginRequired.toLocaleString('en-IN')}, Available: ₹${user.virtualBalance.toLocaleString('en-IN')}`
@@ -480,7 +709,7 @@ export async function POST(request: NextRequest) {
           const order = await tx.order.create({
             data: {
               userId: user.id,
-              orderType: orderType as 'MARKET' | 'LIMIT' | 'SL' | 'SL_M',
+              orderType: 'MARKET',
               tradeDirection: 'SELL',
               segment: 'FUTURES',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
@@ -489,13 +718,16 @@ export async function POST(request: NextRequest) {
               quantity: totalQty,
               lotSize,
               lots,
-              price: price || fillPrice,
+              price: fillPrice,
               fillPrice,
+              stopLoss: stopLoss || null,
+              target: target || null,
               totalValue,
               brokerage,
               marginRequired,
               expiryDate: (future as Record<string, unknown>).expiryDate as Date,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -543,6 +775,8 @@ export async function POST(request: NextRequest) {
                 currentPrice: fillPrice,
                 unrealizedPnl: Math.round((newCurrent - newInvested) * 100) / 100,
                 marginUsed: newMargin,
+                stopLoss: stopLoss || existingPosition.stopLoss,
+                target: target || existingPosition.target,
               }
             })
           } else {
@@ -559,6 +793,8 @@ export async function POST(request: NextRequest) {
                 marginUsed: marginRequired,
                 instrumentId: (future as Record<string, unknown>).id as string,
                 expiryDate: (future as Record<string, unknown>).expiryDate as Date,
+                stopLoss: stopLoss || null,
+                target: target || null,
                 isOpen: true,
               }
             })
@@ -578,6 +814,7 @@ export async function POST(request: NextRequest) {
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
           marginRequired,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
@@ -701,6 +938,44 @@ export async function POST(request: NextRequest) {
 
       // ─── BUY OPTIONS ──────────────────────────────────────
       if (direction === 'BUY') {
+        // For LIMIT/SL/SL_M orders - create pending order, don't execute
+        if (orderType !== 'MARKET') {
+          const order = await db.order.create({
+            data: {
+              userId: user.id,
+              orderType: orderType as 'LIMIT' | 'SL' | 'SL_M',
+              tradeDirection: 'BUY',
+              segment: 'OPTIONS',
+              productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
+              symbol,
+              instrumentId: optionId,
+              optionType: optionType as 'CE' | 'PE',
+              strikePrice,
+              expiryDate: optionExpiryDate,
+              quantity: totalQty,
+              lotSize,
+              lots,
+              price: price || fillPrice,
+              triggerPrice: (orderType === 'SL' || orderType === 'SL_M') ? price : null,
+              fillPrice: null,
+              stopLoss: stopLoss || null,
+              target: target || null,
+              totalValue,
+              brokerage,
+              status: 'PENDING',
+              placedAt: new Date(),
+            }
+          })
+          return NextResponse.json({
+            success: true,
+            message: `${orderType} order placed: BUY ${lots} lots (${totalQty} qty) ${symbol} ${strikePrice} ${optionType} @ ₹${price || fillPrice}`,
+            order,
+            isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
+          }, { status: 201 })
+        }
+
+        // MARKET order - execute immediately
         const requiredAmount = totalValue + brokerage
         if (user.virtualBalance < requiredAmount) {
           return NextResponse.json({
@@ -721,7 +996,7 @@ export async function POST(request: NextRequest) {
           const order = await tx.order.create({
             data: {
               userId: user.id,
-              orderType: orderType as 'MARKET' | 'LIMIT' | 'SL' | 'SL_M',
+              orderType: 'MARKET',
               tradeDirection: 'BUY',
               segment: 'OPTIONS',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
@@ -733,11 +1008,14 @@ export async function POST(request: NextRequest) {
               quantity: totalQty,
               lotSize,
               lots,
-              price: price || fillPrice,
+              price: fillPrice,
               fillPrice,
+              stopLoss: stopLoss || null,
+              target: target || null,
               totalValue,
               brokerage,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -787,6 +1065,8 @@ export async function POST(request: NextRequest) {
                 currentValue: newCurrent,
                 currentPrice: fillPrice,
                 unrealizedPnl: Math.round((newCurrent - newInvested) * 100) / 100,
+                stopLoss: stopLoss || existingPosition.stopLoss,
+                target: target || existingPosition.target,
               }
             })
           } else {
@@ -804,6 +1084,8 @@ export async function POST(request: NextRequest) {
                 unrealizedPnl: Math.round((currentValue - totalValue) * 100) / 100,
                 instrumentId: optionId,
                 expiryDate: optionExpiryDate,
+                stopLoss: stopLoss || null,
+                target: target || null,
                 isOpen: true,
               }
             })
@@ -822,11 +1104,50 @@ export async function POST(request: NextRequest) {
           trade: result.trade,
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
       // ─── SELL OPTIONS ─────────────────────────────────────
       if (direction === 'SELL') {
+        // For LIMIT/SL/SL_M orders - create pending order, don't execute
+        if (orderType !== 'MARKET') {
+          const order = await db.order.create({
+            data: {
+              userId: user.id,
+              orderType: orderType as 'LIMIT' | 'SL' | 'SL_M',
+              tradeDirection: 'SELL',
+              segment: 'OPTIONS',
+              productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
+              symbol,
+              instrumentId: optionId,
+              optionType: optionType as 'CE' | 'PE',
+              strikePrice,
+              expiryDate: optionExpiryDate,
+              quantity: totalQty,
+              lotSize,
+              lots,
+              price: price || fillPrice,
+              triggerPrice: (orderType === 'SL' || orderType === 'SL_M') ? price : null,
+              fillPrice: null,
+              stopLoss: stopLoss || null,
+              target: target || null,
+              totalValue,
+              brokerage,
+              status: 'PENDING',
+              placedAt: new Date(),
+            }
+          })
+          return NextResponse.json({
+            success: true,
+            message: `${orderType} order placed: SELL ${lots} lots (${totalQty} qty) ${symbol} ${strikePrice} ${optionType} @ ₹${price || fillPrice}`,
+            order,
+            isPending: true,
+            ...(marketWarning ? { warning: marketWarning } : {}),
+          }, { status: 201 })
+        }
+
+        // MARKET order - execute immediately
         const existingBuyPosition = await db.position.findFirst({
           where: {
             userId: user.id, symbol, segment: 'OPTIONS',
@@ -861,7 +1182,7 @@ export async function POST(request: NextRequest) {
             const order = await tx.order.create({
               data: {
                 userId: user.id,
-                orderType: orderType as 'MARKET' | 'LIMIT' | 'SL' | 'SL_M',
+                orderType: 'MARKET',
                 tradeDirection: 'SELL',
                 segment: 'OPTIONS',
                 productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
@@ -873,11 +1194,14 @@ export async function POST(request: NextRequest) {
                 quantity: totalQty,
                 lotSize,
                 lots,
-                price: price || fillPrice,
+                price: fillPrice,
                 fillPrice,
+                stopLoss: stopLoss || null,
+                target: target || null,
                 totalValue,
                 brokerage,
                 status: 'FILLED',
+                placedAt: new Date(),
                 filledAt: new Date(),
               }
             })
@@ -906,6 +1230,7 @@ export async function POST(request: NextRequest) {
                 data: {
                   isOpen: false, realizedPnl: { increment: realizedPnl },
                   squaredOffAt: new Date(), currentValue: 0, unrealizedPnl: 0,
+                  exitReason: 'MANUAL',
                 }
               })
             } else {
@@ -939,6 +1264,7 @@ export async function POST(request: NextRequest) {
             realizedPnl: result.realizedPnl,
             balance: result.updatedUser.virtualBalance,
             totalPnl: result.updatedUser.totalPnl,
+            ...(marketWarning ? { warning: marketWarning } : {}),
           }, { status: 201 })
         }
 
@@ -967,7 +1293,7 @@ export async function POST(request: NextRequest) {
           const order = await tx.order.create({
             data: {
               userId: user.id,
-              orderType: orderType as 'MARKET' | 'LIMIT' | 'SL' | 'SL_M',
+              orderType: 'MARKET',
               tradeDirection: 'SELL',
               segment: 'OPTIONS',
               productType: productType as 'INTRADAY' | 'DELIVERY' | 'CARRY_FORWARD',
@@ -979,12 +1305,15 @@ export async function POST(request: NextRequest) {
               quantity: totalQty,
               lotSize,
               lots,
-              price: price || fillPrice,
+              price: fillPrice,
               fillPrice,
+              stopLoss: stopLoss || null,
+              target: target || null,
               totalValue,
               brokerage,
               marginRequired,
               status: 'FILLED',
+              placedAt: new Date(),
               filledAt: new Date(),
             }
           })
@@ -1036,6 +1365,8 @@ export async function POST(request: NextRequest) {
                 currentPrice: fillPrice,
                 unrealizedPnl: Math.round((newCurrent - newInvested) * 100) / 100,
                 marginUsed: newMargin,
+                stopLoss: stopLoss || existingSellPosition.stopLoss,
+                target: target || existingSellPosition.target,
               }
             })
           } else {
@@ -1054,6 +1385,8 @@ export async function POST(request: NextRequest) {
                 marginUsed: marginRequired,
                 instrumentId: optionId,
                 expiryDate: optionExpiryDate,
+                stopLoss: stopLoss || null,
+                target: target || null,
                 isOpen: true,
               }
             })
@@ -1067,62 +1400,22 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `SELL (SHORT) ${lots} lots (${totalQty} qty) ${symbol} ${strikePrice} ${optionType} @ ₹${fillPrice}`,
+          message: `SELL ${lots} lots (${totalQty} qty) ${symbol} ${strikePrice} ${optionType} @ ₹${fillPrice}`,
           order: result.order,
           trade: result.trade,
           balance: result.updatedUser.virtualBalance,
           totalPnl: result.updatedUser.totalPnl,
           marginRequired,
+          ...(marketWarning ? { warning: marketWarning } : {}),
         }, { status: 201 })
       }
 
       return NextResponse.json({ error: 'Invalid direction' }, { status: 400 })
     } // end OPTIONS
 
-    return NextResponse.json({ error: `Unsupported segment: ${segment}` }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid segment' }, { status: 400 })
   } catch (error) {
-    console.error('[POST /api/trade/place] FULL ERROR:', JSON.stringify(error, null, 2))
-
-    let errorMessage = 'Failed to place order. Please try again.'
-    let statusCode = 500
-
-    if (error instanceof Error) {
-      const msg = error.message
-
-      // Prisma specific errors
-      if (msg.includes('Unique constraint') || msg.includes('unique constraint')) {
-        errorMessage = 'Duplicate order detected. Please try again.'
-        statusCode = 409
-      } else if (msg.includes('Foreign key constraint') || msg.includes('foreign key')) {
-        errorMessage = 'Invalid reference: related record not found. Please refresh and try again.'
-        statusCode = 400
-      } else if (msg.includes('Record not found') || msg.includes('does not exist')) {
-        errorMessage = 'Record not found. The stock or user data may have changed. Please refresh.'
-        statusCode = 404
-      } else if (msg.includes('Transaction failed') || msg.includes('transaction')) {
-        errorMessage = 'Transaction failed due to concurrent modification. Please try again.'
-        statusCode = 409
-      } else if (msg.includes('Interactive transactions are not supported') || msg.includes('interactive transaction')) {
-        errorMessage = 'Database transaction not supported. Please contact support.'
-        statusCode = 500
-      } else if (msg.includes('no such table') || msg.includes('no such column')) {
-        errorMessage = 'Database schema out of sync. Please contact support to run migration.'
-        statusCode = 500
-      } else if (msg.includes('SQLITE_CONSTRAINT')) {
-        errorMessage = `Database constraint error: ${msg.slice(0, 100)}`
-        statusCode = 400
-      } else if (msg.includes('LibsqlError') || msg.includes('HRANA') || msg.includes('SERVER_ERROR')) {
-        errorMessage = `Database connection error. Please try again in a moment.`
-        statusCode = 503
-      } else if (msg.includes('Insufficient') || msg.includes('insufficient')) {
-        errorMessage = msg
-        statusCode = 400
-      } else {
-        // Show the actual error message so we can debug - truncate for safety
-        errorMessage = `Order failed: ${msg.slice(0, 200)}`
-      }
-    }
-
-    return NextResponse.json({ error: errorMessage }, { status: statusCode })
+    console.error('[Place Order] Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -33,6 +33,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useAuthStore } from '@/lib/auth-store'
+import { useMarketStore } from '@/lib/market-store'
 import { useTradeSuccess } from '@/components/tradepro/trade-success-popup'
 import { toast } from 'sonner'
 import { formatINR, formatPnL, formatPercent } from '@/lib/format'
@@ -41,21 +42,6 @@ import { formatINR, formatPnL, formatPercent } from '@/lib/format'
 type Instrument = 'NIFTY' | 'BANKNIFTY' | 'FINNIFTY' | 'SENSEX' | 'MIDCPNIFTY'
 type OrderType = 'MARKET' | 'LIMIT' | 'SL'
 type Direction = 'BUY' | 'SELL'
-
-interface FuturesContract {
-  id: string
-  name: string
-  expiry: string
-  ltp: number
-  change: number
-  changePct: number
-  oi: number
-  volume: number
-  lotSize: number
-  underlying: string
-  expiryDate: string
-  marginPercent: number
-}
 
 interface PositionData {
   id: string
@@ -110,59 +96,58 @@ export function FuturesPage() {
   const { token } = useAuthStore()
   const { showTradeSuccess } = useTradeSuccess()
 
+  // ─── Live market engine data (real-time, 1-second updates) ──────
+  const engineFutures = useMarketStore(state => state.futures)
+  const engineIndices = useMarketStore(state => state.indices)
+  const engineRunning = useMarketStore(state => state.engineRunning)
+
   const [instrument, setInstrument] = useState<Instrument>('NIFTY')
   const [contractIdx, setContractIdx] = useState(0)
   const [direction, setDirection] = useState<Direction>('BUY')
   const [orderType, setOrderType] = useState<OrderType>('MARKET')
   const [lots, setLots] = useState(1)
   const [price, setPrice] = useState('')
+  const [stopLoss, setStopLoss] = useState('')
+  const [target, setTarget] = useState('')
 
-  // Real data states
-  const [contracts, setContracts] = useState<FuturesContract[]>([])
+  // Positions and portfolio
   const [positions, setPositions] = useState<PositionData[]>([])
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
-  const [contractsLoading, setContractsLoading] = useState(true)
   const [positionsLoading, setPositionsLoading] = useState(true)
   const [placingOrder, setPlacingOrder] = useState(false)
   const [squaringOff, setSquaringOff] = useState<string | null>(null)
 
   const config = INSTRUMENT_CONFIG[instrument]
-  const selectedContract = contracts[contractIdx] || null
 
-  // ─── Fetch Futures Contracts ──────────────────────────────────
-  const fetchContracts = useCallback(async () => {
-    setContractsLoading(true)
-    try {
-      const res = await fetch(`/api/futures/${instrument}`)
-      if (res.ok) {
-        const json = await res.json()
-        const futures = (json.data || []).map((f: Record<string, unknown>) => ({
-          id: f.id as string,
-          name: `${f.underlying} ${new Date(f.expiryDate as string).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`,
-          expiry: new Date(f.expiryDate as string).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-          ltp: (f.ltp as number) || 0,
-          change: (f.change as number) || 0,
-          changePct: (f.changePercent as number) || 0,
-          oi: Number(((f.openInterest as number) || 0).toFixed(1)),
-          volume: (f.volume as number) || 0,
-          lotSize: (f.lotSize as number) || config.lotSize,
-          underlying: (f.underlying as string) || instrument,
-          expiryDate: f.expiryDate as string,
-          marginPercent: (f.marginPercent as number) || 12,
-        }))
-        setContracts(futures)
-        if (futures.length > 0 && contractIdx >= futures.length) {
-          setContractIdx(0)
-        }
-      } else {
-        setContracts([])
-      }
-    } catch {
-      setContracts([])
-    } finally {
-      setContractsLoading(false)
+  // ─── Derive contracts from live engine data ──────────────────────
+  // This uses the real-time market engine which updates every second.
+  // No need to fetch from API — the engine provides live futures prices.
+  const contracts = useMemo(() => {
+    const engineTicks = engineFutures[instrument] || []
+
+    if (engineTicks.length > 0) {
+      // Use live engine data (real-time)
+      return engineTicks.map(tick => ({
+        id: `${tick.symbol}-${tick.expiryDate}`,
+        name: tick.name,
+        expiry: new Date(tick.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        ltp: tick.ltp,
+        change: tick.change,
+        changePct: tick.changePercent,
+        oi: tick.openInterest,
+        volume: tick.volume,
+        lotSize: tick.lotSize || config.lotSize,
+        underlying: tick.symbol,
+        expiryDate: tick.expiryDate,
+        marginPercent: tick.marginPercent,
+      }))
     }
-  }, [instrument, config.lotSize, contractIdx])
+
+    // Fallback: No engine data yet — return empty (will show loading)
+    return []
+  }, [engineFutures, instrument, config.lotSize])
+
+  const selectedContract = contracts[contractIdx] || null
 
   // ─── Fetch Positions ──────────────────────────────────────────
   const fetchPositions = useCallback(async () => {
@@ -207,13 +192,14 @@ export function FuturesPage() {
   }, [token])
 
   useEffect(() => {
-    fetchContracts()
-  }, [fetchContracts])
-
-  useEffect(() => {
     fetchPositions()
     fetchPortfolio()
   }, [fetchPositions, fetchPortfolio])
+
+  // Reset contract index when instrument changes
+  useEffect(() => {
+    setContractIdx(0)
+  }, [instrument])
 
   const priceData = useMemo(() => {
     if (selectedContract) {
@@ -234,6 +220,10 @@ export function FuturesPage() {
 
   const instruments: Instrument[] = ['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'SENSEX', 'MIDCPNIFTY']
   const monthLabels = ['Current Month', 'Next Month', 'Far Month']
+
+  // ─── Get live spot price from engine ──────────────────────────
+  const spotPrice = engineIndices[instrument]?.currentPrice || 0
+  const spotChange = engineIndices[instrument]?.changePercent || 0
 
   // ─── Place Futures Order ──────────────────────────────────────
   const handlePlaceOrder = async () => {
@@ -256,6 +246,8 @@ export function FuturesPage() {
           lots,
           price: orderType === 'MARKET' ? undefined : Number(price),
           expiryDate: selectedContract.expiryDate,
+          ...(stopLoss && parseFloat(stopLoss) > 0 ? { stopLoss: parseFloat(stopLoss) } : {}),
+          ...(target && parseFloat(target) > 0 ? { target: parseFloat(target) } : {}),
         }),
       })
       const data = await res.json()
@@ -313,15 +305,44 @@ export function FuturesPage() {
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto bg-[#f5f7fa] min-h-screen">
       {/* ── Header ────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 mb-2">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-[#00D09C]/10">
-          <CandlestickChart className="size-5 text-[#00D09C]" />
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-[#00D09C]/10">
+            <CandlestickChart className="size-5 text-[#00D09C]" />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-[#1a1a1a]">Futures Trading</h1>
+            <p className="text-xs text-[#6b7280]">Trade index & stock futures with real positions</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-[#1a1a1a]">Futures Trading</h1>
-          <p className="text-xs text-[#6b7280]">Trade index & stock futures with real positions</p>
+        {/* Live indicator */}
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            'size-2 rounded-full',
+            engineRunning ? 'bg-[#00D09C] animate-pulse' : 'bg-[#6b7280]'
+          )} />
+          <span className="text-xs text-[#6b7280]">{engineRunning ? 'Live' : 'Offline'}</span>
         </div>
       </div>
+
+      {/* ── Spot Price Bar ──────────────────────────────────────── */}
+      {spotPrice > 0 && (
+        <div className="bg-white border border-[#e5e7eb] p-3 rounded-xl flex items-center gap-4">
+          <div>
+            <div className="text-[10px] text-[#6b7280] uppercase tracking-wider">{instrument} Spot</div>
+            <div className="font-mono font-tabular font-bold text-lg text-[#1a1a1a]">₹{spotPrice.toLocaleString()}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-[#6b7280] uppercase tracking-wider">Change</div>
+            <div className={cn(
+              'font-mono font-tabular font-semibold',
+              spotChange > 0 ? 'text-[#00B386]' : spotChange < 0 ? 'text-[#EB5B3C]' : 'text-[#6b7280]'
+            )}>
+              {formatPercent(spotChange)}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Instrument Selector ───────────────────────────────── */}
       <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
@@ -345,14 +366,10 @@ export function FuturesPage() {
 
       {/* ── Contract Selector Tabs ─────────────────────────────── */}
       <div className="bg-white border border-[#e5e7eb] p-4 rounded-xl">
-        {contractsLoading ? (
+        {contracts.length === 0 ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="size-6 animate-spin text-[#00D09C]" />
-            <span className="ml-2 text-sm text-[#6b7280]">Loading contracts...</span>
-          </div>
-        ) : contracts.length === 0 ? (
-          <div className="text-center py-8 text-[#6b7280] text-sm">
-            No futures contracts found for {instrument}. Please seed the database.
+            <span className="ml-2 text-sm text-[#6b7280]">Loading live futures data...</span>
           </div>
         ) : (
           <Tabs value={String(contractIdx)} onValueChange={(v) => setContractIdx(Number(v))}>
@@ -614,6 +631,40 @@ export function FuturesPage() {
                     />
                   </div>
                 )}
+
+                {/* Stop Loss & Target */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] flex items-center gap-1">
+                      <span className="size-1.5 rounded-full bg-[#EB5B3C]" />
+                      Stop Loss
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="Optional"
+                      step="0.05"
+                      min="0"
+                      value={stopLoss}
+                      onChange={(e) => setStopLoss(e.target.value)}
+                      className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#EB5B3C]/20 focus:border-[#EB5B3C]"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] flex items-center gap-1">
+                      <span className="size-1.5 rounded-full bg-[#00B386]" />
+                      Target
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="Optional"
+                      step="0.05"
+                      min="0"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      className="font-mono font-tabular bg-white border-[#e5e7eb] h-10 focus:ring-[#00B386]/20 focus:border-[#00B386]"
+                    />
+                  </div>
+                </div>
 
                 {/* Calculated Fields */}
                 <div className="bg-[#f5f7fa] border border-[#e5e7eb] p-3 rounded-xl space-y-2 text-sm">

@@ -691,11 +691,11 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                 <div className="overflow-x-auto custom-scrollbar max-h-[420px] overflow-y-auto">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 z-10">
-                      <tr className="bg-[#1a1a1a] text-white">
+                      <tr className="bg-[#00D09C] text-white">
                         <th colSpan={4} className="text-center py-2 font-semibold text-xs tracking-wider">
                           CALLS
                         </th>
-                        <th className="text-center py-2 bg-[#374151] font-bold text-xs border-x border-[#4b5563]">
+                        <th className="text-center py-2 bg-[#00A67E] font-bold text-xs border-x border-[#009E76]">
                           STRIKE
                         </th>
                         <th colSpan={4} className="text-center py-2 font-semibold text-xs tracking-wider">
@@ -725,7 +725,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             key={row.strike}
                             className={cn(
                               'border-b border-[#f3f4f6] transition-colors',
-                              isATM && 'bg-[#1a1a1a]/5'
+                              isATM && 'bg-[#00D09C]/10'
                             )}
                           >
                             {/* CE Side */}
@@ -755,7 +755,7 @@ export function IndexDetailDrawer({ open, onOpenChange, symbol }: IndexDetailDra
                             {/* Strike */}
                             <td className={cn(
                               'px-2 py-1 text-center font-mono font-tabular font-bold bg-[#f9fafb] border-x border-[#e5e7eb]',
-                              isATM ? 'text-[#1a1a1a] bg-[#1a1a1a]/10' : 'text-[#1a1a1a]'
+                              isATM ? 'text-[#00A67E] bg-[#00D09C]/10 font-extrabold' : 'text-[#1a1a1a]'
                             )}>
                               {row.strike.toLocaleString()}
                             </td>

@@ -12,13 +12,29 @@ export async function GET(request: NextRequest) {
 
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20'), 1), 100)
     const offset = Math.max(parseInt(searchParams.get('offset') || '0'), 0)
+    const from = searchParams.get('from')
+    const to = searchParams.get('to')
+
+    // Build where clause
+    const where: Record<string, unknown> = { userId }
+
+    // Date range filter on executedAt
+    if (from || to) {
+      where.executedAt = {}
+      if (from) {
+        where.executedAt.gte = new Date(from)
+      }
+      if (to) {
+        where.executedAt.lte = new Date(to)
+      }
+    }
 
     // Get total count
-    const total = await db.trade.count({ where: { userId } })
+    const total = await db.trade.count({ where })
 
     // Get trades
     const trades = await db.trade.findMany({
-      where: { userId },
+      where,
       orderBy: { executedAt: 'desc' },
       take: limit,
       skip: offset,

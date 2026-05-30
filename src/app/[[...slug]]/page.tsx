@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import { useAppStore } from '@/lib/store'
+import { useAppStore, getPageFromUrl } from '@/lib/store'
 import { useAuthStore } from '@/lib/auth-store'
 import { AuthPage } from '@/components/tradepro/auth-page'
 import { Sidebar } from '@/components/tradepro/sidebar'
@@ -21,6 +21,7 @@ import { FuturesPage } from '@/components/tradepro/pages/futures-page'
 import { LearningPage } from '@/components/tradepro/pages/learning-page'
 import { ActiveDevicesPage } from '@/components/tradepro/pages/active-devices-page'
 import { HelpSupportPage } from '@/components/tradepro/pages/help-support-page'
+import { WatchlistPage } from '@/components/tradepro/pages/watchlist-page'
 import { IndexTicker } from '@/components/tradepro/index-ticker'
 import { TradeSuccessProvider } from '@/components/tradepro/trade-success-popup'
 import { Footer } from '@/components/tradepro/footer'
@@ -36,6 +37,7 @@ import {
 } from '@/components/tradepro/footer-pages'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { TrendingUp } from 'lucide-react'
+import { useMarketEngine } from '@/hooks/use-market-engine'
 
 // Footer page IDs — these pages show their own footer-free layout
 const FOOTER_PAGES = new Set([
@@ -48,6 +50,9 @@ const FOOTER_PAGES = new Set([
   'about-us',
   'refund-policy',
 ])
+
+// Pages where the Footer component should be visible
+const FOOTER_VISIBLE_PAGES = new Set(['dashboard', 'profile', 'helpSupport'])
 
 function PageContent({ page }: { page: string }) {
   switch (page) {
@@ -69,6 +74,8 @@ function PageContent({ page }: { page: string }) {
       return <IndexDetailPage />
     case 'optionChain':
       return <OptionChainPage />
+    case 'watchlist':
+      return <WatchlistPage />
     case 'futures':
       return <FuturesPage />
     case 'learning':
@@ -142,9 +149,12 @@ function LoadingScreen() {
   )
 }
 
-export default function Home() {
+export default function CatchAllPage() {
   const { currentPage, sidebarOpen, setSidebarOpen } = useAppStore()
   const { isAuthenticated, isInitializing, initialize, logout, user, token, setAuth } = useAuthStore()
+
+  // Start the real-time market engine for live price updates
+  useMarketEngine()
 
   // Handle OAuth callback token from URL
   const handleOAuthCallback = useCallback(async () => {
@@ -178,6 +188,40 @@ export default function Home() {
     handleOAuthCallback()
     initialize()
   }, [initialize, handleOAuthCallback])
+
+  // Sync page from URL on first load & listen for popstate
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const { setCurrentPageFromUrl, selectedStockSymbol, selectedIndexSymbol } = useAppStore.getState()
+
+    // Initialize page from current URL
+    const pathPage = getPageFromUrl(window.location.pathname)
+    let stockSym: string | null = selectedStockSymbol
+    let indexSym: string | null = selectedIndexSymbol
+
+    // Parse symbol from URL if stock/index detail page
+    if (pathPage === 'stockOverview') {
+      const parts = window.location.pathname.split('/stock/')
+      if (parts[1]) stockSym = parts[1].split('/')[0]
+    } else if (pathPage === 'indexDetail') {
+      const parts = window.location.pathname.split('/index/')
+      if (parts[1]) indexSym = parts[1].split('/')[0]
+    }
+
+    setCurrentPageFromUrl(pathPage, stockSym, indexSym)
+
+    // Listen for browser back/forward
+    const handlePopState = (e: PopStateEvent) => {
+      const page = (e.state?.page as string) || getPageFromUrl(window.location.pathname)
+      const sym = e.state?.stockSymbol as string | null || null
+      const idx = e.state?.indexSymbol as string | null || null
+      useAppStore.getState().setCurrentPageFromUrl(page as any, sym, idx)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [isAuthenticated])
 
   // Show loading while checking auth
   if (isInitializing) {
@@ -217,7 +261,7 @@ export default function Home() {
             className="w-[240px] p-0"
             style={{ background: '#ffffff', borderRight: '1px solid #e5e7eb' }}
           >
-            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} userAvatar={user?.avatar} />
+            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} userRole={user?.role} userAvatar={user?.avatar} isMobile />
           </SheetContent>
         </Sheet>
 
@@ -227,12 +271,12 @@ export default function Home() {
         {/* Indian Market Index Ticker */}
         {!isFooterPage && <IndexTicker />}
 
-        {/* Main Content */}
-        <main className="flex-1 md:ml-[240px] mt-14 pb-16 md:pb-0">
+        {/* Main Content — extra top padding for index ticker (40px) */}
+        <main className="flex-1 md:ml-[240px] mt-[96px] pb-16 md:pb-0">
           <PageContent page={currentPage} />
 
-          {/* Footer */}
-          <Footer />
+          {/* Footer — only on specific pages */}
+          {FOOTER_VISIBLE_PAGES.has(currentPage) && <Footer />}
         </main>
 
         {/* Mobile Bottom Nav */}

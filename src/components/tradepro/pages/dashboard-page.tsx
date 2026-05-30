@@ -23,6 +23,7 @@ import {
   Briefcase,
 } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
+import { useMarketStore } from '@/lib/market-store'
 import { motion } from 'framer-motion'
 import { formatPrice } from '@/lib/format'
 
@@ -155,10 +156,15 @@ function StockRow({ stock, onClick }: { stock: StockData; onClick: () => void })
 export function DashboardPage() {
   const { navigateToStock, navigateToIndex, setCurrentPage } = useAppStore()
 
+  // Live market data from engine
+  const marketIndices = useMarketStore((s) => s.indices)
+  const marketStocks = useMarketStore((s) => s.stocks)
+  const engineRunning = useMarketStore((s) => s.engineRunning)
+
   // Active tab
   const [activeTab, setActiveTab] = useState<'stocks' | 'options' | 'portfolio' | 'learn'>('stocks')
 
-  // Data states
+  // Data states (API fallback)
   const [apiIndices, setApiIndices] = useState<IndexData[]>([])
   const [apiStocks, setApiStocks] = useState<StockData[]>([])
   const [apiGainers, setApiGainers] = useState<StockData[]>([])
@@ -243,23 +249,63 @@ export function DashboardPage() {
     return () => window.removeEventListener('openIndexDetail', handler)
   }, [])
 
-  // ─── Display data ────────────────────────────────────────────
-  const displayIndices = apiIndices.length > 0 ? apiIndices : fallbackIndices
+  // ─── Display data (prefer live market engine, fallback to API, then static) ──
+  const liveIndices: IndexData[] = engineRunning
+    ? Object.values(marketIndices).map(idx => ({
+        id: idx.symbol,
+        symbol: idx.symbol,
+        name: idx.name,
+        currentPrice: idx.currentPrice,
+        change: idx.change,
+        changePercent: idx.changePercent,
+        isEnabled: true,
+      }))
+    : []
 
-  const displayGainers = apiGainers.length > 0
-    ? apiGainers
-    : apiStocks.length > 0
-      ? [...apiStocks].filter(s => s.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 8)
-      : fallbackGainers
+  const liveStocksArr = engineRunning
+    ? Object.values(marketStocks).map(s => ({
+        id: s.symbol,
+        symbol: s.symbol,
+        name: s.name,
+        sector: s.sector,
+        currentPrice: s.currentPrice,
+        change: s.change,
+        changePercent: s.changePercent,
+        volume: s.volume,
+        marketCap: s.marketCap,
+        isFuturesAvailable: true,
+        isOptionsAvailable: true,
+      }))
+    : []
 
-  const displayLosers = apiLosers.length > 0
-    ? apiLosers
-    : apiStocks.length > 0
-      ? [...apiStocks].filter(s => s.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, 8)
-      : fallbackLosers
+  const liveGainers = engineRunning
+    ? [...liveStocksArr].filter(s => s.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 8)
+    : []
+
+  const liveLosers = engineRunning
+    ? [...liveStocksArr].filter(s => s.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, 8)
+    : []
+
+  const displayIndices = liveIndices.length > 0 ? liveIndices : apiIndices.length > 0 ? apiIndices : fallbackIndices
+
+  const displayGainers = liveGainers.length > 0
+    ? liveGainers
+    : apiGainers.length > 0
+      ? apiGainers
+      : apiStocks.length > 0
+        ? [...apiStocks].filter(s => s.changePercent > 0).sort((a, b) => b.changePercent - a.changePercent).slice(0, 8)
+        : fallbackGainers
+
+  const displayLosers = liveLosers.length > 0
+    ? liveLosers
+    : apiLosers.length > 0
+      ? apiLosers
+      : apiStocks.length > 0
+        ? [...apiStocks].filter(s => s.changePercent < 0).sort((a, b) => a.changePercent - b.changePercent).slice(0, 8)
+        : fallbackLosers
 
   const getOtherStocks = () => {
-    const allStocks = apiStocks.length > 0 ? apiStocks : fallbackOtherStocks
+    const allStocks = liveStocksArr.length > 0 ? liveStocksArr : apiStocks.length > 0 ? apiStocks : fallbackOtherStocks
     const gainersSet = new Set(displayGainers.map(s => s.symbol))
     const losersSet = new Set(displayLosers.map(s => s.symbol))
     let others = allStocks.filter(s => !gainersSet.has(s.symbol) && !losersSet.has(s.symbol))

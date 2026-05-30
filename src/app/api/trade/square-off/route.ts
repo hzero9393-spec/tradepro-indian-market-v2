@@ -124,6 +124,7 @@ export async function POST(request: NextRequest) {
           brokerage,
           marginRequired: position.marginUsed,
           status: 'FILLED',
+          placedAt: new Date(),
           filledAt: new Date(),
         }
       })

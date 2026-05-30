@@ -23,8 +23,15 @@ function createPrismaClient() {
     })
   }
 
-  // Fallback to standard PrismaClient (for local SQLite or PostgreSQL)
+  // Fallback to local SQLite via libSQL adapter
+  // Prisma v7 with engine type "client" requires an adapter
+  const dbUrl = process.env.DATABASE_URL || 'file:./db/custom.db'
+  const adapter = new PrismaLibSql({
+    url: dbUrl,
+  })
+
   return new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   })
 }

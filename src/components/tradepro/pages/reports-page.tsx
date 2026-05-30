@@ -49,6 +49,10 @@ import { useAppStore } from '@/lib/store'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { formatINR, formatINRWhole } from '@/lib/format'
+import { DateFilter, DatePreset, filterByDateRange, getDateRange } from '@/components/tradepro/ui/date-filter'
+
+// ─── Initialize today's date range ─────────────────────────────────
+const todayRange = getDateRange('today')
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -89,10 +93,17 @@ export function ReportsPage() {
   const [trades, setTrades] = useState<TradeData[]>([])
   const [loading, setLoading] = useState(true)
   const [downloadingReport, setDownloadingReport] = useState<string | null>(null)
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'last' | 'monthly' | 'full' | null }>({ open: false, type: null })
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'last' | 'monthly' | 'full' | 'daterange' | null }>({ open: false, type: null })
+
+  // ─── Date Filter State ──────────────────────────────────────
+  const [datePreset, setDatePreset] = useState<DatePreset>('today')
+  const [dateFrom, setDateFrom] = useState<string | null>(todayRange.from)
+  const [dateTo, setDateTo] = useState<string | null>(todayRange.to)
+  const [customFromInput, setCustomFromInput] = useState<string | null>(null)
+  const [customToInput, setCustomToInput] = useState<string | null>(null)
 
   // ─── Download Report Handler ────────────────────────────────
-  const handleDownloadReport = useCallback(async (type: 'last' | 'monthly' | 'full') => {
+  const handleDownloadReport = useCallback(async (type: 'last' | 'monthly' | 'full' | 'daterange') => {
     if (!token) {
       toast.error('Please login to download reports')
       setConfirmDialog({ open: false, type: null })
@@ -101,12 +112,20 @@ export function ReportsPage() {
     setDownloadingReport(type)
     setConfirmDialog({ open: false, type: null })
 
-    const reportLabel = type === 'last' ? 'Last Trade' : type === 'monthly' ? 'Monthly' : 'Full Trading'
+    const reportLabel = type === 'last' ? 'Last Trade' : type === 'monthly' ? 'Monthly' : type === 'daterange' ? 'Date Range' : 'Full Trading'
 
     try {
       toast.loading(`Generating ${reportLabel} report...`, { id: 'pdf-download' })
 
-      const res = await fetch(`/api/profile/report?type=${type}`, {
+      // Build URL with date range params
+      let reportUrl = `/api/profile/report?type=${type}`
+      if (type === 'daterange' && dateFrom && dateTo) {
+        reportUrl += `&from=${encodeURIComponent(dateFrom)}&to=${encodeURIComponent(dateTo)}`
+      } else if (type === 'daterange' && dateFrom) {
+        reportUrl += `&from=${encodeURIComponent(dateFrom)}`
+      }
+
+      const res = await fetch(reportUrl, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
@@ -145,6 +164,7 @@ export function ReportsPage() {
         last: `tradepro-last-trade-${new Date().toISOString().split('T')[0]}.pdf`,
         monthly: `tradepro-monthly-report-${new Date().toISOString().split('T')[0]}.pdf`,
         full: `tradepro-full-report-${new Date().toISOString().split('T')[0]}.pdf`,
+        daterange: `tradepro-report-${dateFrom ? new Date(dateFrom).toISOString().split('T')[0] : 'all'}-to-${dateTo ? new Date(dateTo).toISOString().split('T')[0] : 'now'}-${new Date().toISOString().split('T')[0]}.pdf`,
       }
       a.download = filenameMap[type]
       a.style.display = 'none'
@@ -170,13 +190,22 @@ export function ReportsPage() {
     } finally {
       setDownloadingReport(null)
     }
-  }, [token])
+  }, [token, dateFrom, dateTo])
+
+  // ─── Build query string with date params ────────────────────
+  const buildQueryString = useCallback((basePath: string) => {
+    const params = new URLSearchParams()
+    params.set('limit', '100')
+    if (dateFrom) params.set('from', dateFrom)
+    if (dateTo) params.set('to', dateTo)
+    return `${basePath}?${params.toString()}`
+  }, [dateFrom, dateTo])
 
   // ─── Fetch All Data ───────────────────────────────────────
   const fetchData = useCallback(async () => {
     if (!token) return
     try {
-      const tradesRes = await fetch('/api/trade/trades?limit=100', {
+      const tradesRes = await fetch(buildQueryString('/api/trade/trades'), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (tradesRes.ok) {
@@ -188,17 +217,34 @@ export function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, buildQueryString])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
+  // ─── Date Filter Handler ────────────────────────────────────
+  const handleDateChange = useCallback((preset: DatePreset, from: string | null, to: string | null) => {
+    setDatePreset(preset)
+    setDateFrom(from)
+    setDateTo(to)
+    if (preset !== 'custom') {
+      setCustomFromInput(null)
+      setCustomToInput(null)
+    }
+  }, [])
+
+  // ─── Client-side date filtering ─────────────────────────────
+  const filteredTrades = useMemo(() =>
+    filterByDateRange(trades, 'executedAt', dateFrom, dateTo),
+    [trades, dateFrom, dateTo]
+  )
+
   // ─── Computed Metrics ─────────────────────────────────────
 
   const closedTrades = useMemo(() =>
-    trades.filter(t => t.pnl !== null && t.pnl !== undefined),
-    [trades]
+    filteredTrades.filter(t => t.pnl !== null && t.pnl !== undefined),
+    [filteredTrades]
   )
 
   const totalPnl = useMemo(() =>
@@ -207,13 +253,13 @@ export function ReportsPage() {
   )
 
   const winningTrades = useMemo(() =>
-    closedTrades.filter(t => (t.pnl || 0) > 0),
-    [closedTrades]
+    filteredTrades.filter(t => (t.pnl || 0) > 0),
+    [filteredTrades]
   )
 
   const losingTrades = useMemo(() =>
-    closedTrades.filter(t => (t.pnl || 0) < 0),
-    [closedTrades]
+    filteredTrades.filter(t => (t.pnl || 0) < 0),
+    [filteredTrades]
   )
 
   const winRate = useMemo(() => {
@@ -231,7 +277,7 @@ export function ReportsPage() {
   const stats = [
     {
       label: 'Total Trades',
-      value: String(trades.length),
+      value: String(filteredTrades.length),
       icon: Crosshair,
       borderColor: 'border-l-[#00D09C]',
       textColor: 'text-[#00D09C]',
@@ -303,6 +349,24 @@ export function ReportsPage() {
         </p>
       </div>
 
+      {/* ── Date Filter ─────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
+          <CardContent className="p-4">
+            <DateFilter
+              value={datePreset}
+              customFrom={customFromInput}
+              customTo={customToInput}
+              onChange={handleDateChange}
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* ── Stats Grid ──────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, idx) => {
@@ -335,7 +399,7 @@ export function ReportsPage() {
       </div>
 
       {/* ── Empty State ─────────────────────────────────────────── */}
-      {trades.length === 0 ? (
+      {filteredTrades.length === 0 ? (
         <Card className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
           <CardContent className="py-16">
             <div className="flex flex-col items-center justify-center text-center">
@@ -573,13 +637,13 @@ export function ReportsPage() {
                 <CardContent>
                   {(() => {
                     const segmentData = [
-                      { name: 'Equity', icon: Briefcase, color: '#00D09C', trades: trades.filter(t => t.segment === 'EQUITY' || t.segment === 'CASH') },
-                      { name: 'Futures', icon: TrendingUp, color: '#00d09c', trades: trades.filter(t => t.segment === 'FUTURES') },
-                      { name: 'Options', icon: Award, color: '#eb5b3c', trades: trades.filter(t => t.segment === 'OPTIONS') },
+                      { name: 'Equity', icon: Briefcase, color: '#00D09C', trades: filteredTrades.filter(t => t.segment === 'EQUITY' || t.segment === 'CASH') },
+                      { name: 'Futures', icon: TrendingUp, color: '#00d09c', trades: filteredTrades.filter(t => t.segment === 'FUTURES') },
+                      { name: 'Options', icon: Award, color: '#eb5b3c', trades: filteredTrades.filter(t => t.segment === 'OPTIONS') },
                     ]
                     // Always show all 3 segments, even with 0 trades
 
-                    if (trades.length === 0) {
+                    if (filteredTrades.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center py-12 text-center">
                           <div className="size-14 rounded-full bg-[#f5f7fa] flex items-center justify-center mb-4">
@@ -684,7 +748,7 @@ export function ReportsPage() {
                     </div>
                   </div>
                   <Badge variant="secondary" className="bg-[#00D09C]/10 text-[#00D09C] border-0 text-xs font-semibold">
-                    {trades.length} Trade{trades.length !== 1 ? 's' : ''}
+                    {filteredTrades.length} Trade{filteredTrades.length !== 1 ? 's' : ''}
                   </Badge>
                 </div>
               </CardHeader>
@@ -704,7 +768,7 @@ export function ReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-[#e5e7eb]">
-                      {trades.map((trade) => {
+                      {filteredTrades.map((trade) => {
                         const isBuy = trade.tradeDirection === 'BUY'
                         const hasPnl = trade.pnl !== null && trade.pnl !== undefined
                         const isPositive = hasPnl && trade.pnl! >= 0
@@ -797,7 +861,7 @@ export function ReportsPage() {
                         Total Brokerage
                       </p>
                       <p className="font-mono-data font-tabular text-sm font-bold text-[#1a1a1a] mt-0.5">
-                        {formatINR(trades.reduce((s, t) => s + t.brokerage, 0))}
+                        {formatINR(filteredTrades.reduce((s, t) => s + t.brokerage, 0))}
                       </p>
                     </div>
                     <div>
@@ -835,7 +899,7 @@ export function ReportsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Last Trade Report */}
                   <div className="rounded-xl border border-[#e5e7eb] bg-[#f8f9fb] p-5 hover:border-[#00D09C]/30 hover:bg-[#e6faf4]/30 transition-all group">
                     <div className="flex items-center gap-3 mb-3">
@@ -913,6 +977,37 @@ export function ReportsPage() {
                       {downloadingReport === 'full' ? 'Downloading...' : 'Download PDF'}
                     </Button>
                   </div>
+
+                  {/* Date Range Report */}
+                  <div className="rounded-xl border border-[#00D09C]/40 bg-[#e6faf4]/30 p-5 hover:border-[#00D09C]/60 hover:bg-[#e6faf4]/50 transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="size-10 rounded-lg bg-[#00D09C]/15 flex items-center justify-center shrink-0 group-hover:bg-[#00D09C]/25 transition-colors">
+                        <Calendar className="size-5 text-[#00D09C]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[#1a1a1a]">Custom Date Range</p>
+                        <p className="text-[11px] text-[#6b7280] mt-0.5">
+                          {dateFrom && dateTo
+                            ? `${new Date(dateFrom).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - ${new Date(dateTo).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}`
+                            : 'Select dates from filter above'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full gap-2 bg-[#00A67E] hover:bg-[#008f6e] text-white font-semibold rounded-lg"
+                      onClick={() => setConfirmDialog({ open: true, type: 'daterange' })}
+                      disabled={downloadingReport !== null || (!dateFrom && !dateTo)}
+                    >
+                      {downloadingReport === 'daterange' ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Download className="size-4" />
+                      )}
+                      {downloadingReport === 'daterange' ? 'Downloading...' : 'Download PDF'}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -931,13 +1026,15 @@ export function ReportsPage() {
               <div className="size-8 rounded-lg bg-[#00D09C]/10 flex items-center justify-center">
                 <FileText className="size-4 text-[#00D09C]" />
               </div>
-              Download {confirmDialog.type === 'last' ? 'Last Trade' : confirmDialog.type === 'monthly' ? 'Monthly' : 'Full Trading'} Report
+              Download {confirmDialog.type === 'last' ? 'Last Trade' : confirmDialog.type === 'monthly' ? 'Monthly' : confirmDialog.type === 'daterange' ? 'Custom Date Range' : 'Full Trading'} Report
             </DialogTitle>
             <DialogDescription className="text-[#6b7280]">
               {confirmDialog.type === 'last'
                 ? 'Generate a PDF report of your most recent trade.'
                 : confirmDialog.type === 'monthly'
                 ? 'Generate a PDF report of all trades from the last 30 days.'
+                : confirmDialog.type === 'daterange'
+                ? `Generate a PDF report for trades from ${dateFrom ? new Date(dateFrom).toLocaleDateString('en-IN') : 'start'} to ${dateTo ? new Date(dateTo).toLocaleDateString('en-IN') : 'now'}.`
                 : 'Generate a comprehensive PDF of all your trading data.'}
             </DialogDescription>
           </DialogHeader>
@@ -971,7 +1068,7 @@ export function ReportsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#6b7280]">Trade count:</span>
                   <span className="font-semibold text-[#1a1a1a]">
-                    {confirmDialog.type === 'last' ? '1 trade' : confirmDialog.type === 'monthly' ? `Last 30 days` : `All trades`}
+                    {confirmDialog.type === 'last' ? '1 trade' : confirmDialog.type === 'monthly' ? 'Last 30 days' : confirmDialog.type === 'daterange' ? 'Selected date range' : 'All trades'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs mt-1">
