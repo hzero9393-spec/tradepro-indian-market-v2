@@ -52,10 +52,36 @@ export interface OptionTick {
   peVolume: number
 }
 
+// ─── Futures Tick Type ────────────────────────────────────────────────
+export interface FutureTick {
+  symbol: string           // Underlying: NIFTY, BANKNIFTY, RELIANCE etc
+  name: string             // Display name: "NIFTY Jan 2025 Fut"
+  underlyingType: 'INDEX' | 'STOCK'
+  expiryDate: string       // ISO date string
+  expiryType: 'WEEKLY' | 'MONTHLY'
+  lotSize: number
+  ltp: number
+  open: number
+  high: number
+  low: number
+  previousClose: number
+  change: number
+  changePercent: number
+  openInterest: number     // In Lakhs
+  oiChange: number
+  volume: number
+  basis: number            // Future Price - Spot Price
+  marginPercent: number
+  trend: 'up' | 'down' | 'neutral'
+  trendStrength: number
+  volatility: number
+}
+
 export interface MarketState {
   indices: Record<string, MarketIndex>
   stocks: Record<string, MarketStock>
   optionChains: Record<string, OptionTick[]>
+  futures: Record<string, FutureTick[]>  // keyed by underlying symbol
   engineRunning: boolean
   tickCount: number
   lastTickTime: number
@@ -86,6 +112,55 @@ const INDEX_VOLATILITY: Record<string, number> = {
   FINNIFTY: 18,
   SENSEX: 15,
   MIDCPNIFTY: 20,
+}
+
+// ─── Futures Configuration ────────────────────────────────────────────
+const FUTURES_INDEX_CONFIG: Record<string, { lotSize: number; marginPercent: number }> = {
+  NIFTY: { lotSize: 50, marginPercent: 12 },
+  BANKNIFTY: { lotSize: 25, marginPercent: 14 },
+  FINNIFTY: { lotSize: 25, marginPercent: 13 },
+  SENSEX: { lotSize: 15, marginPercent: 12 },
+  MIDCPNIFTY: { lotSize: 75, marginPercent: 15 },
+}
+
+// F&O stocks eligible for futures trading
+const FUTURES_STOCK_CONFIG: Record<string, { lotSize: number; marginPercent: number }> = {
+  RELIANCE: { lotSize: 250, marginPercent: 16 },
+  TCS: { lotSize: 150, marginPercent: 15 },
+  HDFCBANK: { lotSize: 550, marginPercent: 14 },
+  INFY: { lotSize: 300, marginPercent: 16 },
+  ICICIBANK: { lotSize: 700, marginPercent: 15 },
+  SBIN: { lotSize: 1500, marginPercent: 18 },
+  BHARTIARTL: { lotSize: 600, marginPercent: 16 },
+  ITC: { lotSize: 1600, marginPercent: 14 },
+  KOTAKBANK: { lotSize: 400, marginPercent: 15 },
+  LT: { lotSize: 150, marginPercent: 17 },
+  AXISBANK: { lotSize: 900, marginPercent: 16 },
+  BAJFINANCE: { lotSize: 125, marginPercent: 20 },
+  TATAMOTORS: { lotSize: 2250, marginPercent: 22 },
+  WIPRO: { lotSize: 1500, marginPercent: 17 },
+  HCLTECH: { lotSize: 350, marginPercent: 16 },
+  SUNPHARMA: { lotSize: 425, marginPercent: 17 },
+  MARUTI: { lotSize: 50, marginPercent: 18 },
+  ASIANPAINT: { lotSize: 200, marginPercent: 17 },
+  TATASTEEL: { lotSize: 4250, marginPercent: 22 },
+  ADANIENT: { lotSize: 500, marginPercent: 25 },
+  ADANIPORTS: { lotSize: 1250, marginPercent: 18 },
+  JSWSTEEL: { lotSize: 2000, marginPercent: 20 },
+  COALINDIA: { lotSize: 3600, marginPercent: 17 },
+  HINDALCO: { lotSize: 2800, marginPercent: 19 },
+  GRASIM: { lotSize: 675, marginPercent: 18 },
+  TECHM: { lotSize: 600, marginPercent: 17 },
+  BAJAJFINSV: { lotSize: 400, marginPercent: 18 },
+  DRREDDY: { lotSize: 125, marginPercent: 18 },
+  CIPLA: { lotSize: 650, marginPercent: 17 },
+  EICHERMOT: { lotSize: 75, marginPercent: 18 },
+  M_M: { lotSize: 200, marginPercent: 18 },
+  NTPC: { lotSize: 4800, marginPercent: 17 },
+  POWERGRID: { lotSize: 5600, marginPercent: 16 },
+  ONGC: { lotSize: 5625, marginPercent: 18 },
+  ULTRACEMCO: { lotSize: 100, marginPercent: 17 },
+  TITAN: { lotSize: 150, marginPercent: 19 },
 }
 
 // ─── Stock Definitions ────────────────────────────────────────────────
@@ -380,6 +455,172 @@ class OptionChainEngine {
   }
 }
 
+// ─── Futures Engine ────────────────────────────────────────────────────
+class FuturesEngine {
+  /**
+   * Generate next 3 monthly expiry dates (last Thursday of each month)
+   */
+  private static getNextExpiries(count: number = 3): Date[] {
+    const expiries: Date[] = []
+    const now = new Date()
+    let year = now.getFullYear()
+    let month = now.getMonth()
+
+    for (let i = 0; i < count + 2; i++) {
+      // Find last Thursday of the month
+      const lastDay = new Date(year, month + 1, 0).getDate()
+      let lastThursday = lastDay
+      while (lastThursday > 0) {
+        const d = new Date(year, month, lastThursday)
+        if (d.getDay() === 4) break // Thursday = 4
+        lastThursday--
+      }
+
+      const expiry = new Date(year, month, lastThursday, 15, 30, 0)
+      // Only add future expiries
+      if (expiry > now) {
+        expiries.push(expiry)
+      }
+
+      month++
+      if (month > 11) { month = 0; year++ }
+    }
+
+    return expiries.slice(0, count)
+  }
+
+  /**
+   * Initialize futures contracts for an underlying (INDEX or STOCK)
+   */
+  static initializeFutures(
+    symbol: string,
+    spotPrice: number,
+    underlyingType: 'INDEX' | 'STOCK',
+    lotSize: number,
+    marginPercent: number,
+    volatility: number
+  ): FutureTick[] {
+    const expiries = FuturesEngine.getNextExpiries(3)
+    const contracts: FutureTick[] = []
+
+    expiries.forEach((expiry, idx) => {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const name = `${symbol} ${monthNames[expiry.getMonth()]} ${expiry.getFullYear()} Fut`
+
+      // Futures premium increases with time to expiry
+      const basisPoints = [0.05, 0.15, 0.30] // % premium over spot
+      const premium = spotPrice * basisPoints[idx] / 100
+      const futurePrice = spotPrice + premium
+
+      const previousClose = futurePrice * (1 + (Math.random() - 0.5) * 0.015)
+      const open = previousClose * (1 + (Math.random() - 0.5) * 0.008)
+      const trend = Math.random() > 0.5 ? 'up' : 'down'
+      const trendStrength = Math.random() * 0.3 + 0.1
+
+      contracts.push({
+        symbol,
+        name,
+        underlyingType,
+        expiryDate: expiry.toISOString(),
+        expiryType: 'MONTHLY',
+        lotSize,
+        ltp: Number(open.toFixed(2)),
+        open: Number(open.toFixed(2)),
+        high: Number(Math.max(open, futurePrice).toFixed(2)),
+        low: Number(Math.min(open, futurePrice).toFixed(2)),
+        previousClose: Number(previousClose.toFixed(2)),
+        change: Number((open - previousClose).toFixed(2)),
+        changePercent: Number(((open - previousClose) / previousClose * 100).toFixed(2)),
+        openInterest: Number((Math.random() * 80 + 20).toFixed(1)), // Lakhs
+        oiChange: Number(((Math.random() - 0.3) * 5).toFixed(1)),
+        volume: Math.round(Math.random() * 5000000 + 500000),
+        basis: Number(premium.toFixed(2)),
+        marginPercent,
+        trend: trend as 'up' | 'down',
+        trendStrength,
+        volatility: volatility + 2, // Futures slightly more volatile than spot
+      })
+    })
+
+    return contracts
+  }
+
+  /**
+   * Update futures tick prices based on underlying spot movement
+   * NON-DESTRUCTIVE: Merges new ticks into existing list, preserving
+   * any externally-added contracts with matching symbol+expiry key
+   */
+  static updateFutures(
+    prevTicks: FutureTick[],
+    spotPrice: number,
+    marketBias: number
+  ): FutureTick[] {
+    return prevTicks.map(tick => {
+      // Futures price follows spot with basis adjustment
+      const trendDir = tick.trend === 'up' ? 1 : tick.trend === 'down' ? -1 : 0
+      const effectiveTrend = trendDir * tick.trendStrength * 0.6 + marketBias * 0.4
+      const movement = PriceSimulator.calculateMovement(tick.volatility, effectiveTrend, 0.25)
+
+      const newPrice = Math.max(0.01, tick.ltp * (1 + movement))
+      const newChange = newPrice - tick.previousClose
+      const newChangePct = tick.previousClose > 0 ? (newChange / tick.previousClose) * 100 : 0
+
+      // Basis decays towards expiry (simplified)
+      const daysToExpiry = Math.max(0, (new Date(tick.expiryDate).getTime() - Date.now()) / 86400000)
+      const newBasis = daysToExpiry > 0 ? (newPrice - spotPrice) : 0
+
+      // OI slow drift
+      const newOI = Number(Math.max(0.5, tick.openInterest * (1 + (Math.random() - 0.5) * 0.015)).toFixed(1))
+      const newOiChange = Number(((newOI - tick.openInterest) / Math.max(0.1, tick.openInterest) * 100).toFixed(1))
+
+      // Trend update (10% chance)
+      let newTrend = tick.trend
+      let newTrendStrength = tick.trendStrength
+      if (Math.random() < 0.1) {
+        if (newChangePct > 0.3) { newTrend = 'up'; newTrendStrength = Math.min(1, tick.trendStrength + 0.1) }
+        else if (newChangePct < -0.3) { newTrend = 'down'; newTrendStrength = Math.min(1, tick.trendStrength + 0.1) }
+        else { newTrend = Math.random() > 0.5 ? 'up' : 'down'; newTrendStrength = Math.random() * 0.3 }
+      }
+      newTrendStrength = Math.max(0.1, newTrendStrength * 0.998)
+
+      return {
+        ...tick,
+        ltp: Number(newPrice.toFixed(2)),
+        high: Math.max(tick.high, newPrice),
+        low: Math.min(tick.low, newPrice),
+        change: Number(newChange.toFixed(2)),
+        changePercent: Number(newChangePct.toFixed(2)),
+        basis: Number(newBasis.toFixed(2)),
+        openInterest: newOI,
+        oiChange: newOiChange,
+        volume: tick.volume + Math.round(Math.random() * 300),
+        trend: newTrend,
+        trendStrength: newTrendStrength,
+      }
+    })
+  }
+
+  /**
+   * NON-DESTRUCTIVE ADD: Merge a new future into existing list.
+   * If symbol+expiry already exists, skip (idempotent).
+   * If not, append. NEVER overwrites the full list.
+   */
+  static addFuture(
+    prev: FutureTick[] | undefined,
+    newFuture: FutureTick
+  ): FutureTick[] {
+    if (!prev) return [newFuture]
+
+    const exists = prev.some(
+      f => f.symbol === newFuture.symbol && f.expiryDate === newFuture.expiryDate
+    )
+
+    if (exists) return prev // Duplicate — skip
+
+    return [...prev, newFuture] // Append — no overwrite
+  }
+}
+
 // ─── MarketEngine ─────────────────────────────────────────────────────
 export class MarketEngine {
   private intervalId: ReturnType<typeof setInterval> | null = null
@@ -395,6 +636,7 @@ export class MarketEngine {
     const indices: Record<string, MarketIndex> = {}
     const stocks: Record<string, MarketStock> = {}
     const optionChains: Record<string, OptionTick[]> = {}
+    const futures: Record<string, FutureTick[]> = {}
 
     // Initialize indices with random open/preClose variations
     for (const def of INDEX_DEFINITIONS) {
@@ -462,10 +704,30 @@ export class MarketEngine {
       optionChains[idxSymbol] = OptionChainEngine.generateOptionChain(idxSymbol, spotPrice)
     }
 
+    // Initialize futures for indices
+    for (const [symbol, config] of Object.entries(FUTURES_INDEX_CONFIG)) {
+      const spotPrice = indices[symbol]?.currentPrice || INDEX_BASE_PRICES[symbol] || 10000
+      const vol = INDEX_VOLATILITY[symbol] || 15
+      futures[symbol] = FuturesEngine.initializeFutures(
+        symbol, spotPrice, 'INDEX', config.lotSize, config.marginPercent, vol
+      )
+    }
+
+    // Initialize futures for F&O stocks
+    for (const [symbol, config] of Object.entries(FUTURES_STOCK_CONFIG)) {
+      const stock = stocks[symbol]
+      if (stock) {
+        futures[symbol] = FuturesEngine.initializeFutures(
+          symbol, stock.currentPrice, 'STOCK', config.lotSize, config.marginPercent, stock.volatility
+        )
+      }
+    }
+
     return {
       indices,
       stocks,
       optionChains,
+      futures,
       engineRunning: false,
       tickCount: 0,
       lastTickTime: Date.now(),
@@ -516,6 +778,20 @@ export class MarketEngine {
       }
     }
 
+    // Update futures contracts (every tick for smooth price updates)
+    for (const underlying of Object.keys(this.state.futures)) {
+      const spotPrice = this.state.indices[underlying]?.currentPrice
+        || this.state.stocks[underlying]?.currentPrice
+        || 0
+      if (spotPrice > 0) {
+        this.state.futures[underlying] = FuturesEngine.updateFutures(
+          this.state.futures[underlying],
+          spotPrice,
+          marketBias
+        )
+      }
+    }
+
     // Notify all listeners
     this.notifyListeners()
   }
@@ -525,6 +801,7 @@ export class MarketEngine {
       indices: { ...this.state.indices },
       stocks: { ...this.state.stocks },
       optionChains: { ...this.state.optionChains },
+      futures: { ...this.state.futures },
       engineRunning: this.state.engineRunning,
       tickCount: this.state.tickCount,
       lastTickTime: this.state.lastTickTime,
@@ -582,6 +859,7 @@ export class MarketEngine {
       indices: { ...this.state.indices },
       stocks: { ...this.state.stocks },
       optionChains: { ...this.state.optionChains },
+      futures: { ...this.state.futures },
       engineRunning: this.state.engineRunning,
       tickCount: this.state.tickCount,
       lastTickTime: this.state.lastTickTime,
@@ -607,6 +885,23 @@ export class MarketEngine {
    */
   getOptionChain(underlying: string): OptionTick[] {
     return this.state.optionChains[underlying] || []
+  }
+
+  /**
+   * Get futures contracts for an underlying
+   */
+  getFutures(underlying: string): FutureTick[] {
+    return this.state.futures[underlying] || []
+  }
+
+  /**
+   * NON-DESTRUCTIVE ADD: Add a new futures contract to the engine.
+   * Uses symbol+expiry as unique key — duplicates are silently skipped.
+   * Never overwrites existing data.
+   */
+  addFutureContract(newFuture: FutureTick): void {
+    const prev = this.state.futures[newFuture.symbol] || []
+    this.state.futures[newFuture.symbol] = FuturesEngine.addFuture(prev, newFuture)
   }
 
   /**
